@@ -1,0 +1,28 @@
+/* Storely design tokens (matches the mobile app: light theme, gold + navy). */
+:root {
+  --color-gold: #f5a623;
+  --color-navy: #14213d;
+  --color-text: #1f2937;
+  --color-bg: #ffffff;
+
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 48rem;
+  margin: 4rem auto;
+  padding: 0 1rem;
+}
+
+h1 {
+  color: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+  display: inline-block;
+}
