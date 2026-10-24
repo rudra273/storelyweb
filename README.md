@@ -1,32 +1,18 @@
-# React + TypeScript + Vite
+# storelyweb
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Desktop web app for Storely shop owners and staff (React, TypeScript, Vite, Node 26).
+Master plan: `/Users/rudra/projects/Storely/plan.md`. The API lives in
+`/Users/rudra/projects/storelyapi`. Everything runs in Docker; you only need Docker.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+make check      # lint, typecheck, tests, production build, dependency audit
+make test       # just the tests
+make lock       # refresh package-lock.json after editing package.json
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Phase 0 contains only the skeleton. Sign-in, role-aware navigation and the API
+client arrive in Phase 5; the dev server joins the API's `docker compose` stack
+at that point so it is served over HTTPS at `https://app.storely.localhost`.
+
+Rules: no tokens in `localStorage`, no `dangerouslySetInnerHTML` or `eval` (the
+linter enforces both), and the server is the source of truth for money totals.
