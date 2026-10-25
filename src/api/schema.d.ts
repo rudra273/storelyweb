@@ -713,6 +713,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/reports/day-book": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Day Book */
+        get: operations["get_day_book_v1_shops__shop_id__reports_day_book_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/expiring-stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Expiring */
+        get: operations["get_expiring_v1_shops__shop_id__reports_expiring_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/gstr1": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Gstr1
+         * @description The month's GSTR-1 sheets as data, for review before downloading the workbook.
+         */
+        get: operations["get_gstr1_v1_shops__shop_id__reports_gstr1_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/gstr1.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Gstr1 */
+        get: operations["download_gstr1_v1_shops__shop_id__reports_gstr1_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/kpis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Kpis */
+        get: operations["get_kpis_v1_shops__shop_id__reports_kpis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/profit-loss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Profit Loss */
+        get: operations["get_profit_loss_v1_shops__shop_id__reports_profit_loss_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/purchase-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Purchases */
+        get: operations["get_purchases_v1_shops__shop_id__reports_purchase_register_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/receivables-ageing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Ageing */
+        get: operations["get_ageing_v1_shops__shop_id__reports_receivables_ageing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/stock-valuation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Stock Valuation */
+        get: operations["get_stock_valuation_v1_shops__shop_id__reports_stock_valuation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/reports/tax-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Tax Summary */
+        get: operations["get_tax_summary_v1_shops__shop_id__reports_tax_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/role": {
         parameters: {
             query?: never;
@@ -879,6 +1052,30 @@ export interface components {
              */
             reason: "damage" | "expired" | "theft" | "return" | "own_use" | "count" | "other";
         };
+        /** Ageing */
+        Ageing: {
+            /** As Of */
+            as_of: string;
+            /** Bucket Labels */
+            bucket_labels: string[];
+            /** Bucket Totals */
+            bucket_totals: string[];
+            /** Customers */
+            customers: components["schemas"]["AgeingCustomer"][];
+            /** Total */
+            total: string;
+        };
+        /** AgeingCustomer */
+        AgeingCustomer: {
+            /** Buckets */
+            buckets: string[];
+            /** Customer Name */
+            customer_name: string;
+            /** Customer Phone */
+            customer_phone: string | null;
+            /** Total */
+            total: string;
+        };
         /** CategoryIn */
         CategoryIn: {
             /** Gst Percent */
@@ -909,6 +1106,77 @@ export interface components {
             hsn_code?: string | null;
             /** Name */
             name?: string | null;
+        };
+        /** CategoryRevenue */
+        CategoryRevenue: {
+            /** Category */
+            category: string;
+            /** Revenue */
+            revenue: string;
+        };
+        /** DailyPoint */
+        DailyPoint: {
+            /** Day */
+            day: string;
+            /** Invoices */
+            invoices: number;
+            /** Revenue */
+            revenue: string;
+        };
+        /** DayBill */
+        DayBill: {
+            /** Balance Due */
+            balance_due: string;
+            /** Bill Number */
+            bill_number: string;
+            /** Created At */
+            created_at: string;
+            /** Customer Name */
+            customer_name: string;
+            /** Document Type */
+            document_type: string;
+            /** Paid Amount */
+            paid_amount: string;
+            /** Total Amount */
+            total_amount: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** DayBook */
+        DayBook: {
+            /** Bills */
+            bills: components["schemas"]["DayBill"][];
+            /** Cash Expenses */
+            cash_expenses: string;
+            /** Cash Received */
+            cash_received: string;
+            /** Collected */
+            collected: string;
+            /** Day */
+            day: string;
+            /** Expenses */
+            expenses: components["schemas"]["DayExpense"][];
+            /** Net Cash */
+            net_cash: string;
+            /** Payments By Method */
+            payments_by_method: components["schemas"]["MethodAmount"][];
+            /** Sales */
+            sales: string;
+            /** Total Expenses */
+            total_expenses: string;
+        };
+        /** DayExpense */
+        DayExpense: {
+            /** Amount */
+            amount: string;
+            /** Category */
+            category: string;
+            /** Notes */
+            notes: string | null;
+            /** Payment Method */
+            payment_method: string;
+            /** Uuid */
+            uuid: string;
         };
         /** DeleteAccountIn */
         DeleteAccountIn: {
@@ -982,6 +1250,39 @@ export interface components {
             /** User Agent */
             user_agent: string | null;
         };
+        /** ExpenseCategory */
+        ExpenseCategory: {
+            /** Amount */
+            amount: string;
+            /** Category */
+            category: string;
+        };
+        /** Expiring */
+        Expiring: {
+            /** As Of */
+            as_of: string;
+            /** Batches */
+            batches: components["schemas"]["ExpiringBatch"][];
+            /** Days */
+            days: number;
+        };
+        /** ExpiringBatch */
+        ExpiringBatch: {
+            /** Batch No */
+            batch_no: string | null;
+            /** Expired */
+            expired: boolean;
+            /** Expiry */
+            expiry: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit */
+            unit: string | null;
+        };
         /** ForgotIn */
         ForgotIn: {
             /**
@@ -989,6 +1290,31 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** Gstr1 */
+        Gstr1: {
+            /** From */
+            from: string;
+            /** Gstin */
+            gstin: string | null;
+            /** Sheets */
+            sheets: {
+                [key: string]: unknown[][];
+            };
+            /** To */
+            to: string;
+            totals: components["schemas"]["Gstr1Totals"];
+        };
+        /** Gstr1Totals */
+        Gstr1Totals: {
+            /** Cgst */
+            cgst: string;
+            /** Igst */
+            igst: string;
+            /** Sgst */
+            sgst: string;
+            /** Taxable */
+            taxable: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1054,6 +1380,47 @@ export interface components {
             id: string;
             /** Role */
             role: string;
+        };
+        /** Kpis */
+        Kpis: {
+            /** Average Order Value */
+            average_order_value: string;
+            /** By Category */
+            by_category: components["schemas"]["CategoryRevenue"][];
+            /** By Payment Method */
+            by_payment_method: components["schemas"]["MethodTotal"][];
+            /** Collected */
+            collected: string;
+            /** Daily */
+            daily: components["schemas"]["DailyPoint"][];
+            /** Discount Rate Percent */
+            discount_rate_percent: string;
+            /** Expenses */
+            expenses: string;
+            /** Gross Margin Percent */
+            gross_margin_percent: string;
+            /** Gross Profit */
+            gross_profit: string;
+            /** Gst Collected */
+            gst_collected: string;
+            /** Inventory Value */
+            inventory_value: string;
+            /** Invoices */
+            invoices: number;
+            /** Low Stock Count */
+            low_stock_count: number;
+            /** Out Of Stock Count */
+            out_of_stock_count: number;
+            /** Revenue */
+            revenue: string;
+            /** Top By Revenue */
+            top_by_revenue: components["schemas"]["TopProduct"][];
+            /** Top By Units */
+            top_by_units: components["schemas"]["TopUnits"][];
+            /** Unpaid Count */
+            unpaid_count: number;
+            /** Unpaid Total */
+            unpaid_total: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -1131,6 +1498,20 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** MethodAmount */
+        MethodAmount: {
+            /** Amount */
+            amount: string;
+            /** Method */
+            method: string;
+        };
+        /** MethodTotal */
+        MethodTotal: {
+            /** Method */
+            method: string;
+            /** Total */
+            total: string;
         };
         /** MfaCodeIn */
         MfaCodeIn: {
@@ -1360,6 +1741,23 @@ export interface components {
             /** Full Name */
             full_name?: string | null;
         };
+        /** ProfitLoss */
+        ProfitLoss: {
+            /** Cost Of Goods */
+            cost_of_goods: string;
+            /** Expenses */
+            expenses: string;
+            /** Expenses By Category */
+            expenses_by_category: components["schemas"]["ExpenseCategory"][];
+            /** Gross Profit */
+            gross_profit: string;
+            /** Gst Collected */
+            gst_collected: string;
+            /** Net Profit */
+            net_profit: string;
+            /** Sales */
+            sales: string;
+        };
         /** PullIn */
         PullIn: {
             /**
@@ -1383,6 +1781,40 @@ export interface components {
              * @enum {string}
              */
             table: "shops" | "app_settings" | "bill_settings" | "categories" | "units" | "suppliers" | "customers" | "products" | "invoice_series" | "bills" | "bill_items" | "bill_payments" | "stock_movements" | "expenses" | "audit_log";
+        };
+        /** PurchaseRow */
+        PurchaseRow: {
+            /** Amount */
+            amount: string;
+            /** Batch No */
+            batch_no: string | null;
+            /** Date */
+            date: string;
+            /** Expiry */
+            expiry: string | null;
+            /** Imported */
+            imported: boolean;
+            /** Product Name */
+            product_name: string;
+            /** Quantity */
+            quantity: string;
+            /** Supplier */
+            supplier: string | null;
+            /** Unit */
+            unit: string | null;
+            /** Unit Cost */
+            unit_cost: string;
+        };
+        /** Purchases */
+        Purchases: {
+            /** From */
+            from: string;
+            /** Rows */
+            rows: components["schemas"]["PurchaseRow"][];
+            /** To */
+            to: string;
+            /** Total */
+            total: string;
         };
         /** PushIn */
         PushIn: {
@@ -1537,6 +1969,30 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** StockValuation */
+        StockValuation: {
+            /** Items */
+            items: components["schemas"]["StockValueRow"][];
+            /** Total Cost */
+            total_cost: string;
+            /** Total Sale */
+            total_sale: string;
+        };
+        /** StockValueRow */
+        StockValueRow: {
+            /** Category */
+            category: string | null;
+            /** Cost Value */
+            cost_value: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: string;
+            /** Sale Value */
+            sale_value: string;
+            /** Unit */
+            unit: string | null;
+        };
         /** SupplierIn */
         SupplierIn: {
             /** Address */
@@ -1584,6 +2040,34 @@ export interface components {
             /** Phone */
             phone?: string | null;
         };
+        /** TaxRate */
+        TaxRate: {
+            /** Cgst */
+            cgst: string;
+            /** Igst */
+            igst: string;
+            /** Rate */
+            rate: string;
+            /** Sgst */
+            sgst: string;
+            /** Tax */
+            tax: string;
+            /** Taxable */
+            taxable: string;
+        };
+        /** TaxSummary */
+        TaxSummary: {
+            /** From */
+            from: string;
+            /** Rates */
+            rates: components["schemas"]["TaxRate"][];
+            /** To */
+            to: string;
+            /** Total Tax */
+            total_tax: string;
+            /** Total Taxable */
+            total_taxable: string;
+        };
         /** TokenOut */
         TokenOut: {
             /** Access Token */
@@ -1597,6 +2081,22 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** TopProduct */
+        TopProduct: {
+            /** Name */
+            name: string;
+            /** Revenue */
+            revenue: string;
+            /** Units */
+            units: string;
+        };
+        /** TopUnits */
+        TopUnits: {
+            /** Name */
+            name: string;
+            /** Units */
+            units: string;
         };
         /** UnitIn */
         UnitIn: {
@@ -3140,6 +3640,367 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuantityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_day_book_v1_shops__shop_id__reports_day_book_get: {
+        parameters: {
+            query: {
+                /** @description YYYY-MM-DD */
+                day: string;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayBook"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_expiring_v1_shops__shop_id__reports_expiring_stock_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                /** @description YYYY-MM-DD */
+                as_of?: string | null;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expiring"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_gstr1_v1_shops__shop_id__reports_gstr1_get: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description YYYY-MM-DD */
+                to: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gstr1"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_gstr1_v1_shops__shop_id__reports_gstr1_xlsx_get: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description YYYY-MM-DD */
+                to: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kpis_v1_shops__shop_id__reports_kpis_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                /** @description YYYY-MM-DD */
+                to?: string | null;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Kpis"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profit_loss_v1_shops__shop_id__reports_profit_loss_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                /** @description YYYY-MM-DD */
+                to?: string | null;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfitLoss"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_purchases_v1_shops__shop_id__reports_purchase_register_get: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description YYYY-MM-DD */
+                to: string;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Purchases"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_ageing_v1_shops__shop_id__reports_receivables_ageing_get: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM-DD */
+                as_of?: string | null;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ageing"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_stock_valuation_v1_shops__shop_id__reports_stock_valuation_get: {
+        parameters: {
+            query?: {
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockValuation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_tax_summary_v1_shops__shop_id__reports_tax_summary_get: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description YYYY-MM-DD */
+                to: string;
+                /** @description json (default), csv or xlsx */
+                format?: "json" | "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxSummary"];
                 };
             };
             /** @description Validation Error */

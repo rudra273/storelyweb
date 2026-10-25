@@ -25,6 +25,11 @@ export function Labels({ ids, onClose }: { ids: string[]; onClose: () => void })
   const { current } = useShop()
   const shop = current?.shop_id
   const [copies, setCopies] = useState(1)
+  useEffect(() => {
+    // While this dialog is open, printing means printing the labels, not the page behind.
+    document.body.classList.add('printing-labels')
+    return () => document.body.classList.remove('printing-labels')
+  }, [])
   const results = useQueries({
     queries: ids.map((id) => ({ queryKey: ['product', shop, id], queryFn: () => api.get<ProductDetail>(`/v1/shops/${shop}/products/${id}`) })),
   })

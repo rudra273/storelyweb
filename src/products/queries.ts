@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '../api/schema'
 import { ApiError, api, request } from '../api/client'
+import { downloadFile } from '../lib/download'
 import { useShop } from '../shops/context'
 
 type S = components['schemas']
@@ -109,16 +110,8 @@ export async function importFile(shop: string, file: File, options: { dryRun: bo
 }
 
 /** Downloads the export through the normal authenticated request, then saves it. */
-export async function downloadExport(shop: string, format: 'csv' | 'xlsx'): Promise<void> {
-  const blob = await request<Blob>('GET', `/v1/shops/${shop}/products/export?format=${format}`, { as: 'blob' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `products_${new Date().toISOString().slice(0, 10)}.${format}`
-  document.body.append(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+export function downloadExport(shop: string, format: 'csv' | 'xlsx'): Promise<void> {
+  return downloadFile(`/v1/shops/${shop}/products/export?format=${format}`, `products_${new Date().toISOString().slice(0, 10)}.${format}`)
 }
 
 export { ApiError }

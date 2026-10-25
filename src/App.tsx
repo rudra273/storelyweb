@@ -4,6 +4,10 @@ import { AppLayout } from './components/AppLayout'
 import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
 import { ComingSoon } from './pages/ComingSoon'
 import { ProductsPage } from './products/ProductsPage'
+import { Overview } from './reports/Overview'
+import { ExpiringPage, PurchasesPage, StockValuePage, TaxPage } from './reports/Registers'
+import { ReportsLayout } from './reports/ReportsLayout'
+import { DayBookPage, ProfitLossPage, ReceivablesPage } from './reports/Statements'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
@@ -59,7 +63,16 @@ export default function App() {
                 <Route path="products/:id" element={<ProductsPage />} />
               </Route>
               <Route element={<RequireCapability needs="reports.view" />}>
-                <Route path="reports" element={<ComingSoon title="Reports" note="Reports arrive after the product catalogue." />} />
+                <Route path="reports" element={<ReportsLayout />}>
+                  <Route index element={<Overview />} />
+                  <Route path="day-book" element={<DayBookPage />} />
+                  <Route path="profit-loss" element={<ProfitLossPage />} />
+                  <Route path="receivables" element={<ReceivablesPage />} />
+                  <Route path="expiring" element={<ExpiringPage />} />
+                  <Route path="purchases" element={<PurchasesPage />} />
+                  <Route path="tax" element={<TaxPage />} />
+                  <Route path="stock" element={<StockValuePage />} />
+                </Route>
               </Route>
               <Route element={<RequireCapability needs="billing.create" />}>
                 <Route path="billing" element={<ComingSoon title="Billing" note="Billing on the web arrives after reports." />} />

@@ -61,6 +61,86 @@
     "title": "AdjustIn",
     "type": "object"
    },
+   "Ageing": {
+    "properties": {
+     "as_of": {
+      "title": "As Of",
+      "type": "string"
+     },
+     "bucket_labels": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Bucket Labels",
+      "type": "array"
+     },
+     "bucket_totals": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Bucket Totals",
+      "type": "array"
+     },
+     "customers": {
+      "items": {
+       "$ref": "#/components/schemas/AgeingCustomer"
+      },
+      "title": "Customers",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "as_of",
+     "bucket_labels",
+     "customers",
+     "bucket_totals",
+     "total"
+    ],
+    "title": "Ageing",
+    "type": "object"
+   },
+   "AgeingCustomer": {
+    "properties": {
+     "buckets": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Buckets",
+      "type": "array"
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "customer_phone": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Phone"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "customer_name",
+     "customer_phone",
+     "buckets",
+     "total"
+    ],
+    "title": "AgeingCustomer",
+    "type": "object"
+   },
    "CategoryIn": {
     "additionalProperties": false,
     "properties": {
@@ -204,6 +284,202 @@
      }
     },
     "title": "CategoryPatch",
+    "type": "object"
+   },
+   "CategoryRevenue": {
+    "properties": {
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "string"
+     }
+    },
+    "required": [
+     "category",
+     "revenue"
+    ],
+    "title": "CategoryRevenue",
+    "type": "object"
+   },
+   "DailyPoint": {
+    "properties": {
+     "day": {
+      "title": "Day",
+      "type": "string"
+     },
+     "invoices": {
+      "title": "Invoices",
+      "type": "integer"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "string"
+     }
+    },
+    "required": [
+     "day",
+     "revenue",
+     "invoices"
+    ],
+    "title": "DailyPoint",
+    "type": "object"
+   },
+   "DayBill": {
+    "properties": {
+     "balance_due": {
+      "title": "Balance Due",
+      "type": "string"
+     },
+     "bill_number": {
+      "title": "Bill Number",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "customer_name": {
+      "title": "Customer Name",
+      "type": "string"
+     },
+     "document_type": {
+      "title": "Document Type",
+      "type": "string"
+     },
+     "paid_amount": {
+      "title": "Paid Amount",
+      "type": "string"
+     },
+     "total_amount": {
+      "title": "Total Amount",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "bill_number",
+     "customer_name",
+     "document_type",
+     "total_amount",
+     "paid_amount",
+     "balance_due",
+     "created_at"
+    ],
+    "title": "DayBill",
+    "type": "object"
+   },
+   "DayBook": {
+    "properties": {
+     "bills": {
+      "items": {
+       "$ref": "#/components/schemas/DayBill"
+      },
+      "title": "Bills",
+      "type": "array"
+     },
+     "cash_expenses": {
+      "title": "Cash Expenses",
+      "type": "string"
+     },
+     "cash_received": {
+      "title": "Cash Received",
+      "type": "string"
+     },
+     "collected": {
+      "title": "Collected",
+      "type": "string"
+     },
+     "day": {
+      "title": "Day",
+      "type": "string"
+     },
+     "expenses": {
+      "items": {
+       "$ref": "#/components/schemas/DayExpense"
+      },
+      "title": "Expenses",
+      "type": "array"
+     },
+     "net_cash": {
+      "title": "Net Cash",
+      "type": "string"
+     },
+     "payments_by_method": {
+      "items": {
+       "$ref": "#/components/schemas/MethodAmount"
+      },
+      "title": "Payments By Method",
+      "type": "array"
+     },
+     "sales": {
+      "title": "Sales",
+      "type": "string"
+     },
+     "total_expenses": {
+      "title": "Total Expenses",
+      "type": "string"
+     }
+    },
+    "required": [
+     "day",
+     "bills",
+     "payments_by_method",
+     "expenses",
+     "sales",
+     "collected",
+     "cash_received",
+     "cash_expenses",
+     "total_expenses",
+     "net_cash"
+    ],
+    "title": "DayBook",
+    "type": "object"
+   },
+   "DayExpense": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_method": {
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "category",
+     "amount",
+     "payment_method",
+     "notes"
+    ],
+    "title": "DayExpense",
     "type": "object"
    },
    "DeleteAccountIn": {
@@ -389,6 +665,107 @@
     "title": "EventOut",
     "type": "object"
    },
+   "ExpenseCategory": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     }
+    },
+    "required": [
+     "category",
+     "amount"
+    ],
+    "title": "ExpenseCategory",
+    "type": "object"
+   },
+   "Expiring": {
+    "properties": {
+     "as_of": {
+      "title": "As Of",
+      "type": "string"
+     },
+     "batches": {
+      "items": {
+       "$ref": "#/components/schemas/ExpiringBatch"
+      },
+      "title": "Batches",
+      "type": "array"
+     },
+     "days": {
+      "title": "Days",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "as_of",
+     "days",
+     "batches"
+    ],
+    "title": "Expiring",
+    "type": "object"
+   },
+   "ExpiringBatch": {
+    "properties": {
+     "batch_no": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expired": {
+      "title": "Expired",
+      "type": "boolean"
+     },
+     "expiry": {
+      "title": "Expiry",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "title": "Product Uuid",
+      "type": "string"
+     },
+     "quantity": {
+      "title": "Quantity",
+      "type": "string"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "required": [
+     "product_uuid",
+     "product_name",
+     "unit",
+     "batch_no",
+     "expiry",
+     "quantity",
+     "expired"
+    ],
+    "title": "ExpiringBatch",
+    "type": "object"
+   },
    "ForgotIn": {
     "properties": {
      "email": {
@@ -401,6 +778,80 @@
      "email"
     ],
     "title": "ForgotIn",
+    "type": "object"
+   },
+   "Gstr1": {
+    "properties": {
+     "from": {
+      "title": "From",
+      "type": "string"
+     },
+     "gstin": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gstin"
+     },
+     "sheets": {
+      "additionalProperties": {
+       "items": {
+        "items": {},
+        "type": "array"
+       },
+       "type": "array"
+      },
+      "title": "Sheets",
+      "type": "object"
+     },
+     "to": {
+      "title": "To",
+      "type": "string"
+     },
+     "totals": {
+      "$ref": "#/components/schemas/Gstr1Totals"
+     }
+    },
+    "required": [
+     "from",
+     "to",
+     "gstin",
+     "totals",
+     "sheets"
+    ],
+    "title": "Gstr1",
+    "type": "object"
+   },
+   "Gstr1Totals": {
+    "properties": {
+     "cgst": {
+      "title": "Cgst",
+      "type": "string"
+     },
+     "igst": {
+      "title": "Igst",
+      "type": "string"
+     },
+     "sgst": {
+      "title": "Sgst",
+      "type": "string"
+     },
+     "taxable": {
+      "title": "Taxable",
+      "type": "string"
+     }
+    },
+    "required": [
+     "taxable",
+     "igst",
+     "cgst",
+     "sgst"
+    ],
+    "title": "Gstr1Totals",
     "type": "object"
    },
    "HTTPValidationError": {
@@ -536,6 +987,124 @@
      "created_at"
     ],
     "title": "InviteOut",
+    "type": "object"
+   },
+   "Kpis": {
+    "properties": {
+     "average_order_value": {
+      "title": "Average Order Value",
+      "type": "string"
+     },
+     "by_category": {
+      "items": {
+       "$ref": "#/components/schemas/CategoryRevenue"
+      },
+      "title": "By Category",
+      "type": "array"
+     },
+     "by_payment_method": {
+      "items": {
+       "$ref": "#/components/schemas/MethodTotal"
+      },
+      "title": "By Payment Method",
+      "type": "array"
+     },
+     "collected": {
+      "title": "Collected",
+      "type": "string"
+     },
+     "daily": {
+      "items": {
+       "$ref": "#/components/schemas/DailyPoint"
+      },
+      "title": "Daily",
+      "type": "array"
+     },
+     "discount_rate_percent": {
+      "title": "Discount Rate Percent",
+      "type": "string"
+     },
+     "expenses": {
+      "title": "Expenses",
+      "type": "string"
+     },
+     "gross_margin_percent": {
+      "title": "Gross Margin Percent",
+      "type": "string"
+     },
+     "gross_profit": {
+      "title": "Gross Profit",
+      "type": "string"
+     },
+     "gst_collected": {
+      "title": "Gst Collected",
+      "type": "string"
+     },
+     "inventory_value": {
+      "title": "Inventory Value",
+      "type": "string"
+     },
+     "invoices": {
+      "title": "Invoices",
+      "type": "integer"
+     },
+     "low_stock_count": {
+      "title": "Low Stock Count",
+      "type": "integer"
+     },
+     "out_of_stock_count": {
+      "title": "Out Of Stock Count",
+      "type": "integer"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "string"
+     },
+     "top_by_revenue": {
+      "items": {
+       "$ref": "#/components/schemas/TopProduct"
+      },
+      "title": "Top By Revenue",
+      "type": "array"
+     },
+     "top_by_units": {
+      "items": {
+       "$ref": "#/components/schemas/TopUnits"
+      },
+      "title": "Top By Units",
+      "type": "array"
+     },
+     "unpaid_count": {
+      "title": "Unpaid Count",
+      "type": "integer"
+     },
+     "unpaid_total": {
+      "title": "Unpaid Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "revenue",
+     "collected",
+     "invoices",
+     "average_order_value",
+     "discount_rate_percent",
+     "gross_profit",
+     "gross_margin_percent",
+     "gst_collected",
+     "expenses",
+     "unpaid_count",
+     "unpaid_total",
+     "inventory_value",
+     "out_of_stock_count",
+     "low_stock_count",
+     "daily",
+     "by_payment_method",
+     "by_category",
+     "top_by_revenue",
+     "top_by_units"
+    ],
+    "title": "Kpis",
     "type": "object"
    },
    "LoginIn": {
@@ -710,6 +1279,42 @@
      "created_at"
     ],
     "title": "MemberOut",
+    "type": "object"
+   },
+   "MethodAmount": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "method": {
+      "title": "Method",
+      "type": "string"
+     }
+    },
+    "required": [
+     "method",
+     "amount"
+    ],
+    "title": "MethodAmount",
+    "type": "object"
+   },
+   "MethodTotal": {
+    "properties": {
+     "method": {
+      "title": "Method",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "method",
+     "total"
+    ],
+    "title": "MethodTotal",
     "type": "object"
    },
    "MfaCodeIn": {
@@ -1722,6 +2327,52 @@
     "title": "ProfileIn",
     "type": "object"
    },
+   "ProfitLoss": {
+    "properties": {
+     "cost_of_goods": {
+      "title": "Cost Of Goods",
+      "type": "string"
+     },
+     "expenses": {
+      "title": "Expenses",
+      "type": "string"
+     },
+     "expenses_by_category": {
+      "items": {
+       "$ref": "#/components/schemas/ExpenseCategory"
+      },
+      "title": "Expenses By Category",
+      "type": "array"
+     },
+     "gross_profit": {
+      "title": "Gross Profit",
+      "type": "string"
+     },
+     "gst_collected": {
+      "title": "Gst Collected",
+      "type": "string"
+     },
+     "net_profit": {
+      "title": "Net Profit",
+      "type": "string"
+     },
+     "sales": {
+      "title": "Sales",
+      "type": "string"
+     }
+    },
+    "required": [
+     "sales",
+     "cost_of_goods",
+     "gross_profit",
+     "gst_collected",
+     "expenses_by_category",
+     "expenses",
+     "net_profit"
+    ],
+    "title": "ProfitLoss",
+    "type": "object"
+   },
    "PullIn": {
     "properties": {
      "after_key": {
@@ -1769,6 +2420,123 @@
      "table"
     ],
     "title": "PullIn",
+    "type": "object"
+   },
+   "PurchaseRow": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "batch_no": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "date": {
+      "title": "Date",
+      "type": "string"
+     },
+     "expiry": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry"
+     },
+     "imported": {
+      "title": "Imported",
+      "type": "boolean"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "quantity": {
+      "title": "Quantity",
+      "type": "string"
+     },
+     "supplier": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "unit_cost": {
+      "title": "Unit Cost",
+      "type": "string"
+     }
+    },
+    "required": [
+     "date",
+     "product_name",
+     "unit",
+     "supplier",
+     "quantity",
+     "unit_cost",
+     "amount",
+     "batch_no",
+     "expiry",
+     "imported"
+    ],
+    "title": "PurchaseRow",
+    "type": "object"
+   },
+   "Purchases": {
+    "properties": {
+     "from": {
+      "title": "From",
+      "type": "string"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/PurchaseRow"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "to": {
+      "title": "To",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "from",
+     "to",
+     "rows",
+     "total"
+    ],
+    "title": "Purchases",
     "type": "object"
    },
    "PushIn": {
@@ -2202,6 +2970,84 @@
     "title": "StatusOut",
     "type": "object"
    },
+   "StockValuation": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/StockValueRow"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "total_cost": {
+      "title": "Total Cost",
+      "type": "string"
+     },
+     "total_sale": {
+      "title": "Total Sale",
+      "type": "string"
+     }
+    },
+    "required": [
+     "items",
+     "total_cost",
+     "total_sale"
+    ],
+    "title": "StockValuation",
+    "type": "object"
+   },
+   "StockValueRow": {
+    "properties": {
+     "category": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "cost_value": {
+      "title": "Cost Value",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "quantity": {
+      "title": "Quantity",
+      "type": "string"
+     },
+     "sale_value": {
+      "title": "Sale Value",
+      "type": "string"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "required": [
+     "name",
+     "category",
+     "unit",
+     "quantity",
+     "cost_value",
+     "sale_value"
+    ],
+    "title": "StockValueRow",
+    "type": "object"
+   },
    "SupplierIn": {
     "additionalProperties": false,
     "properties": {
@@ -2436,6 +3282,80 @@
     "title": "SupplierPatch",
     "type": "object"
    },
+   "TaxRate": {
+    "properties": {
+     "cgst": {
+      "title": "Cgst",
+      "type": "string"
+     },
+     "igst": {
+      "title": "Igst",
+      "type": "string"
+     },
+     "rate": {
+      "title": "Rate",
+      "type": "string"
+     },
+     "sgst": {
+      "title": "Sgst",
+      "type": "string"
+     },
+     "tax": {
+      "title": "Tax",
+      "type": "string"
+     },
+     "taxable": {
+      "title": "Taxable",
+      "type": "string"
+     }
+    },
+    "required": [
+     "rate",
+     "taxable",
+     "cgst",
+     "sgst",
+     "igst",
+     "tax"
+    ],
+    "title": "TaxRate",
+    "type": "object"
+   },
+   "TaxSummary": {
+    "properties": {
+     "from": {
+      "title": "From",
+      "type": "string"
+     },
+     "rates": {
+      "items": {
+       "$ref": "#/components/schemas/TaxRate"
+      },
+      "title": "Rates",
+      "type": "array"
+     },
+     "to": {
+      "title": "To",
+      "type": "string"
+     },
+     "total_tax": {
+      "title": "Total Tax",
+      "type": "string"
+     },
+     "total_taxable": {
+      "title": "Total Taxable",
+      "type": "string"
+     }
+    },
+    "required": [
+     "from",
+     "to",
+     "rates",
+     "total_taxable",
+     "total_tax"
+    ],
+    "title": "TaxSummary",
+    "type": "object"
+   },
    "TokenOut": {
     "properties": {
      "access_token": {
@@ -2468,6 +3388,47 @@
      "expires_in"
     ],
     "title": "TokenOut",
+    "type": "object"
+   },
+   "TopProduct": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "revenue": {
+      "title": "Revenue",
+      "type": "string"
+     },
+     "units": {
+      "title": "Units",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "revenue",
+     "units"
+    ],
+    "title": "TopProduct",
+    "type": "object"
+   },
+   "TopUnits": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "units": {
+      "title": "Units",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "units"
+    ],
+    "title": "TopUnits",
     "type": "object"
    },
    "UnitIn": {
@@ -4715,6 +5676,783 @@
     "summary": "Adjust Stock",
     "tags": [
      "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/day-book": {
+   "get": {
+    "operationId": "get_day_book_v1_shops__shop_id__reports_day_book_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "day",
+      "required": true,
+      "schema": {
+       "description": "YYYY-MM-DD",
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "Day",
+       "type": "string"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DayBook"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Day Book",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/expiring-stock": {
+   "get": {
+    "operationId": "get_expiring_v1_shops__shop_id__reports_expiring_stock_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "days",
+      "required": false,
+      "schema": {
+       "default": 30,
+       "maximum": 3650,
+       "minimum": 0,
+       "title": "Days",
+       "type": "integer"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "as_of",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "YYYY-MM-DD",
+       "title": "As Of"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Expiring"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Expiring",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/gstr1": {
+   "get": {
+    "description": "The month's GSTR-1 sheets as data, for review before downloading the workbook.",
+    "operationId": "get_gstr1_v1_shops__shop_id__reports_gstr1_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "From",
+       "type": "string"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "to",
+      "required": true,
+      "schema": {
+       "description": "YYYY-MM-DD",
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "To",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Gstr1"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Gstr1",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/gstr1.xlsx": {
+   "get": {
+    "operationId": "download_gstr1_v1_shops__shop_id__reports_gstr1_xlsx_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "From",
+       "type": "string"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "to",
+      "required": true,
+      "schema": {
+       "description": "YYYY-MM-DD",
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "To",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Download Gstr1",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/kpis": {
+   "get": {
+    "operationId": "get_kpis_v1_shops__shop_id__reports_kpis_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "YYYY-MM-DD",
+       "title": "To"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Kpis"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Kpis",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/profit-loss": {
+   "get": {
+    "operationId": "get_profit_loss_v1_shops__shop_id__reports_profit_loss_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "YYYY-MM-DD",
+       "title": "To"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProfitLoss"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Profit Loss",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/purchase-register": {
+   "get": {
+    "operationId": "get_purchases_v1_shops__shop_id__reports_purchase_register_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "From",
+       "type": "string"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "to",
+      "required": true,
+      "schema": {
+       "description": "YYYY-MM-DD",
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "To",
+       "type": "string"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Purchases"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Purchases",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/receivables-ageing": {
+   "get": {
+    "operationId": "get_ageing_v1_shops__shop_id__reports_receivables_ageing_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "as_of",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "YYYY-MM-DD",
+       "title": "As Of"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ageing"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Ageing",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/stock-valuation": {
+   "get": {
+    "operationId": "get_stock_valuation_v1_shops__shop_id__reports_stock_valuation_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StockValuation"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Stock Valuation",
+    "tags": [
+     "reports"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/reports/tax-summary": {
+   "get": {
+    "operationId": "get_tax_summary_v1_shops__shop_id__reports_tax_summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": true,
+      "schema": {
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "From",
+       "type": "string"
+      }
+     },
+     {
+      "description": "YYYY-MM-DD",
+      "in": "query",
+      "name": "to",
+      "required": true,
+      "schema": {
+       "description": "YYYY-MM-DD",
+       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+       "title": "To",
+       "type": "string"
+      }
+     },
+     {
+      "description": "json (default), csv or xlsx",
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "description": "json (default), csv or xlsx",
+       "enum": [
+        "json",
+        "csv",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TaxSummary"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Tax Summary",
+    "tags": [
+     "reports"
     ]
    }
   },
