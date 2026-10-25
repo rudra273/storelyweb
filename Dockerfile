@@ -12,7 +12,14 @@ EXPOSE 5173
 CMD ["npm", "run", "dev"]
 
 # ---- production build (static files in /app/dist) ----
-# Serving them (with strict security headers) is decided in Phase 5/9.
 FROM deps AS build
 COPY --chown=node:node . .
 RUN npm run build
+
+# ---- production-like server: static files, TLS, strict headers (docker/Caddyfile) ----
+FROM caddy:2 AS serve
+COPY docker/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
+# Caddy wants a writable home; the container's file system is read-only.
+ENV XDG_DATA_HOME=/tmp XDG_CONFIG_HOME=/tmp
+EXPOSE 8443
