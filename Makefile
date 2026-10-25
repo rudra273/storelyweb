@@ -27,7 +27,7 @@ audit: image      ## known-vulnerability scan of dependencies
 	$(RUN) npm run audit
 
 secrets:         ## scan the repo and its history for committed secrets
-	docker run --rm -v "$$PWD":/repo zricethezav/gitleaks:latest detect --source /repo --no-banner --redact
+	docker run --rm -v "$$PWD":/repo zricethezav/gitleaks:latest detect --source /repo --no-banner --redact --config /repo/.gitleaks.toml
 
 # openapi.json comes from the API (`make openapi` in storelyapi writes it here).
 OPENAPI_TS = openapi-typescript@7.13.0

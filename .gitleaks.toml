@@ -1,0 +1,8 @@
+# Keep every default rule. Allow only the one throwaway password that the browser test
+# (e2e/live.cjs) signs its development-only test users up with.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixed test password used by e2e/live.cjs"
+regexes = ['''Correct-Horse-Battery-Staple-42''']
