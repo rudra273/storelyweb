@@ -81,13 +81,14 @@ async function parseError(response: Response): Promise<ApiError> {
 
 async function send(method: string, path: string, body: unknown, withToken: boolean): Promise<Response> {
   const headers: Record<string, string> = { ...WEB_HEADER }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const raw = body instanceof Blob // a file goes up as it is, everything else as JSON
+  if (body !== undefined) headers['Content-Type'] = raw ? 'application/octet-stream' : 'application/json'
   if (withToken && accessToken) headers.Authorization = `Bearer ${accessToken}`
   try {
     return await fetch(path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
       credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
@@ -126,7 +127,7 @@ async function doRefresh(): Promise<boolean> {
 export async function request<T>(
   method: string,
   path: string,
-  options: { body?: unknown; auth?: boolean } = {},
+  options: { body?: unknown; auth?: boolean; as?: 'json' | 'blob' } = {},
 ): Promise<T> {
   const withToken = options.auth !== false
   let response = await send(method, path, options.body, withToken)
@@ -140,6 +141,7 @@ export async function request<T>(
   }
   if (!response.ok) throw await parseError(response)
   if (response.status === 204) return undefined as T
+  if (options.as === 'blob') return (await response.blob()) as T
   return (await response.json()) as T
 }
 

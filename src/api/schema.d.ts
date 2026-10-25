@@ -512,6 +512,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Categories */
+        get: operations["list_categories_v1_shops__shop_id__categories_get"];
+        put?: never;
+        /** Create Category */
+        post: operations["create_category_v1_shops__shop_id__categories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Category */
+        delete: operations["delete_category_v1_shops__shop_id__categories__category_id__delete"];
+        options?: never;
+        head?: never;
+        /** Edit Category */
+        patch: operations["edit_category_v1_shops__shop_id__categories__category_id__patch"];
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/invites": {
         parameters: {
             query?: never;
@@ -585,6 +621,98 @@ export interface paths {
         patch: operations["change_role_v1_shops__shop_id__members__member_id__patch"];
         trace?: never;
     };
+    "/v1/shops/{shop_id}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Products */
+        get: operations["list_products_v1_shops__shop_id__products_get"];
+        put?: never;
+        /** Create Product */
+        post: operations["create_product_v1_shops__shop_id__products_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Products */
+        get: operations["export_products_v1_shops__shop_id__products_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Products
+         * @description The file is the raw request body (CSV or .xlsx). A dry run reports what would happen
+         *     and changes nothing; the real run adds each row's stock as a purchase.
+         */
+        post: operations["import_products_v1_shops__shop_id__products_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Product Detail */
+        get: operations["product_detail_v1_shops__shop_id__products__product_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Product */
+        delete: operations["delete_product_v1_shops__shop_id__products__product_id__delete"];
+        options?: never;
+        head?: never;
+        /** Edit Product */
+        patch: operations["edit_product_v1_shops__shop_id__products__product_id__patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/{product_id}/stock-adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adjust Stock */
+        post: operations["adjust_stock_v1_shops__shop_id__products__product_id__stock_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/role": {
         parameters: {
             query?: never;
@@ -617,6 +745,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Suppliers */
+        get: operations["list_suppliers_v1_shops__shop_id__suppliers_get"];
+        put?: never;
+        /** Create Supplier */
+        post: operations["create_supplier_v1_shops__shop_id__suppliers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit Supplier */
+        patch: operations["edit_supplier_v1_shops__shop_id__suppliers__supplier_id__patch"];
         trace?: never;
     };
     "/v1/shops/{shop_id}/sync/pull": {
@@ -659,6 +822,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Units */
+        get: operations["list_units_v1_shops__shop_id__units_get"];
+        put?: never;
+        /** Create Unit */
+        post: operations["create_unit_v1_shops__shop_id__units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/units/{unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Unit */
+        delete: operations["delete_unit_v1_shops__shop_id__units__unit_id__delete"];
+        options?: never;
+        head?: never;
+        /** Edit Unit */
+        patch: operations["edit_unit_v1_shops__shop_id__units__unit_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -667,6 +866,49 @@ export interface components {
         AcceptIn: {
             /** Shop Id */
             shop_id: string;
+        };
+        /** AdjustIn */
+        AdjustIn: {
+            /** Delta */
+            delta: number | string;
+            /** Note */
+            note?: string | null;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "damage" | "expired" | "theft" | "return" | "own_use" | "count" | "other";
+        };
+        /** CategoryIn */
+        CategoryIn: {
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** CategoryOut */
+        CategoryOut: {
+            /** Gst Percent */
+            gst_percent: string | null;
+            /** Hsn Code */
+            hsn_code: string | null;
+            /** Name */
+            name: string;
+            /** Product Count */
+            product_count?: number | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** CategoryPatch */
+        CategoryPatch: {
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Name */
+            name?: string | null;
         };
         /** DeleteAccountIn */
         DeleteAccountIn: {
@@ -752,6 +994,35 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImportErrorRow */
+        ImportErrorRow: {
+            /** Message */
+            message: string;
+            /** Row */
+            row: number;
+        };
+        /** ImportReport */
+        ImportReport: {
+            /** Added */
+            added: number;
+            /** Dry Run */
+            dry_run: boolean;
+            /** Errors */
+            errors: components["schemas"]["ImportErrorRow"][];
+            /**
+             * More Errors
+             * @default 0
+             */
+            more_errors: number;
+            /** Possible Duplicate */
+            possible_duplicate: boolean;
+            /** Rows Read */
+            rows_read: number;
+            /** Skipped */
+            skipped: number;
+            /** Updated */
+            updated: number;
         };
         /** InviteIn */
         InviteIn: {
@@ -899,6 +1170,27 @@ export interface components {
             /** Mfa Token */
             mfa_token: string;
         };
+        /** MovementOut */
+        MovementOut: {
+            /** Batch No */
+            batch_no: string | null;
+            /** Created At */
+            created_at: string;
+            /** Expiry Date */
+            expiry_date: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Quantity Delta */
+            quantity_delta: string;
+            /** Reason */
+            reason: string | null;
+            /** Type */
+            type: string;
+            /** Unit Cost */
+            unit_cost?: string | null;
+            /** Uuid */
+            uuid: string;
+        };
         /** MyInviteOut */
         MyInviteOut: {
             /**
@@ -929,6 +1221,139 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** ProductCreate */
+        ProductCreate: {
+            /** Barcode */
+            barcode?: string | null;
+            /** Category Uuid */
+            category_uuid?: string | null;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Mrp Price */
+            mrp_price?: number | string | null;
+            /** Name */
+            name: string;
+            /** Opening Quantity */
+            opening_quantity?: number | string | null;
+            /** Overhead Cost */
+            overhead_cost?: number | string | null;
+            /** Product Code */
+            product_code?: string | null;
+            /** Profit Margin Percent */
+            profit_margin_percent?: number | string | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Reorder Level */
+            reorder_level?: number | string | null;
+            /** Selling Price */
+            selling_price?: number | string | null;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+            /** Track Stock */
+            track_stock?: boolean | null;
+            /** Unit Uuid */
+            unit_uuid?: string | null;
+        };
+        /** ProductDetail */
+        ProductDetail: {
+            /** Movements */
+            movements: components["schemas"]["MovementOut"][];
+            product: components["schemas"]["ProductOut"];
+        };
+        /**
+         * ProductOut
+         * @description Staff responses leave the purchase-side fields out entirely (not null, absent).
+         */
+        ProductOut: {
+            /** Barcode */
+            barcode: string | null;
+            /** Category Name */
+            category_name: string | null;
+            /** Category Uuid */
+            category_uuid: string | null;
+            /** Gst Percent */
+            gst_percent: string | null;
+            /** Hsn Code */
+            hsn_code: string | null;
+            /** Low Stock */
+            low_stock: boolean;
+            /** Mrp Price */
+            mrp_price: string | null;
+            /** Name */
+            name: string;
+            /** Next Expiry */
+            next_expiry: string | null;
+            /** Overhead Cost */
+            overhead_cost?: string | null;
+            /** Product Code */
+            product_code: string | null;
+            /** Profit Margin Percent */
+            profit_margin_percent?: string | null;
+            /** Purchase Price */
+            purchase_price?: string | null;
+            /** Quantity */
+            quantity: string | null;
+            /** Reorder Level */
+            reorder_level: string | null;
+            /** Selling Price */
+            selling_price: string | null;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+            /** Track Stock */
+            track_stock: boolean;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Unit Uuid */
+            unit_uuid: string | null;
+            /** Updated At */
+            updated_at: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** ProductPage */
+        ProductPage: {
+            /** Items */
+            items: components["schemas"]["ProductOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** Total */
+            total: number;
+        };
+        /** ProductPatch */
+        ProductPatch: {
+            /** Barcode */
+            barcode?: string | null;
+            /** Category Uuid */
+            category_uuid?: string | null;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Mrp Price */
+            mrp_price?: number | string | null;
+            /** Name */
+            name?: string | null;
+            /** Overhead Cost */
+            overhead_cost?: number | string | null;
+            /** Product Code */
+            product_code?: string | null;
+            /** Profit Margin Percent */
+            profit_margin_percent?: number | string | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Reorder Level */
+            reorder_level?: number | string | null;
+            /** Selling Price */
+            selling_price?: number | string | null;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+            /** Track Stock */
+            track_stock?: boolean | null;
+            /** Unit Uuid */
+            unit_uuid?: string | null;
         };
         /** ProfileIn */
         ProfileIn: {
@@ -977,6 +1402,11 @@ export interface components {
             accepted: number;
             /** Rejected */
             rejected: components["schemas"]["Rejected"][];
+        };
+        /** QuantityOut */
+        QuantityOut: {
+            /** Quantity */
+            quantity: string;
         };
         /** RefreshIn */
         RefreshIn: {
@@ -1107,6 +1537,53 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** SupplierIn */
+        SupplierIn: {
+            /** Address */
+            address?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Gstin */
+            gstin?: string | null;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes?: string | null;
+            /** Phone */
+            phone?: string | null;
+        };
+        /** SupplierOut */
+        SupplierOut: {
+            /** Address */
+            address: string | null;
+            /** Email */
+            email: string | null;
+            /** Gstin */
+            gstin: string | null;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** SupplierPatch */
+        SupplierPatch: {
+            /** Address */
+            address?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Gstin */
+            gstin?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Phone */
+            phone?: string | null;
+        };
         /** TokenOut */
         TokenOut: {
             /** Access Token */
@@ -1120,6 +1597,20 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** UnitIn */
+        UnitIn: {
+            /** Name */
+            name: string;
+        };
+        /** UnitOut */
+        UnitOut: {
+            /** Name */
+            name: string;
+            /** Product Count */
+            product_count?: number | null;
+            /** Uuid */
+            uuid: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -2060,6 +2551,138 @@ export interface operations {
             };
         };
     };
+    list_categories_v1_shops__shop_id__categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_category_v1_shops__shop_id__categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_category_v1_shops__shop_id__categories__category_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_category_v1_shops__shop_id__categories__category_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_invites_v1_shops__shop_id__invites_get: {
         parameters: {
             query?: never;
@@ -2253,6 +2876,283 @@ export interface operations {
             };
         };
     };
+    list_products_v1_shops__shop_id__products_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                category?: string | null;
+                low_stock?: boolean;
+                expiring_days?: number | null;
+                sort?: "name" | "price" | "quantity" | "updated" | "code";
+                direction?: "asc" | "desc";
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_product_v1_shops__shop_id__products_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_products_v1_shops__shop_id__products_export_get: {
+        parameters: {
+            query?: {
+                format?: "csv" | "xlsx";
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_products_v1_shops__shop_id__products_import_post: {
+        parameters: {
+            query: {
+                filename: string;
+                dry_run?: boolean;
+                allow_duplicate?: boolean;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    product_detail_v1_shops__shop_id__products__product_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_product_v1_shops__shop_id__products__product_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_product_v1_shops__shop_id__products__product_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adjust_stock_v1_shops__shop_id__products__product_id__stock_adjustments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuantityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     my_role_v1_shops__shop_id__role_get: {
         parameters: {
             query?: never;
@@ -2302,6 +3202,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopEventOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suppliers_v1_shops__shop_id__suppliers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_supplier_v1_shops__shop_id__suppliers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_supplier_v1_shops__shop_id__suppliers__supplier_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierOut"];
                 };
             };
             /** @description Validation Error */
@@ -2372,6 +3374,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PushOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_units_v1_shops__shop_id__units_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_unit_v1_shops__shop_id__units_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_unit_v1_shops__shop_id__units__unit_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_unit_v1_shops__shop_id__units__unit_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitOut"];
                 };
             };
             /** @description Validation Error */

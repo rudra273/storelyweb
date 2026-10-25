@@ -3,6 +3,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import { AppLayout } from './components/AppLayout'
 import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
 import { ComingSoon } from './pages/ComingSoon'
+import { ProductsPage } from './products/ProductsPage'
 import { ForgotPassword } from './pages/ForgotPassword'
 import { Home } from './pages/Home'
 import { Login } from './pages/Login'
@@ -54,7 +55,8 @@ export default function App() {
               <Route path="account" element={<Profile />} />
               <Route path="account/security" element={<Security />} />
               <Route element={<RequireCapability needs="products.view" />}>
-                <Route path="products" element={<ComingSoon title="Products" note="The product catalogue arrives in the next phase." />} />
+                <Route path="products" element={<ProductsPage />} />
+                <Route path="products/:id" element={<ProductsPage />} />
               </Route>
               <Route element={<RequireCapability needs="reports.view" />}>
                 <Route path="reports" element={<ComingSoon title="Reports" note="Reports arrive after the product catalogue." />} />
