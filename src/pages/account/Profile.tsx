@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/context'
 import { useAction } from '../../components/useAction'
@@ -81,6 +82,9 @@ export function Profile() {
             <button className="primary" disabled={email.busy || code.length !== 6}>Confirm new email</button>
           </form>
         )}
+      </Card>
+      <Card title="Delete account">
+        <p className="muted">Permanently remove your account. <Link to="/delete-account">Delete my account</Link></p>
       </Card>
     </div>
   )

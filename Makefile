@@ -1,4 +1,4 @@
-.PHONY: image lock lint typecheck test build audit secrets check api-types api-types-check
+.PHONY: image lock lint typecheck test build audit secrets check api-types api-types-check e2e
 
 # Everything runs in Docker (Node 26); the host needs only Docker.
 IMG = storelyweb:dev
@@ -41,3 +41,12 @@ api-types-check: ## fail when the committed types do not match openapi.json
 	  && echo "api types are up to date" || { echo "api types are out of date: run make api-types"; exit 1; }
 
 check: lint typecheck test build audit api-types-check   ## everything CI runs
+
+# Real browser against the real stack (run `make up` in ../storelyapi first). The API's
+# rate limits are loosened for the run, as for the mobile tests, and put back after.
+e2e:             ## browser end-to-end test of sign-in, roles, two-step, sessions
+	cd ../storelyapi && STORELY_RATE_LIMIT_SCALE=1000 docker compose up -d --wait api >/dev/null
+	docker run --rm --add-host host.docker.internal:host-gateway -v "$$PWD/e2e":/e2e:ro $(if $(SHOTS),-v $(SHOTS):/shots -e SHOTS=1) \
+	  mcr.microsoft.com/playwright:v1.64.1-noble sh -c \
+	  'mkdir /tmp/p && cd /tmp/p && npm init -y >/dev/null && npm i playwright@1.64.1 >/dev/null 2>&1 && NODE_PATH=/tmp/p/node_modules node /e2e/live.cjs'; \
+	status=$$?; cd ../storelyapi && docker compose up -d --wait api >/dev/null; exit $$status
