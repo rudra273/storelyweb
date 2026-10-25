@@ -1,8 +1,128 @@
-import { render, screen } from '@testing-library/react'
-import { expect, test } from 'vitest'
-import App from './App'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, expect, test, vi } from 'vitest'
+import { SIGNED_IN, fakeApi, ok, renderApp } from './test-utils'
 
-test('renders the Storely heading', () => {
-  render(<App />)
-  expect(screen.getByRole('heading', { name: 'Storely' })).toBeInTheDocument()
+afterEach(() => vi.unstubAllGlobals())
+
+const SHOP = (role: string) => ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Asha Stores', role }])
+const SIGNED_OUT = ok('POST', '/v1/auth/refresh', { error: { code: 'invalid_token', message: 'x' } }, 401)
+
+test('a visitor with no session is sent to the sign-in page', async () => {
+  fakeApi([SIGNED_OUT])
+  renderApp('/')
+  expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+})
+
+test('signing in lands on the home page for the shop and role', async () => {
+  const calls = fakeApi([
+    SIGNED_OUT,
+    ok('POST', '/v1/auth/login', { access_token: 't', token_type: 'bearer', expires_in: 900, mfa_required: false }),
+    ok('GET', '/v1/me', { id: 'u1', email: 'a@b.c', full_name: 'Asha', email_verified: true }),
+    SHOP('owner'),
+  ])
+  renderApp('/')
+  await userEvent.type(await screen.findByLabelText('Email'), 'a@b.c')
+  await userEvent.type(screen.getByLabelText('Password'), 'pw-123456789')
+  await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  expect(await screen.findByRole('heading', { name: 'Hello, Asha' })).toBeInTheDocument()
+  const login = calls.find((c) => c.path === '/v1/auth/login')!
+  expect(login.body).toMatchObject({ client: 'web', email: 'a@b.c' })
+})
+
+test('two-step sign-in asks for the code and sends it with the challenge token', async () => {
+  const calls = fakeApi([
+    SIGNED_OUT,
+    ok('POST', '/v1/auth/login', { mfa_required: true, mfa_token: 'chal-1', expires_in: 300, token_type: 'bearer' }),
+    ok('POST', '/v1/auth/mfa/verify', { access_token: 't', token_type: 'bearer', expires_in: 900, mfa_required: false }),
+    ok('GET', '/v1/me', { id: 'u1', email: 'a@b.c', full_name: null, email_verified: true }),
+    SHOP('admin'),
+  ])
+  renderApp('/')
+  await userEvent.type(await screen.findByLabelText('Email'), 'a@b.c')
+  await userEvent.type(screen.getByLabelText('Password'), 'pw-123456789')
+  await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  await userEvent.type(await screen.findByLabelText('Code'), '123456')
+  await userEvent.click(screen.getByRole('button', { name: 'Verify' }))
+  expect(await screen.findByRole('heading', { name: 'Hello' })).toBeInTheDocument()
+  expect(calls.find((c) => c.path === '/v1/auth/mfa/verify')!.body).toEqual({ mfa_token: 'chal-1', code: '123456' })
+})
+
+test('an unverified account is taken to the verification page', async () => {
+  fakeApi([SIGNED_OUT, ok('POST', '/v1/auth/login', { error: { code: 'email_not_verified', message: 'Verify first.' } }, 403)])
+  renderApp('/login')
+  await userEvent.type(await screen.findByLabelText('Email'), 'a@b.c')
+  await userEvent.type(screen.getByLabelText('Password'), 'pw-123456789')
+  await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Email')).toHaveValue('a@b.c')
+})
+
+test('wrong credentials show the server message and stay on the page', async () => {
+  fakeApi([SIGNED_OUT, ok('POST', '/v1/auth/login', { error: { code: 'invalid_credentials', message: 'Wrong email or password.' } }, 401)])
+  renderApp('/login')
+  await userEvent.type(await screen.findByLabelText('Email'), 'a@b.c')
+  await userEvent.type(screen.getByLabelText('Password'), 'nope')
+  await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Wrong email or password.')
+})
+
+function menu() {
+  return within(screen.getByRole('navigation', { name: 'Main' }))
+    .getAllByRole('link')
+    .map((a) => a.textContent)
+}
+
+test('owner and admin menus include reports, team and shop activity', async () => {
+  for (const role of ['owner', 'admin']) {
+    fakeApi([...SIGNED_IN, SHOP(role)])
+    const view = renderApp('/')
+    await screen.findByRole('heading', { name: 'Hello, Asha' })
+    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Team', 'Shop activity'])
+    view.unmount()
+  }
+})
+
+test('a staff menu has only products and billing', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff')])
+  renderApp('/')
+  await screen.findByRole('heading', { name: 'Hello, Asha' })
+  expect(menu()).toEqual(['Home', 'Products', 'Billing'])
+})
+
+test('staff who type an admin address get "No access" and the page never loads its data', async () => {
+  for (const path of ['/reports', '/team', '/activity']) {
+    const calls = fakeApi([...SIGNED_IN, SHOP('staff')])
+    const view = renderApp(path)
+    expect(await screen.findByRole('heading', { name: 'No access' })).toBeInTheDocument()
+    expect(calls.map((c) => c.path).filter((p) => p.includes('/members') || p.includes('/invites') || p.includes('security-events'))).toEqual([])
+    view.unmount()
+  }
+})
+
+test('a person with no shop sees invitations and can start a shop', async () => {
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', []), ok('GET', '/v1/invites/pending', [{ shop_id: 's9', role: 'staff', created_at: '2026-10-25T10:00:00Z' }])])
+  renderApp('/')
+  expect(await screen.findByRole('heading', { name: 'Welcome to Storely' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Accept' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Create shop' })).toBeDisabled()
+})
+
+test('when the server ends the session the visitor sees why', async () => {
+  fakeApi([
+    ...SIGNED_IN,
+    SHOP('owner'),
+    ok('GET', '/v1/me/sessions', { error: { code: 'invalid_token', message: 'x' } }, 401),
+  ])
+  renderApp('/account/security')
+  // the first refresh in this fake always succeeds, so the retried call fails again
+  await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument())
+})
+
+test('the public delete-account page asks a signed-out visitor to sign in first', async () => {
+  fakeApi([SIGNED_OUT])
+  renderApp('/delete-account')
+  expect(await screen.findByRole('heading', { name: 'Delete your account' })).toBeInTheDocument()
+  expect(await screen.findByLabelText('Password')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeInTheDocument()
 })

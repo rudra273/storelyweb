@@ -1,8 +1,78 @@
+import { Link, Route, Routes } from 'react-router'
+import { AuthProvider } from './auth/AuthProvider'
+import { AppLayout } from './components/AppLayout'
+import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
+import { ComingSoon } from './pages/ComingSoon'
+import { ForgotPassword } from './pages/ForgotPassword'
+import { Home } from './pages/Home'
+import { Login } from './pages/Login'
+import { ResetPassword } from './pages/ResetPassword'
+import { ShopActivity } from './pages/ShopActivity'
+import { Signup } from './pages/Signup'
+import { Team } from './pages/Team'
+import { VerifyEmail } from './pages/VerifyEmail'
+import { DeleteAccount } from './pages/account/DeleteAccount'
+import { Profile } from './pages/account/Profile'
+import { Security } from './pages/account/Security'
+import { ShopGate } from './shops/ShopGate'
+import { ShopProvider } from './shops/ShopProvider'
+
+function NotFound() {
+  return (
+    <main className="auth">
+      <div className="auth-card">
+        <h1>Page not found</h1>
+        <p><Link to="/">Go to the start page</Link></p>
+      </div>
+    </main>
+  )
+}
+
+/** Needs a router and a QueryClientProvider around it (see main.tsx and the tests). */
 export default function App() {
   return (
-    <main>
-      <h1>Storely</h1>
-      <p>Web app foundation. Sign-in arrives in Phase 5.</p>
-    </main>
+    <AuthProvider>
+      <Routes>
+        <Route element={<PublicOnly />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/verify" element={<VerifyEmail />} />
+          <Route path="/forgot" element={<ForgotPassword />} />
+          <Route path="/reset" element={<ResetPassword />} />
+        </Route>
+        <Route path="/delete-account" element={<DeleteAccount />} />
+        <Route element={<RequireAuth />}>
+          <Route
+            element={
+              <ShopProvider>
+                <ShopGate />
+              </ShopProvider>
+            }
+          >
+            <Route element={<AppLayout />}>
+              <Route index element={<Home />} />
+              <Route path="account" element={<Profile />} />
+              <Route path="account/security" element={<Security />} />
+              <Route element={<RequireCapability needs="products.view" />}>
+                <Route path="products" element={<ComingSoon title="Products" note="The product catalogue arrives in the next phase." />} />
+              </Route>
+              <Route element={<RequireCapability needs="reports.view" />}>
+                <Route path="reports" element={<ComingSoon title="Reports" note="Reports arrive after the product catalogue." />} />
+              </Route>
+              <Route element={<RequireCapability needs="billing.create" />}>
+                <Route path="billing" element={<ComingSoon title="Billing" note="Billing on the web arrives after reports." />} />
+              </Route>
+              <Route element={<RequireCapability needs="team.manage" />}>
+                <Route path="team" element={<Team />} />
+              </Route>
+              <Route element={<RequireCapability needs="shop.events" />}>
+                <Route path="activity" element={<ShopActivity />} />
+              </Route>
+            </Route>
+          </Route>
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AuthProvider>
   )
 }
