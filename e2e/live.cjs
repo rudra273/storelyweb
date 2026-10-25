@@ -280,6 +280,78 @@ const navLinks = (page) => page.getByRole('navigation', { name: 'Main' }).getByR
     await page.getByRole('button', { name: 'Basmati Rice' }).waitFor()
   })
 
+  // ── reports (owner): the data comes in the way a phone's sync would send it ──
+  const today = new Date()
+  const day = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  await step('bills from a phone are available to the web reports', async () => {
+    const out = await page.evaluate(async (d) => {
+      const t = await (await fetch('/v1/auth/refresh', { method: 'POST', headers: { 'X-Requested-With': 'storely-web', 'content-type': 'application/json' }, body: '{}' })).json()
+      const h = { Authorization: `Bearer ${t.access_token}`, 'content-type': 'application/json', 'X-Requested-With': 'storely-web' }
+      const shop = (await (await fetch('/v1/shops', { headers: h })).json())[0].shop_id
+      const id = () => crypto.randomUUID()
+      const at = `${d}T10:00:00.000`
+      const stamp = { created_at: at, updated_at: at }
+      const b1 = id(); const b2 = id()
+      const push = async (table, rows) => (await (await fetch(`/v1/shops/${shop}/sync/push`, { method: 'POST', headers: h, body: JSON.stringify({ table, rows: rows.map((r) => ({ ...r, shop_id: shop, ...stamp })) }) })).json())
+      const results = [
+        await push('bills', [
+          { uuid: b1, bill_number: 'E2E-1', total_amount: 105, subtotal_amount: 100, item_count: 1, customer_name: 'Ravi', paid_amount: 105, balance_due: 0, cgst_amount: 2.5, sgst_amount: 2.5 },
+          { uuid: b2, bill_number: 'E2E-2', total_amount: 100, subtotal_amount: 100, item_count: 1, customer_name: 'Sita', customer_phone: '9000000001', paid_amount: 0, balance_due: 100 },
+        ]),
+        await push('bill_items', [
+          { uuid: id(), bill_uuid: b1, product_name: 'Basmati Rice', quantity: 2, subtotal: 105, taxable_value_snapshot: 50, gst_snapshot: 2.5, gst_percent_snapshot: 5, cost_snapshot: 40, cgst_amount_snapshot: 1.25, sgst_amount_snapshot: 1.25, hsn_code_snapshot: '1006', unit_name: 'kg' },
+          { uuid: id(), bill_uuid: b2, product_name: 'Loose Sugar', quantity: 1, subtotal: 100, taxable_value_snapshot: 100, gst_snapshot: 0, gst_percent_snapshot: 0, cost_snapshot: 60 },
+        ]),
+        await push('bill_payments', [{ uuid: id(), bill_uuid: b1, amount: 105, payment_method: 'cash', received_at: `${d}T10:05:00.000` }]),
+        await push('expenses', [{ uuid: id(), expense_date: `${d}T12:00:00`, amount: 40, category: 'Tea & snacks', payment_method: 'cash' }]),
+      ]
+      return results.map((r) => r.rejected?.length ?? 'bad')
+    }, day)
+    expect(out.every((n) => n === 0), `the sync push was refused: ${JSON.stringify(out)}`)
+  })
+  await step('reports overview shows sales, profit and the chart', async () => {
+    await navTo(page, 'Reports')
+    await page.getByText('₹205.00').first().waitFor()
+    await page.getByText('2 invoices, net of returns').waitFor()
+    await page.getByText('₹60.00').first().waitFor() // gross profit
+    await page.getByRole('img', { name: /Sales by day/ }).waitFor()
+    await page.getByText('₹105.00').first().waitFor() // money received
+    if (process.env.SHOTS) await page.screenshot({ path: '/shots/reports.png', fullPage: true })
+  })
+  await step('the day book lists both bills and the cash movement', async () => {
+    await page.getByRole('navigation', { name: 'Reports' }).getByRole('link', { name: 'Day book' }).click()
+    await page.getByText('E2E-1').waitFor()
+    await page.getByText('E2E-2').waitFor()
+    await page.getByText('Cash drawer change').waitFor()
+    await page.getByText('₹65.00').first().waitFor() // cash in 105 less 40 cash expense
+  })
+  await step('profit and loss and who owes you', async () => {
+    await page.getByRole('navigation', { name: 'Reports' }).getByRole('link', { name: 'Profit and loss' }).click()
+    await page.getByText('Net profit').waitFor()
+    await page.getByText('₹20.00').first().waitFor() // 60 gross - 40 expenses
+    await page.getByRole('navigation', { name: 'Reports' }).getByRole('link', { name: 'Who owes you' }).click()
+    await page.getByText('Sita').waitFor()
+    await page.getByText('₹100.00').first().waitFor()
+  })
+  await step('a report downloads as Excel and as CSV, and GSTR-1 as a workbook', async () => {
+    await page.getByRole('navigation', { name: 'Reports' }).getByRole('link', { name: 'Overview' }).click()
+    await page.getByText('₹205.00').first().waitFor()
+    const [xlsx] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Excel' }).click()])
+    const head = require('node:fs').readFileSync(await xlsx.path()).subarray(0, 2).toString()
+    expect(head === 'PK' && xlsx.suggestedFilename().endsWith('.xlsx'), 'not an Excel file')
+    const [csv] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download CSV' }).click()])
+    expect(require('node:fs').readFileSync(await csv.path(), 'utf8').includes('Revenue'), 'csv missing the summary')
+    await page.getByRole('navigation', { name: 'Reports' }).getByRole('link', { name: 'Tax and GSTR-1' }).click()
+    await page.getByText('GSTR-1 workbook').waitFor()
+    await page.getByText('5%').first().waitFor()
+    const [book] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download Excel' }).last().click()])
+    expect(require('node:fs').readFileSync(await book.path()).subarray(0, 2).toString() === 'PK', 'GSTR-1 is not a workbook')
+  })
+  await step('a bad period never reaches the server and says what to fix', async () => {
+    await page.goto(`${ORIGIN}/reports?p=custom&from=2026-10-31&to=2026-10-01`)
+    await page.getByText('Pick a start and an end date').waitFor()
+  })
+
   // ── staff in a second, separate browser profile ──
   const staffCtx = await browser.newContext({ ignoreHTTPSErrors: true })
   const staff = await staffCtx.newPage()
@@ -311,6 +383,20 @@ const navLinks = (page) => page.getByRole('navigation', { name: 'Main' }).getByR
     })
     expect(!api.list.includes('purchase_price'), 'the API sent purchase_price to staff')
     expect(api.write === 403, `staff write answered ${api.write}`)
+  })
+
+  await step('staff cannot open reports, in the page or in the API', async () => {
+    await staff.goto(`${ORIGIN}/reports`)
+    await staff.getByRole('heading', { name: 'No access' }).waitFor()
+    const statuses = await staff.evaluate(async () => {
+      const t = await (await fetch('/v1/auth/refresh', { method: 'POST', headers: { 'X-Requested-With': 'storely-web', 'content-type': 'application/json' }, body: '{}' })).json()
+      const h = { Authorization: `Bearer ${t.access_token}` }
+      const shop = (await (await fetch('/v1/shops', { headers: h })).json())[0].shop_id
+      const out = []
+      for (const p of ['kpis', 'stock-valuation', 'receivables-ageing']) out.push((await fetch(`/v1/shops/${shop}/reports/${p}`, { headers: h })).status)
+      return out
+    })
+    expect(statuses.every((c) => c === 403), `staff got ${statuses}`)
   })
 
   await step('staff typing an owner-only address gets "No access"; the API also refuses', async () => {
