@@ -1,0 +1,92 @@
+import { useRef, useState, type FormEvent } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { ApiError, request } from '../api/client'
+import { Modal } from '../components/Modal'
+import { Alert, Field, Loading } from '../components/ui'
+import { describeError } from '../components/useAction'
+import { formatMoney, formatQty } from '../lib/money'
+import { can } from '../permissions'
+import { useShop } from '../shops/context'
+import { Invoice } from './Invoice'
+import { useBillingMutation, useBillingQuery, type BillDetail, type PaymentInput, type CreditInput } from './queries'
+
+export function BillDetailPage() {
+  const { id } = useParams()
+  const { current } = useShop()
+  const query = useBillingQuery<BillDetail>('bill', `bills/${encodeURIComponent(id ?? '')}`, !!id)
+  return <>
+    <Link className="no-print" to="/billing">Back to bills</Link>
+    {query.isPending && <Loading />}
+    {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}
+    {query.data && <Detail key={`${current?.shop_id}/${id}`} detail={query.data} />}
+  </>
+}
+
+function Detail({ detail }: { detail: BillDetail }) {
+  const { role } = useShop()
+  const [action, setAction] = useState<'payment' | 'cancel' | 'return' | null>(null)
+  const [printing, setPrinting] = useState(false)
+  const b = detail.bill
+  return <>
+    <header className="page-head no-print"><div><h1>{b.bill_number}</h1><p>{b.customer_name} · {b.created_at.slice(0, 10)} · {b.cancelled ? 'Cancelled' : b.payment_status}</p></div></header>
+    {b.cancelled && <Alert kind="info">Cancelled: {b.cancel_reason}</Alert>}
+    <div className="actions no-print">
+      <button onClick={() => setPrinting(!printing)}>{printing ? 'Close invoice' : 'Invoice / Print / PDF'}</button>
+      {!b.cancelled && b.document_type !== 'credit_note' && <>
+        {Number(b.balance_due) > 0 && <button onClick={() => setAction('payment')}>Record payment</button>}
+        {can(role, 'billing.cancel') && <button onClick={() => setAction('return')}>Return items</button>}
+      </>}
+      {!b.cancelled && can(role, 'billing.cancel') && <button className="danger-button" onClick={() => setAction('cancel')}>Cancel {b.document_type === 'credit_note' ? 'credit note' : 'bill'}</button>}
+    </div>
+    {printing ? <Invoice detail={detail} /> : <div className="bill-screen">
+      <div className="table-wrap"><table className="table"><thead><tr><th>Item</th><th>Quantity</th><th>Unit price</th><th>Taxable</th><th>GST</th><th>Amount</th></tr></thead><tbody>{detail.items.map(i => <tr key={i.uuid}><td>{i.product_name}</td><td>{formatQty(i.quantity)} {i.unit}</td><td>{formatMoney(i.selling_price)}</td><td>{formatMoney(i.line_taxable_value)}</td><td>{formatMoney(i.line_gst)}</td><td>{formatMoney(i.amount)}</td></tr>)}</tbody></table></div>
+      <section className="card"><h2>Totals</h2><dl className="bill-totals">{[['Subtotal', b.subtotal_amount], ['Discount', b.discount_amount], ['Taxable amount', b.taxable_amount], ['CGST', b.cgst_amount], ['SGST', b.sgst_amount], ['IGST', b.igst_amount], ['Round-off', b.round_off_amount], ['Total', b.total_amount], ['Paid', b.paid_amount], ['Due', b.balance_due]].map(([k, v]) => <div className="row" key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></section>
+      <section className="card"><h2>Payments</h2>{detail.payments.length ? <ul className="plain">{detail.payments.map(p => <li className="row" key={p.uuid}><span>{p.received_at.slice(0, 10)} · {p.payment_method}<br />{p.payment_reference} {p.notes}</span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p>No payments recorded.</p>}</section>
+      {!!b.original_bill_uuid && <p>Against invoice <Link to={`/billing/${b.original_bill_uuid}`}>{b.original_bill_number}</Link></p>}
+      {!!detail.credit_notes.length && <section className="card"><h2>Credit notes</h2>{detail.credit_notes.map(n => <p key={n.uuid}><Link to={`/billing/${n.uuid}`}>{n.bill_number}</Link> · {formatMoney(n.total_amount)}</p>)}</section>}
+      <section className="card"><h2>History</h2>{detail.history.length ? <ul className="plain">{detail.history.map((h, i) => <li className="row" key={i}><span>{h.action} · {h.actor}<br />{h.details}</span><small>{h.created_at}</small></li>)}</ul> : <p>No activity yet.</p>}</section>
+    </div>}
+    {action && <BillAction key={action} action={action} detail={detail} close={() => setAction(null)} />}
+  </>
+}
+
+function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 'return'; detail: BillDetail; close: () => void }) {
+  const navigate = useNavigate()
+  const [amount, setAmount] = useState(detail.bill.balance_due)
+  const [method, setMethod] = useState<PaymentInput['method']>('cash')
+  const [reason, setReason] = useState('')
+  const [reference, setReference] = useState('')
+  const [settlement, setSettlement] = useState<CreditInput['settlement']>('refund')
+  const [quantities, setQuantities] = useState<Record<string, string>>({})
+  type Attempt = { body: PaymentInput | CreditInput | { reason: string }; key?: string }
+  const [attempt, setAttempt] = useState<Attempt | null>(null)
+  const sending = useRef(false)
+  const mutation = useBillingMutation(async (base: string, input: Attempt) => request<BillDetail>('POST', `${base}/bills/${detail.bill.uuid}/${action === 'payment' ? 'payments' : action === 'return' ? 'credit-note' : 'cancel'}`, { body: input.body, idempotencyKey: input.key }))
+  const uncertainCancel = action === 'cancel' && mutation.error instanceof ApiError && (mutation.error.status === 0 || mutation.error.status >= 500)
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (sending.current || uncertainCancel) return
+    const body = action === 'payment' ? { amount, method, reference: reference || null, notes: reason || null } : action === 'cancel' ? { reason } : { quantities: Object.fromEntries(Object.entries(quantities).filter(([, q]) => Number(q) > 0)), settlement, refund_method: method, reason: reason || null }
+    const next = attempt ?? { body, key: action === 'cancel' ? undefined : crypto.randomUUID() }
+    if (action !== 'cancel') setAttempt(next)
+    sending.current = true
+    try {
+      const result = await mutation.mutateAsync(next)
+      close()
+      if (action === 'return') void navigate(`/billing/${result.bill.uuid}`)
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 422 || (error.status === 409 && error.code !== 'idempotency_conflict'))) setAttempt(null)
+    } finally { sending.current = false }
+  }
+  const title = action === 'payment' ? 'Record payment' : action === 'cancel' ? 'Cancel document' : 'Return items'
+  return <Modal title={title} canClose={!mutation.isPending && !attempt} onClose={() => { if (!mutation.isPending && !attempt) close() }}><form onSubmit={submit}><fieldset disabled={mutation.isPending || !!attempt}>
+    {action === 'cancel' && <Alert kind="info">This cancels the document and reverses its stock movements.</Alert>}
+    {action === 'payment' && <Field label="Amount (₹)" type="number" min="0.01" max={detail.bill.balance_due} step="0.01" required value={amount} onChange={e => setAmount(e.target.value)} />}
+    {action === 'return' && <><p>Enter the quantities being returned. The server checks earlier returns and calculates the credit.</p>{detail.items.map(i => <Field key={i.uuid} label={`Return ${i.product_name}`} type="number" min="0" max={i.quantity} step="0.001" value={quantities[i.uuid] ?? ''} onChange={e => setQuantities({ ...quantities, [i.uuid]: e.target.value })} />)}<label>Settlement<select value={settlement} onChange={e => setSettlement(e.target.value as typeof settlement)}><option value="refund">Refund customer</option><option value="adjust">Reduce invoice due</option></select></label></>}
+    {action !== 'cancel' && <label>Payment method<select value={method} onChange={e => setMethod(e.target.value as typeof method)}>{['cash', 'upi', 'card', 'bank', 'online'].map(m => <option key={m}>{m}</option>)}</select></label>}
+    {action === 'payment' && <Field label="Reference" maxLength={100} value={reference} onChange={e => setReference(e.target.value)} />}
+    <Field label={action === 'payment' ? 'Notes' : 'Reason'} maxLength={200} value={reason} onChange={e => setReason(e.target.value)} />
+    </fieldset>{mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Details are locked. Retry to safely confirm the original request.' : 'Check the bill before trying again if the connection was interrupted.'}</Alert>}
+    <div className="actions"><button className={action === 'cancel' ? 'danger-button' : 'primary'} disabled={mutation.isPending || uncertainCancel || (action === 'return' && !Object.values(quantities).some(q => Number(q) > 0))}>{mutation.isPending ? 'Saving…' : attempt ? `Retry ${action === 'payment' ? 'payment' : 'return'}` : title}</button><button type="button" disabled={mutation.isPending || !!attempt} onClick={close}>Close</button></div>
+  </form></Modal>
+}

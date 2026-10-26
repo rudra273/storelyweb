@@ -1,4 +1,4 @@
-.PHONY: image lock lint typecheck test build audit secrets check api-types api-types-check e2e
+.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e
 
 # Everything runs in Docker (Node 26); the host needs only Docker.
 IMG = storelyweb:dev
@@ -26,6 +26,11 @@ build: image
 audit: image      ## known-vulnerability scan of dependencies
 	$(RUN) npm run audit
 
+scan-image:       ## scan the actual Caddy/static production image
+	docker build -q --target serve -t storelyweb:serve .
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
+	  --no-progress --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed storelyweb:serve
+
 secrets:         ## scan the repo and its history for committed secrets
 	docker run --rm -v "$$PWD":/repo zricethezav/gitleaks:latest detect --source /repo --no-banner --redact --config /repo/.gitleaks.toml
 
@@ -46,7 +51,7 @@ check: lint typecheck test build audit api-types-check   ## everything CI runs
 # rate limits are loosened for the run, as for the mobile tests, and put back after.
 e2e:             ## browser end-to-end test of sign-in, roles, two-step, sessions
 	cd ../storelyapi && STORELY_RATE_LIMIT_SCALE=1000 docker compose up -d --wait api >/dev/null
-	docker run --rm --add-host host.docker.internal:host-gateway -v "$$PWD/e2e":/e2e:ro $(if $(SHOTS),-v $(SHOTS):/shots -e SHOTS=1) \
+	docker run --rm --add-host host.docker.internal:host-gateway --add-host app.storely.localhost:host-gateway -v "$$PWD/e2e":/e2e:ro $(if $(SHOTS),-v $(SHOTS):/shots -e SHOTS=1) \
 	  mcr.microsoft.com/playwright:v1.64.1-noble sh -c \
 	  'mkdir /tmp/p && cd /tmp/p && npm init -y >/dev/null && npm i playwright@1.64.1 >/dev/null 2>&1 && NODE_PATH=/tmp/p/node_modules node /e2e/live.cjs'; \
 	status=$$?; cd ../storelyapi && docker compose up -d --wait api >/dev/null; exit $$status

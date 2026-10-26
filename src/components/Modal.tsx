@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 
 /** A dialog built on the browser's own <dialog>: focus stays inside, Esc closes it. */
-export function Modal({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+export function Modal({ title, onClose, children, wide = false, canClose = true }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; canClose?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const dialog = ref.current
@@ -10,10 +10,10 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
     else dialog.setAttribute('open', '')
   }, [])
   return (
-    <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} aria-label={title} onClose={onClose} onCancel={onClose}>
+    <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} aria-label={title} onClose={onClose} onCancel={e => { if (canClose) onClose(); else e.preventDefault() }}>
       <div className="modal-head">
         <h2>{title}</h2>
-        <button className="link" onClick={onClose} aria-label="Close">
+        <button className="link" onClick={onClose} aria-label="Close" disabled={!canClose}>
           ✕
         </button>
       </div>

@@ -1,0 +1,90 @@
+import { useRef, useState, type FormEvent } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Link, useNavigate } from 'react-router'
+import { ApiError, api } from '../api/client'
+import { Alert, Empty, Field, Loading } from '../components/ui'
+import { describeError } from '../components/useAction'
+import { formatMoney } from '../lib/money'
+import { useDebounced } from '../lib/useDebounced'
+import { useProducts, type Product } from '../products/queries'
+import { useShop } from '../shops/context'
+import { createBill, useBillingMutation, useBillingQuery, type BillInput, type CartInput, type Customer, type Preview } from './queries'
+
+export function NewBill() {
+  const { current } = useShop()
+  // A shop switch discards this component's cart and in-flight UI state.
+  return <BillForm key={current?.shop_id} />
+}
+
+function BillForm() {
+  const shop = useShop().current!.shop_id
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
+  const [items, setItems] = useState<{ product: Product; quantity: string }[]>([])
+  const [customer, setCustomer] = useState({ customer_name: '', customer_phone: '', customer_gstin: '', customer_gst_legal_name: '', customer_gst_trade_name: '', customer_address: '', place_of_supply_state_code: '' })
+  const [billType, setBillType] = useState<'b2c' | 'b2b'>('b2c')
+  const [discount, setDiscount] = useState('0')
+  const [amount, setAmount] = useState('0')
+  const [method, setMethod] = useState<BillInput['payment']['method']>('cash')
+  const [reference, setReference] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+  const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(null)
+  const sending = useRef(false)
+  const mutation = useBillingMutation(createBill)
+  const products = useProducts({ q: useDebounced(search, 250), category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
+  const customerSearch = useDebounced(customer.customer_name, 300)
+  const customers = useBillingQuery<Customer[]>('customers', `customers?q=${encodeURIComponent(customerSearch)}`, customerSearch.trim().length >= 2)
+  const cart: CartInput = { ...customer, customer_gstin: customer.customer_gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: items.map(i => ({ product_uuid: i.product.uuid, quantity: i.quantity })) }
+  const preview = useQuery({ queryKey: ['bill-preview', shop, cart], queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, cart), enabled: items.length > 0 && items.every(i => Number(i.quantity) > 0) && !attempt, retry: false })
+  const locked = !!attempt || mutation.isPending
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (sending.current || (!attempt && (!confirmed || !preview.data || preview.isFetching || preview.error))) return
+    sending.current = true
+    const next = attempt ?? { body: { ...cart, payment: { amount, method, reference: reference || null } }, key: crypto.randomUUID() }
+    setAttempt(next)
+    try {
+      const result = await mutation.mutateAsync(next)
+      void navigate(`/billing/${result.bill.uuid}`, { replace: true })
+    } catch (error) {
+      // A rejected validation has rolled back. An unknown outcome keeps the key
+      // and exact payload so a retry cannot charge or reduce stock twice.
+      if (error instanceof ApiError && (error.status === 422 || error.status === 409)) setAttempt(null)
+    }
+    finally { sending.current = false }
+  }
+  return <>
+    <header className="page-head"><h1>New bill</h1><Link to="/billing">Back to bills</Link></header>
+    <form onSubmit={submit}>
+      <fieldset disabled={locked} onChange={() => setConfirmed(false)}>
+        <section className="card wide"><h2>Customer</h2><div className="form-grid">
+          <Field label="Customer name" maxLength={120} value={customer.customer_name} onChange={e => setCustomer({ ...customer, customer_name: e.target.value })} />
+          <Field label="Phone" maxLength={20} value={customer.customer_phone} onChange={e => setCustomer({ ...customer, customer_phone: e.target.value })} />
+        </div>
+        {customers.isFetching && <Loading label="Finding customers…" />}
+        {customers.error && <Alert>{describeError(customers.error)}</Alert>}
+        {!!customers.data?.length && <ul className="plain">{customers.data.map(c => <li key={c.uuid}><button type="button" className="link" onClick={() => setCustomer({ customer_name: c.name, customer_phone: c.phone ?? '', customer_gstin: c.gstin ?? '', customer_gst_legal_name: c.gst_legal_name ?? '', customer_gst_trade_name: c.gst_trade_name ?? '', customer_address: c.address ?? '', place_of_supply_state_code: c.place_of_supply_state_code ?? '' })}>{c.name} · {c.phone || 'No phone'}</button></li>)}</ul>}
+        <label>Bill type<select value={billType} onChange={e => setBillType(e.target.value as 'b2c' | 'b2b')}><option value="b2c">Consumer (B2C)</option><option value="b2b">Business (B2B)</option></select></label>
+        <div className="form-grid">
+          <Field label="GSTIN" maxLength={15} required={billType === 'b2b'} value={customer.customer_gstin} onChange={e => setCustomer({ ...customer, customer_gstin: e.target.value.toUpperCase() })} />
+          <Field label="GST legal name" maxLength={150} value={customer.customer_gst_legal_name} onChange={e => setCustomer({ ...customer, customer_gst_legal_name: e.target.value })} />
+          <Field label="GST trade name" maxLength={150} value={customer.customer_gst_trade_name} onChange={e => setCustomer({ ...customer, customer_gst_trade_name: e.target.value })} />
+          <Field label="Place of supply state code" maxLength={2} pattern="[0-9]{2}" placeholder="27" value={customer.place_of_supply_state_code} onChange={e => setCustomer({ ...customer, place_of_supply_state_code: e.target.value })} />
+          <Field label="Address" maxLength={300} value={customer.customer_address} onChange={e => setCustomer({ ...customer, customer_address: e.target.value })} />
+        </div></section>
+        <section className="card wide"><h2>Items</h2><Field label="Find product or barcode" type="search" value={search} onChange={e => setSearch(e.target.value)} />
+          {products.isPending && <Loading />}{products.error && <Alert>{describeError(products.error)}</Alert>}
+          {products.data && <><ul className="product-picker plain">{products.data.items.map(p => <li key={p.uuid}><button type="button" className="link" disabled={items.some(i => i.product.uuid === p.uuid) || items.length >= 200} onClick={() => { setItems([...items, { product: p, quantity: '1' }]); setConfirmed(false) }}>{p.name} · {p.barcode || p.product_code || ''} · {formatMoney(p.selling_price)}</button></li>)}</ul>{!products.data.items.length && <Empty title="No matching products" />}</>}
+          <div className="table-wrap"><table className="table"><thead><tr><th>Product</th><th>Quantity</th><th>Action</th></tr></thead><tbody>{items.map((i, index) => <tr key={i.product.uuid}><td>{i.product.name}</td><td><input aria-label={`Quantity for ${i.product.name}`} type="number" min="0.001" max="1000000" step="0.001" required value={i.quantity} onChange={e => { setItems(items.map((line, n) => n === index ? { ...line, quantity: e.target.value } : line)); setConfirmed(false) }} /></td><td><button type="button" className="link" aria-label={`Remove ${i.product.name}`} onClick={() => { setItems(items.filter((_, n) => n !== index)); setConfirmed(false) }}>Remove</button></td></tr>)}</tbody></table></div>
+          <Field label="Discount (%)" type="number" min="0" max="100" step="0.01" required value={discount} onChange={e => { setDiscount(e.target.value); setConfirmed(false) }} />
+        </section>
+      </fieldset>
+      {items.length > 0 && <section className="card wide"><h2>Server total</h2>{preview.isFetching && <Loading label="Pricing this cart…" />}{preview.error && <Alert>{describeError(preview.error)} <button type="button" className="link" onClick={() => void preview.refetch()}>Retry pricing</button></Alert>}
+        {preview.data && !preview.isFetching && !preview.error && <><dl className="bill-totals">{[['Subtotal', preview.data.subtotal], ['Discount', preview.data.discount_amount], ['Taxable', preview.data.taxable_amount], ['CGST', preview.data.cgst_amount], ['SGST', preview.data.sgst_amount], ['IGST', preview.data.igst_amount], ['Round-off', preview.data.round_off_amount], ['Total', preview.data.total]].map(([k, v]) => <div className="row" key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></>}
+        <fieldset disabled={locked}><div className="form-grid"><Field label="Paid now (₹)" type="number" min="0" step="0.01" required value={amount} onChange={e => setAmount(e.target.value)} /><label>Payment method<select value={method} onChange={e => setMethod(e.target.value as typeof method)}>{['cash', 'upi', 'card', 'bank', 'online'].map(m => <option key={m}>{m}</option>)}</select></label><Field label="Payment reference" maxLength={100} value={reference} onChange={e => setReference(e.target.value)} /></div><label className="check"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />I have checked the items and total</label></fieldset>
+      </section>}
+      {mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Your cart is locked. Retry to safely retrieve or create this same bill.' : 'Check your cart and try again.'}</Alert>}
+      <div className="actions"><button className="primary" disabled={mutation.isPending || (!attempt && (!confirmed || !preview.data || !!preview.error || preview.isFetching || !items.length))}>{mutation.isPending ? 'Saving…' : attempt ? 'Retry saving bill' : 'Create bill'}</button></div>
+    </form>
+  </>
+}

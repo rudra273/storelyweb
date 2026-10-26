@@ -79,8 +79,9 @@ async function parseError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message, Number.isFinite(retry) && retry > 0 ? retry : null, fields)
 }
 
-async function send(method: string, path: string, body: unknown, withToken: boolean): Promise<Response> {
+async function send(method: string, path: string, body: unknown, withToken: boolean, idempotencyKey?: string): Promise<Response> {
   const headers: Record<string, string> = { ...WEB_HEADER }
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
   const raw = body instanceof Blob // a file goes up as it is, everything else as JSON
   if (body !== undefined) headers['Content-Type'] = raw ? 'application/octet-stream' : 'application/json'
   if (withToken && accessToken) headers.Authorization = `Bearer ${accessToken}`
@@ -127,14 +128,14 @@ async function doRefresh(): Promise<boolean> {
 export async function request<T>(
   method: string,
   path: string,
-  options: { body?: unknown; auth?: boolean; as?: 'json' | 'blob' } = {},
+  options: { body?: unknown; auth?: boolean; as?: 'json' | 'blob'; idempotencyKey?: string } = {},
 ): Promise<T> {
   const withToken = options.auth !== false
-  let response = await send(method, path, options.body, withToken)
+  let response = await send(method, path, options.body, withToken, options.idempotencyKey)
   if (response.status === 401 && withToken) {
     // The access token expired (or was revoked): try the cookie once, then repeat.
     if (await refreshSession()) {
-      response = await send(method, path, options.body, true)
+      response = await send(method, path, options.body, true, options.idempotencyKey)
     } else {
       onSessionLost?.()
     }

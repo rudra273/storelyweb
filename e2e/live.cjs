@@ -413,6 +413,164 @@ const navLinks = (page) => page.getByRole('navigation', { name: 'Main' }).getByR
     expect(status === 403 || status === 404, `server answered ${status}`)
   })
 
+  // ── billing: a staff sale, payment, owner return and cancellation ──
+  let webBillUrl = ''
+  let creditUrl = ''
+  await step('staff creates a bill from server pricing with a discount', async () => {
+    await staff.goto(`${ORIGIN}/billing/new`)
+    await staff.getByLabel('Customer name', { exact: true }).fill('Web Buyer')
+    await staff.getByLabel('Phone', { exact: true }).fill('9876543210')
+    await staff.getByLabel('Find product or barcode').fill('8901234567890')
+    await staff.getByRole('button', { name: /Basmati Rice · 8901234567890/ }).click()
+    await staff.getByLabel('Quantity for Basmati Rice').fill('2')
+    await staff.getByLabel('Discount (%)').fill('10')
+    await staff.getByLabel('I have checked the items and total').check()
+    await staff.getByRole('button', { name: 'Create bill', exact: true }).click()
+    await staff.getByRole('heading', { name: /^INV\// }).waitFor()
+    webBillUrl = staff.url()
+    expect(await staff.getByRole('button', { name: 'Cancel bill' }).count() === 0, 'staff can cancel')
+    expect(await staff.getByRole('button', { name: 'Return items' }).count() === 0, 'staff can return')
+    await staff.getByText('₹234.00').first().waitFor()
+    if (process.env.SHOTS) await staff.screenshot({ path: '/shots/billing.png', fullPage: true })
+  })
+  await step('staff safely retries a committed payment after its response is dropped', async () => {
+    const keys = []
+    let injected = false
+    let routeError = null
+    await staff.route('**/bills/*/payments', async route => {
+      keys.push(route.request().headers()['idempotency-key'])
+      try {
+        if (keys.length === 1) {
+          const response = await route.fetch()
+          if (!response.ok()) throw new Error('Payment refused before response injection')
+          injected = true
+          await route.abort('failed')
+        } else await route.continue()
+      } catch (error) { routeError = String(error.message).split('\n')[0]; await route.abort('failed') }
+    })
+    await staff.getByRole('button', { name: 'Record payment', exact: true }).click()
+    const dlg = staff.getByRole('dialog')
+    await dlg.getByLabel('Amount (₹)').fill('50.25')
+    await dlg.getByLabel('Payment method').selectOption('upi')
+    await dlg.getByLabel('Reference', { exact: true }).fill('UPI-web-test')
+    await dlg.getByRole('button', { name: 'Record payment', exact: true }).click()
+    await dlg.getByRole('button', { name: 'Retry payment', exact: true }).click()
+    await dlg.waitFor({ state: 'detached' })
+    expect(injected && !routeError, routeError || 'Payment response was not dropped after commit')
+    expect(keys.length === 2 && keys[0] && keys[0] === keys[1], 'payment retry key changed')
+    await staff.unroute('**/bills/*/payments')
+    await staff.getByText('UPI-web-test').waitFor()
+    await staff.getByText('₹183.75').waitFor()
+  })
+  await step('owner issues a credit note and its cancellation reverses the return', async () => {
+    await page.goto(webBillUrl)
+    const keys = []
+    let injected = false
+    let routeError = null
+    await page.route('**/bills/*/credit-note', async route => {
+      keys.push(route.request().headers()['idempotency-key'])
+      try {
+        if (keys.length === 1) {
+          const response = await route.fetch()
+          if (!response.ok()) throw new Error('Return refused before response injection')
+          injected = true
+          await route.abort('failed')
+        } else await route.continue()
+      } catch (error) { routeError = String(error.message).split('\n')[0]; await route.abort('failed') }
+    })
+    await page.getByRole('button', { name: 'Return items' }).click()
+    const dlg = page.getByRole('dialog')
+    await dlg.getByLabel('Return Basmati Rice').fill('0.5')
+    await dlg.getByRole('button', { name: 'Return items', exact: true }).click()
+    await dlg.getByRole('button', { name: 'Retry return', exact: true }).click()
+    await page.getByRole('heading', { name: /^CN\// }).waitFor()
+    expect(injected && !routeError, routeError || 'Return response was not dropped after commit')
+    expect(keys.length === 2 && keys[0] && keys[0] === keys[1], 'return retry key changed')
+    await page.unroute('**/bills/*/credit-note')
+    creditUrl = page.url()
+    await page.getByRole('button', { name: 'Cancel credit note' }).click()
+    await page.getByRole('dialog').getByLabel('Reason').fill('Return entered in error')
+    await page.getByRole('button', { name: 'Cancel document', exact: true }).click()
+    await page.getByText(/^Cancelled:/).waitFor()
+  })
+  await step('invoice prints on A4 and A5 under the real content security policy', async () => {
+    await page.goto(webBillUrl)
+    await page.getByRole('button', { name: 'Invoice / Print / PDF', exact: true }).click()
+    await page.getByRole('article', { name: 'Invoice' }).waitFor()
+    await page.emulateMedia({ media: 'print' })
+    const pdf = await page.pdf({ preferCSSPageSize: true })
+    expect(pdf.subarray(0, 4).toString() === '%PDF', 'A4 PDF missing')
+    await page.emulateMedia({ media: 'screen' })
+    await page.getByLabel('Paper size').selectOption('A5')
+    await page.waitForFunction(() => [...document.styleSheets].some(s => s.href && s.href.includes('paper-a5')))
+    await page.emulateMedia({ media: 'print' })
+    const a5 = await page.pdf({ preferCSSPageSize: true })
+    await page.emulateMedia({ media: 'screen' })
+    expect(a5.subarray(0, 4).toString() === '%PDF', 'A5 PDF missing')
+    if (process.env.SHOTS) await page.screenshot({ path: '/shots/invoice.png', fullPage: true })
+  })
+  await step('owner cancels the invoice and the list finds it among cancelled bills', async () => {
+    await page.goto(webBillUrl)
+    await page.getByRole('button', { name: 'Cancel bill', exact: true }).click()
+    await page.getByRole('dialog').getByLabel('Reason').fill('End-to-end test completed')
+    await page.getByRole('button', { name: 'Cancel document', exact: true }).click()
+    await page.getByText(/^Cancelled:/).waitFor()
+    await page.goto(`${ORIGIN}/billing`)
+    await page.getByLabel('Cancelled bills').check()
+    await page.getByLabel('Search bills').fill('Web Buyer')
+    await page.getByRole('link', { name: /^INV\// }).waitFor()
+    expect(creditUrl.includes('/billing/'), 'credit note never created')
+  })
+
+  await step('registered shop bills show correct intra-state and inter-state GST and print cleanly', async () => {
+    await page.evaluate(async () => {
+      const t = await (await fetch('/v1/auth/refresh', { method: 'POST', headers: { 'X-Requested-With': 'storely-web', 'content-type': 'application/json' }, body: '{}' })).json()
+      const h = { Authorization: `Bearer ${t.access_token}`, 'content-type': 'application/json', 'X-Requested-With': 'storely-web' }
+      const shop = (await (await fetch('/v1/shops', { headers: h })).json())[0].shop_id
+      const stamp = new Date().toISOString()
+      const pulled = await (await fetch(`/v1/shops/${shop}/sync/pull`, { method: 'POST', headers: h, body: JSON.stringify({ table: 'shops' }) })).json()
+      const shopRow = pulled.rows[0]
+      const push = async (table, rows) => {
+        const r = await (await fetch(`/v1/shops/${shop}/sync/push`, { method: 'POST', headers: h, body: JSON.stringify({ table, rows }) })).json()
+        if (r.rejected?.length) throw new Error(JSON.stringify(r.rejected))
+      }
+      await push('shops', [{ ...shopRow, gstin: '27ABCDE1234F1Z5', address: '12 Market Road, Pune', updated_at: stamp }])
+      await push('app_settings', ['gst_registered', 'gst_scheme'].map(key => ({ shop_id: shop, key, value: key === 'gst_registered' ? '1' : 'regular', updated_at: stamp })))
+    })
+    for (const state of ['27', '29']) {
+      await page.goto(`${ORIGIN}/billing/new`)
+      await page.getByLabel('Customer name', { exact: true }).fill(`Trade Buyer ${state}`)
+      await page.getByLabel('Bill type').selectOption('b2b')
+      await page.getByLabel('GSTIN', { exact: true }).fill(`${state}ABCDE1234F1Z5`)
+      await page.getByLabel('GST legal name').fill(`Trade Buyer ${state} Private Limited`)
+      await page.getByLabel('Address', { exact: true }).fill('45 Wholesale Market, India')
+      await page.getByLabel('Place of supply state code').fill(state)
+      await page.getByRole('button', { name: /Basmati Rice · 8901234567890/ }).click()
+      await page.getByLabel('Quantity for Basmati Rice').fill('2')
+      await page.getByLabel('Discount (%)').fill('12.5')
+      await page.getByLabel('Paid now (₹)').fill('50.25')
+      await page.getByLabel('I have checked the items and total').check()
+      await page.getByRole('button', { name: 'Create bill', exact: true }).click()
+      await page.getByRole('heading', { name: /^INV\// }).waitFor()
+      const tax = state === '27' ? ['₹5.42', '₹5.41'] : ['₹10.83']
+      for (const amount of ['₹216.67', '₹228.00', '₹177.75', ...tax]) await page.getByText(amount, { exact: true }).first().waitFor()
+      await page.getByRole('button', { name: 'Invoice / Print / PDF', exact: true }).click()
+      await page.getByRole('article', { name: 'Invoice' }).waitFor()
+      for (const paper of ['A4', 'A5']) {
+        await page.getByLabel('Paper size').selectOption(paper)
+        await page.waitForFunction(p => [...document.styleSheets].some(s => s.href && s.href.includes(`paper-${p.toLowerCase()}`)), paper)
+        await page.emulateMedia({ media: 'print' })
+        expect(await page.locator('.sidebar').isHidden(), 'Navigation appears in print')
+        expect(await page.getByRole('button', { name: 'Print / Save as PDF' }).isHidden(), 'Invoice controls appear in print')
+        const pdf = await page.pdf({ preferCSSPageSize: true, ...(process.env.SHOTS ? { path: `/shots/gst-${state}-${paper}.pdf` } : {}) })
+        await page.emulateMedia({ media: 'screen' })
+        expect(pdf.subarray(0, 4).toString() === '%PDF', `${paper} GST PDF missing`)
+        expect((pdf.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length === 1, `${paper} short invoice has extra pages`)
+      }
+      if (process.env.SHOTS) await page.screenshot({ path: `/shots/gst-${state}.png`, fullPage: true })
+    }
+  })
+
   await step('owner promotes staff to admin; admin then sees the owner menu', async () => {
     await page.goto(`${ORIGIN}/team`)
     await page.getByLabel(`Role of ${staffEmail}`).selectOption('admin')

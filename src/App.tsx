@@ -2,7 +2,9 @@ import { Link, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { AppLayout } from './components/AppLayout'
 import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
-import { ComingSoon } from './pages/ComingSoon'
+import { BillsPage } from './billing/BillsPage'
+import { NewBill } from './billing/NewBill'
+import { BillDetailPage } from './billing/BillDetailPage'
 import { ProductsPage } from './products/ProductsPage'
 import { Overview } from './reports/Overview'
 import { ExpiringPage, PurchasesPage, StockValuePage, TaxPage } from './reports/Registers'
@@ -75,7 +77,9 @@ export default function App() {
                 </Route>
               </Route>
               <Route element={<RequireCapability needs="billing.create" />}>
-                <Route path="billing" element={<ComingSoon title="Billing" note="Billing on the web arrives after reports." />} />
+                <Route path="billing" element={<BillsPage />} />
+                <Route path="billing/new" element={<NewBill />} />
+                <Route path="billing/:id" element={<BillDetailPage />} />
               </Route>
               <Route element={<RequireCapability needs="team.manage" />}>
                 <Route path="team" element={<Team />} />

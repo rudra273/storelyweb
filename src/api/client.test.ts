@@ -108,3 +108,16 @@ test('redirects are refused so a token can never follow one to another host', as
   await api.get('/v1/me')
   expect(call(0).init.redirect).toBe('error')
 })
+
+test('bill retries keep the same idempotency key when an expired token is refreshed', async () => {
+  let writes = 0
+  mockFetch(c => {
+    if (c.url === '/v1/auth/refresh') return reply(200, { access_token: 'new' })
+    return ++writes === 1 ? reply(401) : reply(201, { bill: 'b1' })
+  })
+  const { request } = await import('./client')
+  await request('POST', '/v1/shops/s1/bills', { body: { items: [] }, idempotencyKey: 'stable-bill-key' })
+  expect(header(call(0), 'Idempotency-Key')).toBe('stable-bill-key')
+  expect(header(call(2), 'Idempotency-Key')).toBe('stable-bill-key')
+  expect(call(0).init.body).toBe(call(2).init.body)
+})

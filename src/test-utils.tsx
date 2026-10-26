@@ -14,10 +14,10 @@ export interface Route {
 
 /** A fake API: answers by method + path, records every call, fails on anything unexpected. */
 export function fakeApi(routes: Route[]) {
-  const calls: { method: string; path: string; body: unknown }[] = []
+  const calls: { method: string; path: string; body: unknown; headers: Headers }[] = []
   vi.stubGlobal('fetch', async (path: string, init: RequestInit) => {
     const method = init.method ?? 'GET'
-    calls.push({ method, path, body: init.body ? JSON.parse(init.body as string) : undefined })
+    calls.push({ method, path, body: init.body ? JSON.parse(init.body as string) : undefined, headers: new Headers(init.headers) })
     const route = routes.find((r) => r.method === method && (typeof r.path === 'string' ? r.path === path : r.path.test(path)))
     if (!route) return new Response(JSON.stringify({ error: { code: 'unexpected', message: `no fake for ${method} ${path}` } }), { status: 599 })
     const status = route.status ?? 200

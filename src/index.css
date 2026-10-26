@@ -173,6 +173,28 @@ tr.selected { background: #fff7e6; }
 
 @media print {
   .sidebar, .no-print, .menu-toggle { display: none !important; }
-  .shell { display: block; } .content { padding: 0; max-width: none; }
+  .shell { display: block; min-height: 0; } .content { padding: 0; max-width: none; }
   .card, .kpi { break-inside: avoid; box-shadow: none; }
+}
+
+/* billing */
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+a.button { display: inline-block; text-decoration: none; }
+.product-picker { max-height: 13rem; overflow-y: auto; }
+.product-picker li { border-bottom: 1px solid var(--line); padding: .45rem 0; }
+.bill-totals { margin: 1rem 0; max-width: 26rem; }
+.bill-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
+.invoice { background: var(--surface); padding: 1.25rem; border: 1px solid var(--line); }
+.invoice header { text-align: center; }
+.invoice p, .invoice footer { white-space: pre-line; overflow-wrap: anywhere; }
+.invoice .bill-totals { margin-left: auto; }
+.invoice .table th, .invoice .table td { overflow-wrap: anywhere; }
+@media print {
+  body:has(.invoice) .bill-screen { display: none; }
+  .invoice { border: 0; padding: 0; font-size: 10pt; }
+  .invoice .row { padding: .2rem 0; }
+  .invoice h2, .invoice h3, .invoice p { margin: .3rem 0; }
+  .invoice .table th, .invoice .table td { padding: .25rem; }
+  .invoice thead { display: table-header-group; }
+  .invoice tr, .invoice .bill-totals, .invoice footer { break-inside: avoid; }
 }
