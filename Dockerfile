@@ -41,3 +41,11 @@ COPY --from=build /app/dist /srv
 # Caddy wants a writable home; the container's file system is read-only.
 ENV XDG_DATA_HOME=/tmp XDG_CONFIG_HOME=/tmp
 EXPOSE 8443
+
+# ---- managed platform frontend (Cloud Run): HTTP behind managed HTTPS ----
+FROM caddy AS platform
+COPY docker/Caddyfile.platform /etc/caddy/Caddyfile
+COPY --from=build /app/dist /srv
+ENV XDG_DATA_HOME=/tmp XDG_CONFIG_HOME=/tmp PORT=8080
+USER 10001:10001
+EXPOSE 8080

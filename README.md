@@ -1,6 +1,15 @@
 # storelyweb
 
 Desktop web app for Storely shop owners and staff (React, TypeScript, Vite, Node 26).
+For **Vercel**, set `STORELY_API_ORIGIN` to the backend HTTPS origin. `vercel.ts`
+configures API forwarding, SPA routes, and security headers. Use Node 24.x,
+`npm run build`, and output directory `dist`. Full production setup is in
+`../storelyapi/docs/DEPLOYMENT.md`.
+
+For a future Cloud Run frontend, build Docker target `platform` and set
+`STORELY_API_ORIGIN` to the backend HTTPS origin. That container serves HTTP on
+`PORT` behind platform HTTPS and forwards API requests on the same origin.
+
 Master plan: `/Users/rudra/projects/Storely/plan.md`. The API lives in
 `/Users/rudra/projects/storelyapi`. Everything runs in Docker; you only need Docker.
 
