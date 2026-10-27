@@ -86,10 +86,10 @@ export function ProductsPage() {
     })
 
   return (
-    <div className="split">
+    <div className="split catalogue">
       <div className="split-main">
         <div className="page-head">
-          <h1>Products</h1>
+          <div><p className="eyebrow">INVENTORY</p><h1>Products</h1><p className="page-description">Your catalogue, stock and pricing in one place.</p></div>
           <div className="actions">
             {canEdit && (
               <button className="primary" onClick={() => setDialog('new')}>
@@ -111,6 +111,7 @@ export function ProductsPage() {
         </div>
         {exportError && <Alert>{exportError}</Alert>}
 
+        <div className="catalogue-heading"><h2>All products {data && <span className="count-badge">{total}</span>}</h2><span className="muted">{picked.size ? `${picked.size} selected` : 'Select products to print labels'}</span></div>
         <div className="filters" role="search">
           <input type="search" aria-label="Search products" placeholder="Search name, code or barcode" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select aria-label="Category" value={query.category} onChange={(e) => update({ cat: e.target.value })}>
@@ -129,7 +130,9 @@ export function ProductsPage() {
             <input type="checkbox" checked={query.expiring} onChange={(e) => update({ exp: e.target.checked ? '1' : null })} />
             Expiring in 30 days
           </label>
+          {(query.q || query.category || query.low || query.expiring) && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null }) }}>Clear filters</button>}
         </div>
+        {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
 
         {products.isPending && <Loading />}
         {products.error && <Alert>{describeError(products.error)}</Alert>}

@@ -28,19 +28,19 @@ function Detail({ detail }: { detail: BillDetail }) {
   const [printing, setPrinting] = useState(false)
   const b = detail.bill
   return <>
-    <header className="page-head no-print"><div><h1>{b.bill_number}</h1><p>{b.customer_name} · {b.created_at.slice(0, 10)} · {b.cancelled ? 'Cancelled' : b.payment_status}</p></div></header>
+    <header className="page-head no-print"><div><p className="eyebrow">BILL DETAILS</p><h1>{b.bill_number}</h1><p>{b.customer_name} · {b.created_at.slice(0, 10)} · {b.cancelled ? 'Cancelled' : b.payment_status}</p></div></header>
     {b.cancelled && <Alert kind="info">Cancelled: {b.cancel_reason}</Alert>}
     <div className="actions no-print">
       <button onClick={() => setPrinting(!printing)}>{printing ? 'Close invoice' : 'Invoice / Print / PDF'}</button>
       {!b.cancelled && b.document_type !== 'credit_note' && <>
-        {Number(b.balance_due) > 0 && <button onClick={() => setAction('payment')}>Record payment</button>}
+        {Number(b.balance_due) > 0 && <button className="primary" onClick={() => setAction('payment')}>Record payment</button>}
         {can(role, 'billing.cancel') && <button onClick={() => setAction('return')}>Return items</button>}
       </>}
       {!b.cancelled && can(role, 'billing.cancel') && <button className="danger-button" onClick={() => setAction('cancel')}>Cancel {b.document_type === 'credit_note' ? 'credit note' : 'bill'}</button>}
     </div>
-    {printing ? <Invoice detail={detail} /> : <div className="bill-screen">
+    {printing ? <Invoice detail={detail} /> : <div className="bill-screen bill-detail-grid">
       <div className="table-wrap"><table className="table"><thead><tr><th>Item</th><th>Quantity</th><th>Unit price</th><th>Taxable</th><th>GST</th><th>Amount</th></tr></thead><tbody>{detail.items.map(i => <tr key={i.uuid}><td>{i.product_name}</td><td>{formatQty(i.quantity)} {i.unit}</td><td>{formatMoney(i.selling_price)}</td><td>{formatMoney(i.line_taxable_value)}</td><td>{formatMoney(i.line_gst)}</td><td>{formatMoney(i.amount)}</td></tr>)}</tbody></table></div>
-      <section className="card"><h2>Totals</h2><dl className="bill-totals">{[['Subtotal', b.subtotal_amount], ['Discount', b.discount_amount], ['Taxable amount', b.taxable_amount], ['CGST', b.cgst_amount], ['SGST', b.sgst_amount], ['IGST', b.igst_amount], ['Round-off', b.round_off_amount], ['Total', b.total_amount], ['Paid', b.paid_amount], ['Due', b.balance_due]].map(([k, v]) => <div className="row" key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></section>
+      <section className="card bill-detail-totals"><h2>Totals</h2><dl className="bill-totals">{[['Subtotal', b.subtotal_amount], ['Discount', b.discount_amount], ['Taxable amount', b.taxable_amount], ['CGST', b.cgst_amount], ['SGST', b.sgst_amount], ['IGST', b.igst_amount], ['Round-off', b.round_off_amount], ['Total', b.total_amount], ['Paid', b.paid_amount], ['Due', b.balance_due]].map(([k, v]) => <div className="row" key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></section>
       <section className="card"><h2>Payments</h2>{detail.payments.length ? <ul className="plain">{detail.payments.map(p => <li className="row" key={p.uuid}><span>{p.received_at.slice(0, 10)} · {p.payment_method}<br />{p.payment_reference} {p.notes}</span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p>No payments recorded.</p>}</section>
       {!!b.original_bill_uuid && <p>Against invoice <Link to={`/billing/${b.original_bill_uuid}`}>{b.original_bill_number}</Link></p>}
       {!!detail.credit_notes.length && <section className="card"><h2>Credit notes</h2>{detail.credit_notes.map(n => <p key={n.uuid}><Link to={`/billing/${n.uuid}`}>{n.bill_number}</Link> · {formatMoney(n.total_amount)}</p>)}</section>}

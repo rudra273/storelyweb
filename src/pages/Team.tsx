@@ -51,7 +51,7 @@ export function Team() {
       <Card title="People with access">
         {members.isPending && <Loading />}
         {members.error && <Alert>Could not load the team.</Alert>}
-        <table className="table">
+        <div className="table-wrap"><table className="table">
           <thead><tr><th>Person</th><th>Role</th><th>Since</th><th /></tr></thead>
           <tbody>
             {members.data?.map((m) => {
@@ -75,7 +75,7 @@ export function Team() {
               )
             })}
           </tbody>
-        </table>
+        </table></div>
       </Card>
 
       <Card title="Invitations waiting">

@@ -17,14 +17,14 @@ export function ShopActivity() {
       {events.error && <Alert>Could not load activity.</Alert>}
       {events.data?.length === 0 && <Empty title="Nothing yet" />}
       {!!events.data?.length && (
-        <table className="table">
+        <div className="table-wrap"><table className="table">
           <thead><tr><th>When</th><th>Event</th></tr></thead>
           <tbody>
             {events.data.map((e) => (
               <tr key={e.id}><td>{when(e.created_at)}</td><td>{e.event.replaceAll('_', ' ')}</td></tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </div>
   )

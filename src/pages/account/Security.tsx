@@ -209,14 +209,14 @@ function ActivityCard() {
       {events.error && <Alert>Could not load activity.</Alert>}
       {events.data?.length === 0 && <p className="muted">Nothing yet.</p>}
       {!!events.data?.length && (
-        <table className="table">
+        <div className="table-wrap"><table className="table">
           <thead><tr><th>When</th><th>What</th><th>From</th></tr></thead>
           <tbody>
             {events.data.map((e) => (
               <tr key={e.id}><td>{when(e.created_at)}</td><td>{e.event.replaceAll('_', ' ')}</td><td>{e.ip ?? '—'}</td></tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
     </Card>
   )

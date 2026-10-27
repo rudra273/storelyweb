@@ -8,6 +8,9 @@ export function Modal({ title, onClose, children, wide = false, canClose = true 
     if (!dialog || dialog.open) return
     if (typeof dialog.showModal === 'function') dialog.showModal()
     else dialog.setAttribute('open', '')
+    // Opening a native dialog otherwise focuses its header's Close button,
+    // overriding React's autofocus on form fields while the dialog was hidden.
+    dialog.querySelector<HTMLElement>('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])')?.focus({ preventScroll: true })
   }, [])
   return (
     <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} aria-label={title} onClose={onClose} onCancel={e => { if (canClose) onClose(); else e.preventDefault() }}>

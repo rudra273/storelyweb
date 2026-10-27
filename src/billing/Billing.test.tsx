@@ -67,7 +67,7 @@ test('a bill waits for server pricing and confirmation, then sends decimal input
   renderApp('/billing/new')
   expect(await screen.findByRole('button', { name: 'Create bill' })).toBeDisabled()
   await userEvent.click(await screen.findByRole('button', { name: /Rice · 8901/ }))
-  await screen.findByRole('heading', { name: 'Server total' })
+  await screen.findByRole('heading', { name: 'Bill summary' })
   await userEvent.click(screen.getByLabelText('I have checked the items and total'))
   await waitFor(() => expect(screen.getByRole('button', { name: 'Create bill' })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: 'Create bill' }))
@@ -134,3 +134,40 @@ for (const action of ['payment', 'return'] as const) {
     expect(writes[0]!.headers.get('Idempotency-Key')).toBe(writes[1]!.headers.get('Idempotency-Key'))
   })
 }
+
+test('an idempotency conflict keeps the original bill request locked for safe retry', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), products, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', { error: { code: 'idempotency_conflict', message: 'Request conflict' } }, 409)])
+  renderApp('/billing/new')
+  await userEvent.click(await screen.findByRole('button', { name: /Rice · 8901/ }))
+  await userEvent.click(screen.getByLabelText('I have checked the items and total'))
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Create bill' })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: 'Create bill' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('cart is locked')
+  expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Retry saving bill' }))
+  const writes = calls.filter(c => c.path === '/v1/shops/s1/bills')
+  expect(writes).toHaveLength(2)
+  expect(writes[0]!.headers.get('Idempotency-Key')).toBe(writes[1]!.headers.get('Idempotency-Key'))
+})
+
+test('clearing bill filters restores the unfiltered request', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', /^\/v1\/shops\/s1\/bills\?/, { items: [bill], total: 1, next_cursor: null })])
+  renderApp('/billing')
+  await screen.findByRole('link', { name: bill.bill_number })
+  await userEvent.selectOptions(screen.getByLabelText('Payment status'), 'unpaid')
+  await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+  await waitFor(() => {
+    const last = [...calls].reverse().find(c => c.path.includes('/bills?'))!
+    expect(new URLSearchParams(last.path.split('?')[1]).has('status')).toBe(false)
+  })
+  expect(screen.getByLabelText('Payment status')).toHaveValue('')
+})
+
+test('business bills expand the required tax details', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), products])
+  renderApp('/billing/new')
+  await screen.findByRole('heading', { name: 'New bill' })
+  await userEvent.selectOptions(screen.getByLabelText('Bill type'), 'b2b')
+  expect(screen.getByLabelText('GSTIN')).toBeRequired()
+  expect(screen.getByLabelText('GSTIN').closest('details')).toHaveAttribute('open')
+})

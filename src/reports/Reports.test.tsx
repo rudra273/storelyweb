@@ -104,3 +104,16 @@ test('downloading a report asks for the file with the same dates and saves it', 
   await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalled())
   expect(calls.length).toBeGreaterThan(0)
 })
+
+test('a report failure offers a retry without losing the selected period', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', REPORT, { error: { code: 'internal_error', message: 'Try again.' } }, 500)])
+  renderApp('/reports?p=custom&from=2026-09-01&to=2026-09-30')
+  const retry = await screen.findByRole('button', { name: 'Retry report' })
+  const before = calls.filter(c => c.path.includes('/reports/kpis')).length
+  await userEvent.click(retry)
+  await waitFor(() => expect(calls.filter(c => c.path.includes('/reports/kpis')).length).toBeGreaterThan(before))
+  expect(screen.getByLabelText('From')).toHaveValue('2026-09-01')
+  expect(screen.getByLabelText('To')).toHaveValue('2026-09-30')
+  const navigation = screen.getByRole('navigation', { name: 'Reports' })
+  expect(within(navigation).getByRole('link', { name: 'Profit and loss' })).toHaveAttribute('href', '/reports/profit-loss?p=custom&from=2026-09-01&to=2026-09-30')
+})

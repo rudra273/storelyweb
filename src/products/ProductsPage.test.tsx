@@ -124,3 +124,33 @@ test('barcode labels accept ordinary codes and refuse what Code 128 cannot hold'
   expect(canEncode('P3F9A2C1')).toBe(true)
   expect(canEncode('चावल')).toBe(false)
 })
+
+test('clearing catalogue filters resets search and server filters', async () => {
+  const calls = setup('owner', [{ ...RICE, ...COST }])
+  renderApp('/products?q=rice&cat=c1&low=1&exp=1')
+  await screen.findByRole('button', { name: 'Basmati Rice' })
+  await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+  expect(screen.getByLabelText('Search products')).toHaveValue('')
+  expect(screen.getByLabelText('Category')).toHaveValue('')
+  expect(screen.getByLabelText('Low stock')).not.toBeChecked()
+  await waitFor(() => {
+    const last = [...calls].reverse().find(c => c.path.includes('/products?'))!.path
+    const params = new URLSearchParams(last.split('?')[1])
+    expect(params.has('q')).toBe(false)
+    expect(params.has('low_stock')).toBe(false)
+    expect(params.has('category')).toBe(false)
+  })
+})
+
+test('category failure is visible and can be retried', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP('owner'),
+    { method: 'GET', path: '/v1/shops/s1/categories', status: 403, body: { error: { code: 'forbidden', message: 'Unavailable' } } },
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([])),
+  ])
+  renderApp('/products')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Categories could not be loaded')
+  const before = calls.filter(c => c.path.endsWith('/categories')).length
+  await userEvent.click(screen.getByRole('button', { name: 'Retry categories' }))
+  await waitFor(() => expect(calls.filter(c => c.path.endsWith('/categories')).length).toBeGreaterThan(before))
+})

@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useSearchParams } from 'react-router'
+import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router'
 
 const TABS = [
   { to: '/reports', label: 'Overview', end: true },
@@ -13,12 +13,14 @@ const TABS = [
 
 export function ReportsLayout() {
   const [params] = useSearchParams()
+  const { pathname } = useLocation()
+  const active = TABS.find(t => t.to === pathname) ?? { to: '/reports', label: 'Overview' }
   // The chosen period follows you from report to report.
   const keep = ['p', 'from', 'to'].flatMap((k) => (params.get(k) ? [[k, params.get(k) as string]] : []))
   const search = keep.length ? `?${new URLSearchParams(keep as [string, string][])}` : ''
   return (
-    <div>
-      <h1>Reports</h1>
+    <div className="reports-page">
+      <div className="page-head"><div><p className="eyebrow">BUSINESS INSIGHTS</p><h1>Reports</h1><p className="page-description">A clear view of your sales, money and inventory.</p></div></div>
       <nav className="tabs no-print" aria-label="Reports">
         {TABS.map((t) => (
           <NavLink key={t.to} to={{ pathname: t.to, search }} end={t.end}>
@@ -26,7 +28,19 @@ export function ReportsLayout() {
           </NavLink>
         ))}
       </nav>
+      <div className="report-heading"><h2>{active.label}</h2><p className="muted">{DESCRIPTIONS[active.to]}</p></div>
       <Outlet />
     </div>
   )
+}
+
+const DESCRIPTIONS: Record<string, string> = {
+  '/reports': 'Key figures and sales trends for your selected period.',
+  '/reports/day-book': 'Bills, collections and expenses for a single day.',
+  '/reports/profit-loss': 'Sales, costs and expenses that contribute to your profit.',
+  '/reports/receivables': 'Outstanding customer balances and how long they have been due.',
+  '/reports/expiring': 'Find stock approaching its expiry date.',
+  '/reports/purchases': 'Review purchases and supplier costs for your selected period.',
+  '/reports/tax': 'Review tax totals and download your GSTR-1 workbook.',
+  '/reports/stock': 'Current quantities and the value of your inventory.',
 }
