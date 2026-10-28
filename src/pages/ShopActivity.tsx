@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/workspace'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { ShopEvent } from '../api/types'
@@ -11,8 +12,7 @@ export function ShopActivity() {
   const events = useQuery({ queryKey: ['shop-events', shopId], queryFn: () => api.get<ShopEvent[]>(`/v1/shops/${shopId}/security-events`), enabled: !!shopId })
   return (
     <div>
-      <p className="eyebrow">WORKSPACE HISTORY</p><h1>Shop activity</h1>
-      <p className="muted">Sign-ins, role changes and invitations for this shop.</p>
+      <PageHeader eyebrow="WORKSPACE HISTORY" title="Shop activity" description="Sign-ins, role changes and invitations for this shop." />
       {events.isPending && <Loading />}
       {events.error && <Alert>Could not load activity. <button className="link" onClick={() => void events.refetch()}>Retry activity</button></Alert>}
       {events.data?.length === 0 && <Empty title="Nothing yet" />}

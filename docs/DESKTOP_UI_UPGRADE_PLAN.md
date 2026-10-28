@@ -1,7 +1,7 @@
 # Storely desktop UI upgrade
 
 Date: 28 October 2026
-Status: proposed implementation plan; no application changes made in this planning pass.
+Status: core redesign and the five remaining code refinements are implemented locally. Validation history and remaining environment-dependent release checks are recorded below.
 
 ## Outcome and scope
 
@@ -243,3 +243,35 @@ catalogue timing and production smoke testing are still separate validations.
 Native dialog tabbing can move focus to browser chrome at the cycle boundary;
 Escape and opener restoration were verified. No full accessibility certification
 is claimed. Raw summary: `product-validation-results.json`.
+
+
+## Final code refinements — 28 October 2026
+
+All five requested code follow-ups are implemented:
+
+- Product forms: Details, Pricing and Stock fieldsets, with optional identifiers/tax
+  in a disclosure. All existing input values remain in the save payload.
+- Secondary actions: Products exposes Add, Import and Print labels directly; exports
+  and category/unit management live under More actions. Escape and outside clicks
+  close the disclosure; ordinary buttons remain keyboard-reachable.
+- Details/history: prominent selling price and stock summary, compact facts and a
+  clearer history layout with signed quantities and readable timestamps.
+- Shared UI: Button, PageHeader, Toolbar, FormSection and ActionMenu in
+  `src/components/workspace.tsx`, with component styles in `workspace.css`.
+  Main workspace headers and product/billing filter toolbars use the shared
+  components. Existing Alert/Loading/Empty components share this stylesheet.
+- Pending operations: product and stock forms disable inputs, Cancel and Close,
+  reject repeated submissions and prevent Escape dismissal while saving.
+  Category/unit management also locks both sections and closing while a write runs.
+
+Validation: 89 frontend tests passed, lint/TypeScript/production build passed,
+`git diff --check` passed. Added pending-product/stock/category tests, cancel-event
+prevention, action-disclosure checks and a complete grouped-form payload test.
+Browser verified native action visibility, Escape/outside dismissal, expanded form
+and detail-panel fit at 320px; Billing/Profile remained within 320px after shared
+component adoption. Browser warning/error log was empty at the final check.
+Screenshots: `product-form-final.png`, `product-details-final.png`.
+
+This completes the five code items listed in the chat. Previously documented
+limits for actual zoom, screen readers, printed output, real large-catalogue timing
+and production smoke testing still apply. Cross-browser testing remains excluded.

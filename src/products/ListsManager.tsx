@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { api } from '../api/client'
 import { Modal } from '../components/Modal'
 import { Alert, Field, Loading } from '../components/ui'
@@ -9,13 +9,14 @@ import { useCategories, useProductMutation, useUnits } from './queries'
 type Kind = 'categories' | 'units'
 interface Item { uuid: string; name: string; product_count?: number | null }
 
-function Section({ kind, title, items, loading }: { kind: Kind; title: string; items: Item[] | undefined; loading: boolean }) {
+function Section({ kind, title, items, loading, blocked, onBusyChange }: { kind: Kind; title: string; items: Item[] | undefined; loading: boolean; blocked: boolean; onBusyChange: (kind: Kind, busy: boolean) => void }) {
   const { current } = useShop()
   const base = `/v1/shops/${current?.shop_id}/${kind}`
   const create = useProductMutation((_: string, name: string) => api.post(base, { name }))
   const rename = useProductMutation((_: string, v: { id: string; name: string }) => api.patch(`${base}/${v.id}`, { name: v.name }))
   const remove = useProductMutation((_: string, id: string) => api.delete(`${base}/${id}`))
   const { error, run, busy } = useAction()
+  useEffect(() => onBusyChange(kind, busy), [kind, busy, onBusyChange])
   const [name, setName] = useState('')
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
 
@@ -29,7 +30,7 @@ function Section({ kind, title, items, loading }: { kind: Kind; title: string; i
       <h3>{title}</h3>
       {error && <Alert>{error}</Alert>}
       {loading && <Loading />}
-      <ul className="plain">
+      <fieldset disabled={busy || blocked}><ul className="plain">
         {items?.map((it) => (
           <li key={it.uuid} className="row">
             {editing?.id === it.uuid ? (
@@ -61,21 +62,29 @@ function Section({ kind, title, items, loading }: { kind: Kind; title: string; i
       <form onSubmit={add} className="inline-form" noValidate>
         <Field label={`New ${kind === 'units' ? 'unit' : 'category'}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
         <button className="primary" disabled={busy || !name.trim()}>Add</button>
-      </form>
+      </form></fieldset>
     </section>
   )
 }
 
 export function ListsManager({ onClose }: { onClose: () => void }) {
+  const [pending, setPending] = useState<ReadonlySet<Kind>>(new Set())
+  const reportBusy = useCallback((kind: Kind, busy: boolean) => setPending(previous => {
+    if (previous.has(kind) === busy) return previous
+    const next = new Set(previous)
+    if (busy) next.add(kind)
+    else next.delete(kind)
+    return next
+  }), [])
   const categories = useCategories()
   const units = useUnits()
   return (
-    <Modal title="Categories and units" onClose={onClose} wide>
+    <Modal title="Categories and units" onClose={onClose} canClose={pending.size === 0} wide>
       {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
       {units.error && <Alert>Units could not be loaded. <button className="link" onClick={() => void units.refetch()}>Retry units</button></Alert>}
       <div className="two-col">
-        <Section kind="categories" title="Categories" items={categories.data} loading={categories.isPending} />
-        <Section kind="units" title="Units" items={units.data} loading={units.isPending} />
+        <Section kind="categories" title="Categories" items={categories.data} loading={categories.isPending} blocked={pending.size > 0} onBusyChange={reportBusy} />
+        <Section kind="units" title="Units" items={units.data} loading={units.isPending} blocked={pending.size > 0} onBusyChange={reportBusy} />
       </div>
       <p className="muted">A category or unit that products still use cannot be deleted; move those products first.</p>
     </Modal>

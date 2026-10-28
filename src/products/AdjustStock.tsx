@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
+import { Button } from '../components/workspace'
 import { Modal } from '../components/Modal'
 import { Alert, Field } from '../components/ui'
 import { useAction } from '../components/useAction'
@@ -6,6 +7,8 @@ import { formatQty, isAmount } from '../lib/money'
 import { adjustStock, REASONS, useProductMutation, type Product } from './queries'
 
 export function AdjustStock({ product, onClose }: { product: Product; onClose: () => void }) {
+  const sending = useRef(false)
+  const close = () => { if (!sending.current) onClose() }
   const save = useProductMutation(adjustStock)
   const { busy, error, run, setError } = useAction()
   const [direction, setDirection] = useState<'add' | 'remove'>('remove')
@@ -16,22 +19,26 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    if (sending.current) return
     if (!isAmount(amount) || Number(amount) === 0) {
       setError('Enter how many to add or remove, like 3 or 2.5.')
       return
     }
-    const done = await run(() => save.mutateAsync({ id: product.uuid, delta: direction === 'remove' ? `-${amount.trim()}` : amount.trim(), reason, note: note.trim() || null }))
-    if (done) onClose()
+    sending.current = true
+    try {
+      const done = await run(() => save.mutateAsync({ id: product.uuid, delta: direction === 'remove' ? `-${amount.trim()}` : amount.trim(), reason, note: note.trim() || null }))
+      if (done) onClose()
+    } finally { sending.current = false }
   }
 
   return (
-    <Modal title={`Adjust stock · ${product.name}`} onClose={onClose}>
-      <form onSubmit={submit} noValidate>
+    <Modal title={`Adjust stock · ${product.name}`} onClose={close} canClose={!busy}>
+      <form onSubmit={submit} noValidate aria-busy={busy}>
         <p className="muted">
           Now in stock: <strong>{formatQty(product.quantity)}</strong> {product.unit_name ?? ''}
         </p>
         {error && <Alert>{error}</Alert>}
-        <div className="field">
+        <fieldset disabled={busy}><div className="field">
           <label htmlFor="adj-dir">What happened</label>
           <select
             id="adj-dir"
@@ -58,13 +65,9 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
           </select>
         </div>
         <Field label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} />
-        <div className="actions">
-          <button className="primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
-          </button>
-          <button type="button" onClick={onClose}>
-            Cancel
-          </button>
+        </fieldset><div className="actions">
+          <Button disabled={busy} onClick={close}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : 'Save'}</Button>
         </div>
       </form>
     </Modal>

@@ -1,0 +1,46 @@
+.ui-button { display: inline-flex; justify-content: center; align-items: center; gap: .5rem; min-height: 38px; padding: .6rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--navy); font-weight: 600; }
+.ui-button.primary { background: var(--navy); color: white; border-color: var(--navy); }
+.ui-button.danger-button { color: var(--danger); border-color: var(--danger); }
+.ui-button:not(:disabled):hover { border-color: var(--navy); }
+.ui-page-actions { margin-top: .5rem; }
+.ui-toolbar { padding: 1rem; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+.ui-form-section { border: 0; border-top: 1px solid var(--line); padding: 1.25rem 0 .25rem; margin: 1rem 0 0; min-width: 0; }
+.ui-form-section legend { color: var(--navy); font-size: .95rem; font-weight: 650; padding-right: .75rem; }
+.ui-form-section > p { font-size: .8rem; margin: -.25rem 0 1rem; }
+.ui-action-menu { position: relative; }
+.ui-action-menu summary { cursor: pointer; list-style: none; padding: .6rem .9rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 600; color: var(--navy); }
+.ui-action-menu summary::-webkit-details-marker { display: none; }
+.ui-action-menu summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.ui-action-menu[open] summary { border-color: var(--navy); }
+.ui-action-menu-panel { position: absolute; right: 0; top: calc(100% + .5rem); min-width: 13rem; padding: .4rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgb(20 33 61 / .12); z-index: 5; display: grid; gap: .2rem; }
+.actions .ui-action-menu-panel button.ui-button { width: 100%; border: 0; text-align: left; justify-content: flex-start; font-weight: 500; }
+.actions .ui-action-menu-panel button.ui-button:hover { background: var(--bg); }
+.product-form .ui-form-section:first-child { margin-top: .25rem; }
+.product-form .form-footer { border-top: 1px solid var(--line); padding-top: 1rem; justify-content: flex-end; }
+.product-form .optional-fields { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+.optional-fields summary { cursor: pointer; font-weight: 600; color: var(--navy); font-size: .9rem; }
+.optional-fields[open] summary { margin-bottom: 1rem; }
+.product-overview { padding: 1.25rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.product-overview > strong { display: block; font-size: 1.9rem; letter-spacing: -.04em; color: var(--navy); font-variant-numeric: tabular-nums; }
+.product-overview > span { font-size: .75rem; color: var(--muted); }
+.product-stock-summary { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; font-size: .85rem; }
+.detail .facts { font-size: .85rem; gap: .7rem 1rem; }
+.detail .history { margin-top: 1rem; }
+.detail .history .row { align-items: flex-start; padding: .85rem 0; }
+.detail .history .row > span { border-left: 2px solid var(--line); padding-left: .75rem; }
+.detail .history strong { font-variant-numeric: tabular-nums; flex-shrink: 0; font-size: .9rem; }
+.detail .history small { display: inline-block; font-size: .75rem; margin-top: .35rem; }
+.detail-section-heading { font-size: .95rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+@media (max-width: 640px) { .product-form .form-footer .ui-button { flex: 1; } .ui-action-menu-panel { right: 0; min-width: 12rem; } }
+
+/* Shared feedback states from ui.tsx. */
+.alert { padding: .7rem .9rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid; }
+.alert-error { background: #fef3f2; border-color: #fecdca; color: #7a271a; }
+.alert-info { background: #eff8ff; border-color: #b2ddff; color: #194185; }
+.alert-success { background: #ecfdf3; border-color: #abefc6; color: #054f31; }
+.loading { padding: 2rem; color: var(--muted); }
+.empty { padding: 2rem; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: var(--radius); background: var(--surface); }
+.empty { padding: 4rem 1.5rem; border-style: solid; }
+.empty h3 { color: var(--navy); font-size: 1.2rem; }
+
+.field > div > input:not([type='checkbox']) { width: 100%; }

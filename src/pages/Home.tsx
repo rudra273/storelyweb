@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/workspace'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/context'
 import { NAV, can } from '../permissions'
@@ -21,10 +22,7 @@ export function Home() {
   const { current, role } = useShop()
   return (
     <div className="home-page">
-      <div className="page-head">
-        <div><p className="eyebrow">YOUR WORKSPACE</p><h1>Hello{user?.full_name ? `, ${user.full_name}` : ''}</h1><p className="page-description">Here’s what’s happening at {current?.name}.</p></div>
-        {can(role, 'billing.create') && <Link className="primary button" to="/billing/new">Create bill <span aria-hidden="true">↗</span></Link>}
-      </div>
+      <PageHeader eyebrow="YOUR WORKSPACE" title={`Hello${user?.full_name ? `, ${user.full_name}` : ''}`} description={`Here’s what’s happening at ${current?.name}.`} actions={can(role, 'billing.create') ? <Link className="primary button" to="/billing/new">Create bill <span aria-hidden="true">↗</span></Link> : undefined} />
       {can(role, 'reports.view') ? <DailySummary /> : <section className="staff-welcome"><div><p className="eyebrow">READY FOR THE DAY</p><h2>Everything you need at the counter.</h2><p>Look up a product, check its availability or start your next bill.</p></div><Link className="button secondary" to="/products">Browse products →</Link></section>}
       <section className="home-shortcuts" aria-labelledby="shortcuts-heading">
         <div className="section-heading"><div><h2 id="shortcuts-heading">Your daily tools</h2><p className="muted">Pick up where you need to work.</p></div></div>

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { formatMoney, formatQty } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
 import { Alert, Empty, Loading } from '../components/ui'
+import { ActionMenu, Button, PageHeader, Toolbar } from '../components/workspace'
 import { can } from '../permissions'
 import { useShop } from '../shops/context'
 import { ImportDialog } from './ImportDialog'
@@ -93,31 +94,22 @@ function ProductsWorkspace() {
   return (
     <div className="split catalogue">
       <div className="split-main">
-        <div className="page-head">
-          <div><p className="eyebrow">INVENTORY</p><h1>Products</h1><p className="page-description">Your catalogue, stock and pricing in one place.</p></div>
-          <div className="actions">
-            {canEdit && (
-              <button className="primary" onClick={() => setDialog('new')}>
-                Add product
-              </button>
-            )}
-            {canEdit && <button onClick={() => setDialog('import')}>Import</button>}
-            {canExport && (
-              <>
-                <button onClick={() => void downloadExport(current?.shop_id ?? '', 'csv').catch((e) => setExportError(describeError(e)))}>Export CSV</button>
-                <button onClick={() => void downloadExport(current?.shop_id ?? '', 'xlsx').catch((e) => setExportError(describeError(e)))}>Export Excel</button>
-              </>
-            )}
-            {canEdit && <button onClick={() => setDialog('lists')}>Categories &amp; units</button>}
-            <button disabled={picked.size === 0} onClick={() => setDialog('labels')}>
-              Print labels{picked.size ? ` (${picked.size})` : ''}
-            </button>
-          </div>
-        </div>
+        <PageHeader eyebrow="INVENTORY" title="Products" description="Your catalogue, stock and pricing in one place." actions={<>
+          {canEdit && <Button variant="primary" onClick={() => setDialog('new')}>Add product</Button>}
+          {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
+          <Button disabled={picked.size === 0} onClick={() => setDialog('labels')}>Print labels{picked.size ? ` (${picked.size})` : ''}</Button>
+          {(canEdit || canExport) && <ActionMenu>
+            {canExport && <>
+              <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'csv').catch(e => setExportError(describeError(e)))}>Export CSV</Button>
+              <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'xlsx').catch(e => setExportError(describeError(e)))}>Export Excel</Button>
+            </>}
+            {canEdit && <Button onClick={() => setDialog('lists')}>Categories &amp; units</Button>}
+          </ActionMenu>}
+        </>} />
         {exportError && <Alert>{exportError}</Alert>}
 
         <div className="catalogue-heading"><h2>All products {data && <span className="count-badge">{total}</span>}</h2><span className="muted">{picked.size ? `${picked.size} selected` : 'Select products to print labels'}</span></div>
-        <div className="filters" role="search">
+        <Toolbar label="Filter products">
           <input type="search" aria-label="Search products" placeholder="Search name, code or barcode" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select aria-label="Category" value={query.category} onChange={(e) => update({ cat: e.target.value })}>
             <option value="">All categories</option>
@@ -136,7 +128,7 @@ function ProductsWorkspace() {
             Expiring in 30 days
           </label>
           {(query.q || query.category || query.low || query.expiring) && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null }) }}>Clear filters</button>}
-        </div>
+        </Toolbar>
         {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
 
         {products.isPending && <Loading />}

@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/workspace'
 import { useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
@@ -54,7 +55,7 @@ function BillForm() {
     finally { sending.current = false }
   }
   return <div className="checkout-page">
-    <header className="page-head"><div><p className="eyebrow">BILLING / NEW BILL</p><h1>New bill</h1><p className="page-description">Add your items, review the total and record payment.</p></div><Link className="button secondary" to="/billing">← Back to bills</Link></header>
+    <PageHeader eyebrow="BILLING / NEW BILL" title="New bill" description="Add your items, review the total and record payment." actions={<Link className="button secondary" to="/billing">← Back to bills</Link>} />
     <form className="checkout-grid" onSubmit={submit}>
       <fieldset className="checkout-main" disabled={locked} onChange={() => setConfirmed(false)}>
         <section className="card wide"><div className="checkout-section-title"><span>01</span><h2>Customer</h2></div><p className="muted">Add a name or leave blank for a walk-in customer.</p><div className="form-grid">

@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/workspace'
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError, request } from '../api/client'
@@ -28,7 +29,7 @@ function Detail({ detail }: { detail: BillDetail }) {
   const [printing, setPrinting] = useState(false)
   const b = detail.bill
   return <>
-    <header className="page-head no-print"><div><p className="eyebrow">BILL DETAILS</p><h1>{b.bill_number}</h1><p>{b.customer_name} · {b.created_at.slice(0, 10)} · {b.cancelled ? 'Cancelled' : b.payment_status}</p></div></header>
+    <div className="no-print"><PageHeader eyebrow="BILL DETAILS" title={b.bill_number} description={`${b.customer_name} · ${b.created_at.slice(0, 10)} · ${b.cancelled ? 'Cancelled' : b.payment_status}`} /></div>
     {b.cancelled && <Alert kind="info">Cancelled: {b.cancel_reason}</Alert>}
     <div className="actions no-print">
       <button onClick={() => setPrinting(!printing)}>{printing ? 'Close invoice' : 'Invoice / Print / PDF'}</button>

@@ -78,3 +78,12 @@ exceeds 5:1. A real CSV preview and label preview were checked, and all three pr
 CSV export rows reconciled with the catalogue. See `product-validation-results.json`.
 Cross-browser testing is waived. True browser zoom, screen-reader operation,
 printed PDF/printer output and large-catalogue timings are not certified here.
+
+
+## Final code follow-ups
+
+The five remaining implementation items are complete; see the final checkpoint
+in `DESKTOP_UI_UPGRADE_PLAN.md`. Current frontend validation: 89 tests passed,
+lint, TypeScript and production build passed. Native action disclosure and grouped
+product forms were checked at desktop and 320px widths. Pending-write controls
+and preserved product payloads have regression coverage.

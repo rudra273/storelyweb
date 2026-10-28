@@ -1,3 +1,4 @@
+import { PageHeader, Toolbar } from '../components/workspace'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Alert, Empty, Field, Loading } from '../components/ui'
@@ -19,15 +20,15 @@ export function BillsPage() {
   for (const [k, v] of Object.entries({ q, status, kind, from, to })) if (v) params.set(k, v)
   const query = useBillingQuery<BillPage>('bills', `bills?${params}`)
   return <div className="billing-page">
-    <header className="page-head"><div><p className="eyebrow">SALES WORKSPACE</p><h1>Billing</h1><p className="page-description">Find invoices, follow up on payments and manage returns.</p></div><Link className="primary button" to="/billing/new">New bill</Link></header>
-    <div className="filters bill-filters" onChange={() => setPage(0)}>
+    <PageHeader eyebrow="SALES WORKSPACE" title="Billing" description="Find invoices, follow up on payments and manage returns." actions={<Link className="primary button" to="/billing/new">New bill</Link>} />
+    <Toolbar label="Filter bills" className="bill-filters" onChange={() => setPage(0)}>
       <Field label="Search bills" type="search" maxLength={100} value={search} onChange={e => setSearch(e.target.value)} />
       <label>Payment status<select value={status} onChange={e => setStatus(e.target.value)}><option value="">All statuses</option><option value="paid">Paid</option><option value="partial">Part paid</option><option value="unpaid">Unpaid</option></select></label>
       <label>Document<select value={kind} onChange={e => setKind(e.target.value)}><option value="">All documents</option><option value="invoice">Invoices</option><option value="credit_note">Credit notes</option></select></label>
       <Field label="From" type="date" value={from} onChange={e => setFrom(e.target.value)} />
       <Field label="To" type="date" min={from} value={to} onChange={e => setTo(e.target.value)} />
       <label className="check inline"><input type="checkbox" checked={cancelled} onChange={e => setCancelled(e.target.checked)} />Cancelled bills</label>
-    </div>
+    </Toolbar>
     {(search || status || kind || from || to || cancelled) && <button className="link clear-bill-filters" onClick={() => { setSearch(''); setStatus(''); setKind(''); setFrom(''); setTo(''); setCancelled(false); setPage(0) }}>Clear filters</button>}
     {query.isPending && <Loading />}
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}

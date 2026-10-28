@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/workspace'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { api } from '../api/client'
@@ -49,7 +50,7 @@ export function Team() {
 
   return (
     <div className="team-page">
-      <header className="page-head"><div><p className="eyebrow">WORKSPACE ACCESS</p><h1>Team</h1><p className="page-description">Bring your team together and manage who can access your shop.</p></div></header>
+      <PageHeader eyebrow="WORKSPACE ACCESS" title="Team" description="Bring your team together and manage who can access your shop." />
       {action.error && <Alert>{action.error}</Alert>}
       {invited && <Alert kind="success">Invitation sent. Your teammate can accept it when they sign in.</Alert>}
       <div className="team-grid"><div><Card title="People with access">

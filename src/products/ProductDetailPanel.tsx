@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from '../components/workspace'
 import { Alert, Loading } from '../components/ui'
 import { when } from '../components/format'
 import { describeError, useAction } from '../components/useAction'
@@ -13,7 +14,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
   const detail = useProduct(id)
   const [mode, setMode] = useState<null | 'edit' | 'adjust'>(null)
   const remove = useProductMutation(removeProduct)
-  const { error, run } = useAction()
+  const { error, run, busy } = useAction()
   const p = detail.data?.product
   const movements = detail.data?.movements ?? []
 
@@ -28,9 +29,9 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
 
   return (
     <aside className="detail" aria-label="Product details">
-      <div className="modal-head">
+      <p className="eyebrow">PRODUCT DETAILS</p><div className="modal-head">
         <h2>{p?.name ?? 'Product'}</h2>
-        <button className="link" onClick={onClose} aria-label="Close details">
+        <button className="link" onClick={onClose} aria-label="Close details" disabled={busy}>
           ✕
         </button>
       </div>
@@ -39,9 +40,8 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
       {error && <Alert>{error}</Alert>}
       {p && (
         <>
+          <div className="product-overview"><span>Selling price</span><strong>{formatMoney(p.selling_price)}</strong><div className="product-stock-summary">{p.track_stock ? `${formatQty(p.quantity)} ${p.unit_name ?? ''} in stock` : 'Stock is not tracked'}{p.low_stock && <span className="badge warn">Low stock</span>}</div></div>
           <dl className="facts">
-            <dt>Selling price</dt>
-            <dd>{formatMoney(p.selling_price)}</dd>
             {p.mrp_price && (
               <>
                 <dt>MRP</dt>
@@ -54,11 +54,6 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
                 <dd>{formatMoney(p.purchase_price)}</dd>
               </>
             )}
-            <dt>In stock</dt>
-            <dd>
-              {p.track_stock ? `${formatQty(p.quantity)} ${p.unit_name ?? ''}` : 'Stock is not tracked'}
-              {p.low_stock && <span className="badge warn">low</span>}
-            </dd>
             {p.reorder_level && (
               <>
                 <dt>Reorder at</dt>
@@ -84,23 +79,23 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
           </dl>
           {canEdit && (
             <div className="actions">
-              <button className="primary" onClick={() => setMode('edit')}>
+              <Button variant="primary" disabled={busy} onClick={() => setMode('edit')}>
                 Edit
-              </button>
-              <button onClick={() => setMode('adjust')}>Adjust stock</button>
-              <button className="danger-button" onClick={confirmDelete}>
-                Delete
-              </button>
+              </Button>
+              <Button disabled={busy} onClick={() => setMode('adjust')}>Adjust stock</Button>
+              <Button variant="danger" disabled={busy} onClick={confirmDelete}>
+                {busy ? 'Deleting…' : 'Delete'}
+              </Button>
             </div>
           )}
-          <h3>Stock history</h3>
+          <h3 className="detail-section-heading">Stock history</h3>
           {movements.length === 0 && <p className="muted">No stock movements yet.</p>}
           <ul className="plain history">
             {movements.map((m) => (
               <li key={m.uuid} className="row">
                 <span>
                   {KIND[m.type] ?? m.type}
-                  {m.reason ? ` · ${m.reason.replace('_', ' ')}` : ''}
+                  {m.reason ? ` · ${m.reason.replaceAll('_', ' ')}` : ''}
                   <br />
                   <small className="muted">
                     {when(m.created_at)}
@@ -115,8 +110,8 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
               </li>
             ))}
           </ul>
-          {mode === 'edit' && <ProductForm product={p} onClose={() => setMode(null)} onSaved={() => setMode(null)} />}
-          {mode === 'adjust' && <AdjustStock product={p} onClose={() => setMode(null)} />}
+          {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => setMode(null)} />}
+          {mode === 'adjust' && <AdjustStock key={p.uuid} product={p} onClose={() => setMode(null)} />}
         </>
       )}
     </aside>

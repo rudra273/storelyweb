@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/workspace'
 import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router'
 
 const TABS = [
@@ -20,7 +21,7 @@ export function ReportsLayout() {
   const search = keep.length ? `?${new URLSearchParams(keep as [string, string][])}` : ''
   return (
     <div className="reports-page">
-      <div className="page-head"><div><p className="eyebrow">BUSINESS INSIGHTS</p><h1>Reports</h1><p className="page-description">A clear view of your sales, money and inventory.</p></div></div>
+      <PageHeader eyebrow="BUSINESS INSIGHTS" title="Reports" description="A clear view of your sales, money and inventory." />
       <nav className="tabs no-print" aria-label="Reports">
         {TABS.map((t) => (
           <NavLink key={t.to} to={{ pathname: t.to, search }} end={t.end}>

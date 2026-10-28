@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { SIGNED_IN, fakeApi, ok, renderApp } from '../test-utils'
@@ -33,6 +33,7 @@ test('an owner sees cost, and the add, import, export and manage buttons', async
   expect(await screen.findByRole('button', { name: 'Basmati Rice' })).toBeInTheDocument()
   expect(screen.getByRole('columnheader', { name: 'Cost' })).toBeInTheDocument()
   expect(screen.getByText('₹18.00')).toBeInTheDocument()
+  await userEvent.click(screen.getByText('More actions'))
   for (const name of ['Add product', 'Import', 'Export CSV', 'Export Excel', 'Categories & units']) {
     expect(screen.getByRole('button', { name })).toBeInTheDocument()
   }
@@ -234,4 +235,94 @@ test('stock adjustment rejects invalid quantity and preserves input after server
   expect(await within(dialog).findByRole('alert')).toHaveTextContent('Not enough stock')
   expect(within(dialog).getByLabelText('Quantity')).toHaveValue('51.25')
   expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))?.body).toMatchObject({ delta: '-51.25' })
+})
+
+for (const kind of ['product', 'stock']) {
+  test(`${kind} saving freezes fields and close controls until completion`, async () => {
+    setup('owner', [{ ...RICE, ...COST }])
+    const original = globalThis.fetch
+    let writes = 0
+    vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+      if (init.method === 'POST' && path.includes(kind === 'product' ? '/shops/s1/products' : '/stock-adjustments')) {
+        writes++
+        return new Promise<Response>(() => {})
+      }
+      return original(path, init)
+    })
+    renderApp('/products')
+    if (kind === 'product') {
+      await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+      await userEvent.type(screen.getByLabelText('Product name'), 'Tea')
+    } else {
+      await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Adjust stock' }))
+      await userEvent.type(screen.getByLabelText('Quantity'), '1')
+    }
+    const dialog = screen.getByRole('dialog')
+    await userEvent.dblClick(within(dialog).getByRole('button', { name: kind === 'product' ? 'Add product' : 'Save' }))
+    expect(writes).toBe(1)
+    expect(within(dialog).getByLabelText(kind === 'product' ? 'Product name' : 'Quantity')).toBeDisabled()
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeDisabled()
+    expect(fireEvent(dialog, new Event('cancel', { bubbles: true, cancelable: true }))).toBe(false)
+    expect(dialog).toBeInTheDocument()
+  })
+}
+
+test('secondary actions are disclosed and Escape returns focus to their trigger', async () => {
+  setup('owner', [{ ...RICE, ...COST }])
+  renderApp('/products')
+  await screen.findByRole('button', { name: 'Basmati Rice' })
+  const trigger = screen.getByText('More actions')
+  expect(trigger.closest('details')).not.toHaveAttribute('open')
+  await userEvent.click(trigger)
+  const exportButton = screen.getByRole('button', { name: 'Export CSV' })
+  await userEvent.click(screen.getByRole('button', { name: 'Categories & units' }))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+  await userEvent.click(trigger)
+  exportButton.focus()
+  await userEvent.keyboard('{Escape}')
+  expect(trigger.closest('details')).not.toHaveAttribute('open')
+  expect(trigger).toHaveFocus()
+})
+
+test('category management cannot close or edit other fields while saving', async () => {
+  setup('owner', [{ ...RICE, ...COST }])
+  const original = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => init.method === 'POST' && path.endsWith('/categories') ? new Promise<Response>(() => {}) : original(path, init))
+  renderApp('/products')
+  await screen.findByRole('button', { name: 'Basmati Rice' })
+  await userEvent.click(screen.getByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Categories & units' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('New category'), 'Tea')
+  const categories = within(dialog).getByLabelText('New category').closest('section')!
+  await userEvent.click(within(categories).getByRole('button', { name: 'Add' }))
+  expect(within(dialog).getByLabelText('New category')).toBeDisabled()
+  expect(within(dialog).getByLabelText('New unit')).toBeDisabled()
+  expect(within(dialog).getByRole('button', { name: 'Close' })).toBeDisabled()
+})
+
+test('grouped product fields retain pricing, stock, identifiers and tax in the save request', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+    ok('POST', '/v1/shops/s1/products', { product: { ...RICE, ...COST }, movements: [] }),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] }),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'Tea')
+  await userEvent.type(within(dialog).getByLabelText('Selling price (₹)'), '25.50')
+  await userEvent.type(within(dialog).getByLabelText('Cost price (₹)'), '18.25')
+  await userEvent.type(within(dialog).getByLabelText('Opening stock'), '3.5')
+  await userEvent.type(within(dialog).getByLabelText('Reorder level'), '2')
+  await userEvent.click(within(dialog).getByText('Codes and tax details (optional)'))
+  await userEvent.type(within(dialog).getByLabelText('Product code'), 'TEA-01')
+  await userEvent.type(within(dialog).getByLabelText('HSN / SAC code'), '0902')
+  await userEvent.selectOptions(within(dialog).getByLabelText('GST %'), '5')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/products'))?.body).toMatchObject({ name: 'Tea', selling_price: '25.50', purchase_price: '18.25', opening_quantity: '3.5', reorder_level: '2', product_code: 'TEA-01', hsn_code: '0902', gst_percent: '5', track_stock: true })
 })
