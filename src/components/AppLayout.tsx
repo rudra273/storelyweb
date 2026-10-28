@@ -17,7 +17,7 @@ export function AppLayout() {
     <div className="shell"><a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar" data-open={open}>
         <div className="sidebar-top">
-          <span className="brand"><span className="brand-mark" aria-hidden="true">S</span>Storely<span className="brand-dot">.</span></span>
+          <span className="brand"><img className="brand-mark" src="/storely-icon.png" alt="" /><span>Store<span className="brand-accent">ly</span></span><span className="brand-dot">.</span></span>
           <button className="menu-toggle" aria-expanded={open} aria-controls="workspace-navigation" onClick={() => setOpen(!open)}>
             Menu
           </button>

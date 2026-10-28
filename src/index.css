@@ -212,7 +212,8 @@ a.button { display: inline-block; text-decoration: none; }
 /* Workspace components */
 .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 100; padding: .75rem; background: white; border-radius: 8px; }
 .skip-link:focus { top: 1rem; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 36px; background: var(--gold); color: var(--navy); border-radius: 10px; font-size: 23px; }
+.brand-mark { width: 36px; height: 36px; object-fit: cover; border-radius: 10px; }
+.brand-accent { color: var(--gold); }
 .brand-dot { color: var(--gold); margin-left: -.6rem; }
 .sidebar-body { display: flex; flex-direction: column; flex: 1; padding-top: 2rem; }
 .shop-context { padding: 1rem; background: rgb(255 255 255 / .045); border: 1px solid rgb(255 255 255 / .1); border-radius: var(--radius); margin-bottom: 2rem; }
@@ -415,7 +416,7 @@ input[type=checkbox] { accent-color: var(--navy); width: 16px; height: 16px; fle
 .auth-story small { color: #a9b6ce; font-size: .75rem; letter-spacing: .08em; }
 .auth-form-area { display: grid; place-items: center; padding: 3rem 2rem; background: white; }
 .auth-split .auth-card { border: 0; box-shadow: none; padding: 0; max-width: 27rem; }
-.auth-form-brand { color: var(--gold-dark); font-weight: 700; margin: 0 0 1.5rem; }
+.auth-form-brand { color: var(--navy); font-weight: 700; margin: 0 0 1.5rem; }
 .auth-split h1 { margin-bottom: 1.5rem; }
 .auth-split .primary { padding: .85rem; }
 @media (max-width: 1150px) { .team-grid { grid-template-columns: minmax(0, 1fr); } .auth-story { padding: 2.5rem; } }
