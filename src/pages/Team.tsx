@@ -16,6 +16,7 @@ export function Team() {
   const members = useQuery({ queryKey: ['members', shopId], queryFn: () => api.get<Member[]>(`/v1/shops/${shopId}/members`), enabled: !!shopId })
   const invites = useQuery({ queryKey: ['invites', shopId], queryFn: () => api.get<Invite[]>(`/v1/shops/${shopId}/invites`), enabled: !!shopId })
   const action = useAction()
+  const [invited, setInvited] = useState(false)
   const [email, setEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('staff')
 
@@ -23,12 +24,14 @@ export function Team() {
 
   async function invite(e: FormEvent) {
     e.preventDefault()
+    setInvited(false)
     const ok = await action.run(async () => {
       await api.post(`/v1/shops/${shopId}/invites`, { email: email.trim(), role: inviteRole })
       return true
     })
     if (ok) {
       setEmail('')
+      setInvited(true)
       await reload()
     }
   }
@@ -45,12 +48,13 @@ export function Team() {
   }
 
   return (
-    <div>
-      <h1>Team</h1>
+    <div className="team-page">
+      <header className="page-head"><div><p className="eyebrow">WORKSPACE ACCESS</p><h1>Team</h1><p className="page-description">Bring your team together and manage who can access your shop.</p></div></header>
       {action.error && <Alert>{action.error}</Alert>}
-      <Card title="People with access">
+      {invited && <Alert kind="success">Invitation sent. Your teammate can accept it when they sign in.</Alert>}
+      <div className="team-grid"><div><Card title="People with access">
         {members.isPending && <Loading />}
-        {members.error && <Alert>Could not load the team.</Alert>}
+        {members.error && <Alert>Could not load the team. <button className="link" onClick={() => void members.refetch()}>Retry team</button></Alert>}
         <div className="table-wrap"><table className="table">
           <thead><tr><th>Person</th><th>Role</th><th>Since</th><th /></tr></thead>
           <tbody>
@@ -78,7 +82,9 @@ export function Team() {
         </table></div>
       </Card>
 
-      <Card title="Invitations waiting">
+      </div><div><Card title="Invitations waiting">
+        {invites.isPending && <Loading label="Loading invitations…" />}
+        {invites.error && <Alert>Could not load invitations. <button className="link" onClick={() => void invites.refetch()}>Retry invitations</button></Alert>}
         {invites.data?.length === 0 && <Empty title="No open invitations" />}
         <ul className="plain">
           {invites.data?.map((i) => (
@@ -89,7 +95,7 @@ export function Team() {
           ))}
         </ul>
         <form onSubmit={invite} noValidate className="inline-form">
-          <Field label="Invite by email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Field label="Invite by email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setInvited(false) }} required />
           {role === 'owner' && (
             <div className="field">
               <label htmlFor="invite-role">Role</label>
@@ -99,10 +105,11 @@ export function Team() {
               </select>
             </div>
           )}
-          <button className="primary" disabled={action.busy || !email}>Send invitation</button>
+          <button className="primary" disabled={action.busy || !email}>{action.busy ? 'Working…' : 'Send invitation'}</button>
         </form>
         <p className="muted">The person signs up (or signs in) with this email and accepts the invitation.</p>
       </Card>
+      <section className="role-guide"><h2>Roles at a glance</h2><dl><dt>Owner</dt><dd>Full access to the shop and team.</dd><dt>Admin</dt><dd>Manage products, billing, reports and staff.</dd><dt>Staff</dt><dd>Look up products and create bills.</dd></dl></section></div></div>
     </div>
   )
 }

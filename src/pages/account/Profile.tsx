@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
+import { AccountHeader } from '../../components/AccountHeader'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/context'
 import { useAction } from '../../components/useAction'
@@ -55,19 +56,22 @@ export function Profile() {
   }
 
   return (
-    <div>
-      <h1>Profile</h1>
+    <div className="settings-page profile-page">
+      <AccountHeader title="Profile" description="Manage your personal details and the email you use to sign in." />
+      <div className="settings-grid">
       <Card title="Your details">
+        <p className="setting-description">Your name appears across your workspace.</p>
         <form onSubmit={saveName} noValidate>
           {profile.error && <Alert>{profile.error}</Alert>}
           {saved && <Alert kind="success">Saved.</Alert>}
           <p>Email: <strong>{user?.email}</strong></p>
           <Field label="Name" value={name} onChange={(e) => { setName(e.target.value); setSaved(false) }} maxLength={100} />
-          <button className="primary" disabled={profile.busy}>Save</button>
+          <button className="primary" disabled={profile.busy}>{profile.busy ? 'Saving…' : 'Save'}</button>
         </form>
       </Card>
 
       <Card title="Change email">
+        <p className="setting-description">We’ll verify your new address before updating your sign-in email.</p>
         {email.error && <Alert>{email.error}</Alert>}
         {!codeSent ? (
           <form onSubmit={requestChange} noValidate>
@@ -83,9 +87,9 @@ export function Profile() {
           </form>
         )}
       </Card>
-      <Card title="Delete account">
+      </div><div className="danger-zone"><Card title="Delete account">
         <p className="muted">Permanently remove your account. <Link to="/delete-account">Delete my account</Link></p>
-      </Card>
+      </Card></div>
     </div>
   )
 }

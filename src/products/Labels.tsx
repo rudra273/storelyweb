@@ -33,6 +33,7 @@ export function Labels({ ids, onClose }: { ids: string[]; onClose: () => void })
   const results = useQueries({
     queries: ids.map((id) => ({ queryKey: ['product', shop, id], queryFn: () => api.get<ProductDetail>(`/v1/shops/${shop}/products/${id}`) })),
   })
+  const failed = results.some(r => r.isError)
   const loading = results.some((r) => r.isPending)
   const items = useMemo(
     () =>
@@ -55,9 +56,10 @@ export function Labels({ ids, onClose }: { ids: string[]; onClose: () => void })
           <input id="copies" type="number" min={1} max={MAX_COPIES} value={copies} onChange={(e) => setCopies(Math.min(MAX_COPIES, Math.max(1, Number(e.target.value) || 1)))} />
         </div>
         {loading && <Loading />}
+        {failed && <Alert>Some labels could not be loaded. <button className="link" onClick={() => { for (const result of results) if (result.isError) void result.refetch() }}>Retry labels</button></Alert>}
         {skipped > 0 && <Alert kind="info">{skipped} product{skipped === 1 ? ' has' : 's have'} no usable barcode or code and will be left out.</Alert>}
         <div className="actions">
-          <button className="primary" disabled={loading || items.length === skipped} onClick={() => window.print()}>
+          <button className="primary" disabled={loading || failed || items.length === skipped} onClick={() => window.print()}>
             Print
           </button>
           <button onClick={onClose}>Close</button>

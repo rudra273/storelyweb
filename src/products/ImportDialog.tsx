@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Modal } from '../components/Modal'
 import { Alert } from '../components/ui'
 import { useAction } from '../components/useAction'
@@ -10,47 +10,60 @@ const GUIDE = 'Needs the columns product_name, quantity and purchase_price. Opti
 /** Pick a file, see exactly what would happen, then confirm. Nothing changes before the second step. */
 export function ImportDialog({ onClose }: { onClose: () => void }) {
   const run = useProductMutation((s: string, input: { file: File; dryRun: boolean; allowDuplicate: boolean }) => importFile(s, input.file, input))
-  const { busy, error, run: act, setError } = useAction()
+  const { busy, error, run: act } = useAction()
+  const pending = useRef(false)
   const [file, setFile] = useState<File | null>(null)
   const [report, setReport] = useState<ImportReport | null>(null)
   const [done, setDone] = useState<ImportReport | null>(null)
   const [duplicate, setDuplicate] = useState(false)
 
   async function preview(chosen: File) {
+    if (pending.current) return
+    pending.current = true
     setFile(chosen)
     setReport(null)
     setDone(null)
     setDuplicate(false)
     const out = await act(() => run.mutateAsync({ file: chosen, dryRun: true, allowDuplicate: false }))
     if (out) setReport(out)
+    pending.current = false
   }
 
   async function confirm() {
-    if (!file) return
+    if (!file || pending.current) return
+    pending.current = true
     try {
-      const out = await run.mutateAsync({ file, dryRun: false, allowDuplicate: duplicate })
-      setDone(out)
-      setReport(null)
-    } catch (e) {
-      if (e instanceof ApiError && e.code === 'duplicate_import') setDuplicate(true)
-      setError(e instanceof ApiError ? e.message : 'The import failed. Nothing was changed.')
+      const out = await act(async () => {
+        try {
+          return await run.mutateAsync({ file, dryRun: false, allowDuplicate: duplicate })
+        } catch (e) {
+          if (e instanceof ApiError && e.code === 'duplicate_import') setDuplicate(true)
+          throw e
+        }
+      })
+      if (out) {
+        setDone(out)
+        setReport(null)
+      }
+    } finally {
+      pending.current = false
     }
   }
 
   const importable = report ? report.added + report.updated : 0
   return (
-    <Modal title="Import products" onClose={onClose} wide>
+    <Modal title="Import products" onClose={onClose} canClose={!busy} wide>
       {!done && (
         <>
           <p className="muted">{GUIDE}</p>
           <div className="field">
             <label htmlFor="import-file">CSV or Excel (.xlsx) file, up to 5 MB</label>
-            <input id="import-file" type="file" accept=".csv,.xlsx,text/csv" onChange={(e) => e.target.files?.[0] && void preview(e.target.files[0])} />
+            <input id="import-file" type="file" disabled={busy} accept=".csv,.xlsx,text/csv" onChange={(e) => e.target.files?.[0] && void preview(e.target.files[0])} />
           </div>
         </>
       )}
       {error && <Alert>{error}</Alert>}
-      {busy && <p role="status">Checking the file…</p>}
+      {busy && <p role="status">{report ? 'Importing products…' : 'Checking the file…'}</p>}
       {report && (
         <div>
           <Alert kind="info">
@@ -72,9 +85,9 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
           {report.more_errors > 0 && <p className="muted">…and {report.more_errors} more.</p>}
           <div className="actions">
             <button className="primary" disabled={busy || importable === 0} onClick={confirm}>
-              {duplicate ? 'Import again anyway' : `Import ${importable} product${importable === 1 ? '' : 's'}`}
+              {busy ? 'Importing…' : duplicate ? 'Import again anyway' : `Import ${importable} product${importable === 1 ? '' : 's'}`}
             </button>
-            <button onClick={onClose}>Cancel</button>
+            <button disabled={busy} onClick={onClose}>Cancel</button>
           </div>
         </div>
       )}

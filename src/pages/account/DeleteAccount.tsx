@@ -33,7 +33,7 @@ export function DeleteAccount() {
   }
 
   return (
-    <AuthLayout title="Delete your account">
+    <AuthLayout title="Delete your account" compact>
       <p>
         This permanently deletes your Storely account and the sign-in details we hold for it. It cannot be undone.
         Data stored only on your phone is not affected.

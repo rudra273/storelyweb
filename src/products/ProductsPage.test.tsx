@@ -154,3 +154,84 @@ test('category failure is visible and can be retried', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Retry categories' }))
   await waitFor(() => expect(calls.filter(c => c.path.endsWith('/categories')).length).toBeGreaterThan(before))
 })
+
+test('switching shops clears the previous catalogue, selection and dialogs while loading', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Asha Stores', role: 'owner' }, { shop_id: 's2', name: 'Second Shop', role: 'owner' }]),
+    CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+  ])
+  const original = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => path.includes('/shops/s2/') ? new Promise<Response>(() => {}) : original(path, init))
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Add product' }))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  await userEvent.selectOptions(screen.getByLabelText('Shop'), 's2')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Basmati Rice' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Print labels' })).toBeDisabled()
+  expect(calls.length).toBeGreaterThan(0)
+})
+
+test('label loading failure is visible and cannot print a partial set', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+    ok('GET', '/v1/shops/s1/products/p1', { error: { message: 'Unavailable' } }, 403),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Print labels (1)' }))
+  const dialog = screen.getByRole('dialog')
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Some labels could not be loaded')
+  expect(within(dialog).getByRole('button', { name: 'Print' })).toBeDisabled()
+  expect(within(dialog).getByRole('button', { name: 'Retry labels' })).toBeEnabled()
+})
+
+test('an import locks confirmation and file selection while saving', async () => {
+  setup('owner', [{ ...RICE, ...COST }])
+  const original = globalThis.fetch
+  let writes = 0
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+    if (path.includes('/products/import?')) {
+      if (path.includes('dry_run=true')) return Promise.resolve(new Response(JSON.stringify({ added: 1, updated: 0, skipped: 0, errors: [], more_errors: 0, possible_duplicate: false }), { status: 200 }))
+      writes++
+      return new Promise<Response>(() => {})
+    }
+    return original(path, init)
+  })
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Import' }))
+  const dialog = screen.getByRole('dialog')
+  const file = within(dialog).getByLabelText('CSV or Excel (.xlsx) file, up to 5 MB')
+  await userEvent.upload(file, new File(['product_name,quantity,purchase_price\nTea,1,10'], 'products.csv', { type: 'text/csv' }))
+  const confirm = await within(dialog).findByRole('button', { name: 'Import 1 product' })
+  await userEvent.dblClick(confirm)
+  expect(writes).toBe(1)
+  expect(file).toBeDisabled()
+  expect(within(dialog).getByRole('button', { name: 'Importing…' })).toBeDisabled()
+  expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  expect(within(dialog).getByRole('button', { name: 'Close' })).toBeDisabled()
+})
+
+test('stock adjustment rejects invalid quantity and preserves input after server rejection', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] }),
+    ok('POST', '/v1/shops/s1/products/p1/stock-adjustments', { error: { message: 'Not enough stock' } }, 409),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Adjust stock' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Quantity'), '-1')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Enter how many')
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))).toBe(false)
+  await userEvent.clear(within(dialog).getByLabelText('Quantity'))
+  await userEvent.type(within(dialog).getByLabelText('Quantity'), '51.25')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Not enough stock')
+  expect(within(dialog).getByLabelText('Quantity')).toHaveValue('51.25')
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))?.body).toMatchObject({ delta: '-51.25' })
+})

@@ -29,6 +29,11 @@ function readQuery(params: URLSearchParams): ProductQuery {
 }
 
 export function ProductsPage() {
+  const { current } = useShop()
+  return <ProductsWorkspace key={current?.shop_id} />
+}
+
+function ProductsWorkspace() {
   const { current, role } = useShop()
   const navigate = useNavigate()
   const { id: selectedId } = useParams()

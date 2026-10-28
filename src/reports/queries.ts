@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { components } from '../api/schema'
 import { api } from '../api/client'
 import { downloadFile } from '../lib/download'
@@ -39,7 +39,7 @@ export function useReport<T>(name: ReportName, params: Record<string, string>, e
     queryKey: ['report', shop, name, params],
     queryFn: () => api.get<T>(path(shop, name, params)),
     enabled: !!shop && enabled,
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === shop && previousQuery.queryKey[2] === name ? previous : undefined,
     staleTime: 30_000,
   })
 }

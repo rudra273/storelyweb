@@ -1,0 +1,222 @@
+{
+  "reports": [
+    {
+      "name": "Overview",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Day book",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Profit and loss",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Who owes you",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Expiring stock",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Purchases",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Tax and GSTR-1",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Stock value",
+      "alerts": [],
+      "page": 1280,
+      "width": 1280
+    },
+    {
+      "name": "Overview",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Day book",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Profit and loss",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Who owes you",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Expiring stock",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Purchases",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Tax and GSTR-1",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    },
+    {
+      "name": "Stock value",
+      "alerts": [],
+      "page": 320,
+      "width": 320
+    }
+  ],
+  "routes": [
+    {
+      "route": "/",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/products",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/billing",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/billing/new",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/account",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/account/security",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/team",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/activity",
+      "page": 1920,
+      "width": 1920
+    },
+    {
+      "route": "/",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/products",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/billing",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/billing/new",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/account",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/account/security",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/team",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/activity",
+      "page": 768,
+      "width": 768
+    },
+    {
+      "route": "/",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/products",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/billing",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/billing/new",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/account",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/account/security",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/team",
+      "page": 320,
+      "width": 320
+    },
+    {
+      "route": "/activity",
+      "page": 320,
+      "width": 320
+    }
+  ]
+}

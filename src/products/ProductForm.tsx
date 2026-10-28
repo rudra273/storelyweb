@@ -65,12 +65,14 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     <Modal title={editing ? 'Edit product' : 'Add product'} onClose={onClose} wide>
       <form onSubmit={submit} noValidate className="form-grid">
         {error && <Alert>{error}</Alert>}
+        {categories.error && <Alert>Categories could not be loaded. <button type="button" className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
+        {units.error && <Alert>Units could not be loaded. <button type="button" className="link" onClick={() => void units.refetch()}>Retry units</button></Alert>}
         <Field label="Product name" value={f.name} onChange={set('name')} maxLength={200} required autoFocus />
         <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} />
         <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} />
         <div className="field">
           <label htmlFor="pf-cat">Category</label>
-          <select id="pf-cat" value={f.category} onChange={set('category')}>
+          <select id="pf-cat" disabled={categories.isPending || categories.isError} value={f.category} onChange={set('category')}>
             <option value="">None</option>
             {categories.data?.map((c) => (
               <option key={c.uuid} value={c.uuid}>
@@ -81,7 +83,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
         </div>
         <div className="field">
           <label htmlFor="pf-unit">Unit</label>
-          <select id="pf-unit" value={f.unit} onChange={set('unit')}>
+          <select id="pf-unit" disabled={units.isPending || units.isError} value={f.unit} onChange={set('unit')}>
             <option value="">None</option>
             {units.data?.map((u) => (
               <option key={u.uuid} value={u.uuid}>

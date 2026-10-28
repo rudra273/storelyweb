@@ -92,7 +92,7 @@ Exit: supporting screens match the main workspace and every existing workflow re
 
 1. Run the complete frontend checks and relevant backend regression checks for any API changes.
 2. Exercise the real local frontend/API/database end to end. Review screenshots against the baseline for every route and key dialog state.
-3. Check Chromium, Firefox, and Safari/WebKit where available; record unavailable coverage explicitly.
+3. Validate in the available local browser. Cross-browser testing is excluded at the user’s request.
 4. Verify 1280/1440/1920px desktop layouts, 768/390/320px fallbacks, 200% zoom, keyboard operation, focus, and contrast. Tables may scroll locally; pages should not overflow unintentionally.
 5. Inspect console/network errors, loading behavior, repeat navigation, and catalogue performance. Verify A4/A5 PDF output; record physical printer testing separately.
 6. Resolve critical/high bugs, document remaining lower-priority issues, and prepare a release checklist and rollback notes.
@@ -174,3 +174,72 @@ Browser warning/error log was empty. Screenshot: `docs/desktop-billing.png`.
 Save/payment/return retry paths were exercised with test API fixtures; no new live
 invoice or payment was saved in this checkpoint. Actual PDF/physical printer output,
 full tax/discount matrices and cross-browser checks remain release validation work.
+
+## Account and team checkpoint — 28 October 2026
+
+Implemented shared Profile/Security tabs, grouped settings cards, clearer account
+help text, a distinct account-deletion section, responsive team/member/invitation
+layout, role explanations, and shared authentication-page styling. Onboarding and
+shop activity now follow the page hierarchy. Account deletion retains a compact,
+focused form layout.
+
+Fixed missing loading/error states on team invitations; failures now show a retry
+action. Successful invitations show confirmation. Added retry controls for team,
+onboarding invitations, MFA status, sessions, and activity query failures.
+
+Validation: 76 frontend tests passed; lint, TypeScript, production build and
+`git diff --check` passed. New tests cover invitation failures/retry, invitation
+success and payload, and profile save/account navigation. Browser inspected
+Profile, Security and Team; all three stayed within 390px page width. Inspected
+the shared authentication layout via the public account page. No warning/error
+entries were present at the final browser log check. Screenshots:
+`docs/desktop-profile.png`, `docs/desktop-team.png`.
+
+Live password/email/MFA changes, invitations and role changes were not submitted.
+Onboarding and sign-in flows remain covered by the existing automated suite;
+full real-browser credential, email delivery and new-shop journeys, cross-browser
+coverage, accessibility verification and release hardening remain outstanding.
+
+## Release hardening checkpoint — 28 October 2026
+
+See `RELEASE_HARDENING.md` for the final local checks, bug ledger, evidence and
+release-sign-off gaps. Fixed shop-crossing placeholder data and product UI state,
+and verified modal focus restoration after Escape. Frontend: 81 tests plus lint,
+TypeScript and production build passed. API: 229 unit + 187 integration tests passed.
+Forty live route/viewport checks passed. Applied the explicitly approved password
+strength threshold of 2 and verified varied eight-character acceptance.
+
+Local implementation is ready for review. Cross-browser, full accessibility,
+printed-output, large-catalogue and production validation remain pending; this
+checkpoint is not a production-readiness certification.
+
+
+## Additional local UI validation — 28 October 2026
+
+Cross-browser testing has been removed from scope at the user's request.
+
+Completed live checks: product editor at 320px (286px dialog within the viewport),
+first-field focus, Escape closing and focus restoration; category/unit dialog;
+CSV dry-run preview with one valid and one invalid row (error on row 3); label
+preview with a valid barcode and a missing-code warning; negative stock-quantity
+validation. Product CSV values were reconciled against all three visible synthetic
+catalogue records using exact Decimal comparisons. This dry run added no products.
+
+Fixed import confirmation not entering busy state (including repeated submissions),
+silent label-load failures, and missing category/unit error/retry feedback. Disabled
+label printing when selected products cannot all be loaded. Amber text contrast was
+3.68:1 on white and 3.44:1 on the workspace background; now 5.42:1 and 5.06:1.
+
+Final checks: 84 frontend tests passed; lint, TypeScript, production build and
+whitespace checks passed. The added tests cover import double clicks/pending locks,
+label-load failures/printing prevention, invalid stock quantities and preserving
+input after server rejection. Product-editor DOM inspection found no unlabelled
+inputs/selects or unnamed buttons.
+
+Limits: actual browser zoom did not respond to the exposed keyboard shortcut,
+so true 200% zoom remains unverified. No screen-reader or physical-printer control
+is available here. Printed A4/A5 output, full screen-reader operation, large real
+catalogue timing and production smoke testing are still separate validations.
+Native dialog tabbing can move focus to browser chrome at the cycle boundary;
+Escape and opener restoration were verified. No full accessibility certification
+is claimed. Raw summary: `product-validation-results.json`.

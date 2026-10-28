@@ -32,7 +32,7 @@ export function Signup() {
         {error && <Alert>{error}</Alert>}
         <Field label="Your name (optional)" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
         <Field label="Email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <Field label="Password" type="password" autoComplete="new-password" hint="At least 10 characters. Avoid common words and patterns." value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Field label="Password" type="password" autoComplete="new-password" hint="At least 8 characters. Avoid common words and patterns." value={password} onChange={(e) => setPassword(e.target.value)} required />
         <Field label="Repeat password" type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} required />
         <button className="primary" disabled={busy || !email || !password}>
           {busy ? 'Creating…' : 'Create account'}

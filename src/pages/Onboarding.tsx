@@ -40,12 +40,12 @@ export function Onboarding() {
 
   return (
     <div className="onboarding">
-      <h1>Welcome to Storely</h1>
+      <p className="eyebrow">LET’S GET STARTED</p><h1>Welcome to Storely</h1>
       <p>You are not part of a shop yet. Accept an invitation, or set up your own shop.</p>
 
       <Card title="Invitations for you">
         {invites.isPending && <Loading />}
-        {invites.error && <Alert>Could not load invitations.</Alert>}
+        {invites.error && <Alert>Could not load invitations. <button className="link" onClick={() => void invites.refetch()}>Retry invitations</button></Alert>}
         {accept.error && <Alert>{accept.error}</Alert>}
         {invites.data?.length === 0 && <p className="muted">No invitations waiting. Ask the shop owner to invite your email address.</p>}
         <ul className="plain">

@@ -1,7 +1,7 @@
 /* Storely design tokens (matches the mobile app: light theme, gold + navy). */
 :root {
   --gold: #f5a623;
-  --gold-dark: #b97700;
+  --gold-dark: #916000;
   --navy: #14213d;
   --text: #1f2937;
   --muted: #6b7280;
@@ -382,3 +382,57 @@ input[type=checkbox] { accent-color: var(--navy); width: 16px; height: 16px; fle
 @media (max-width: 1150px) { .checkout-grid { grid-template-columns: minmax(0, 1fr); } .checkout-summary { position: static; } .checkout-summary .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .bill-detail-grid { grid-template-columns: minmax(0, 1fr); } .bill-detail-totals { grid-column: auto; grid-row: auto; } .checkout-summary .form-grid { grid-template-columns: minmax(0, 1fr); } .bill-filters > label { max-width: 100%; } }
 @media print { .bill-detail-grid { display: block; } .bill-detail-grid > .card { margin: 1rem 0; } }
+
+/* Account and workspace settings */
+.settings-tabs { display: flex; gap: 1.5rem; border-bottom: 1px solid var(--line); margin: 1.5rem 0 2rem; }
+.settings-tabs a { text-decoration: none; padding: .75rem .25rem; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 600; }
+.settings-tabs a.active { border-color: var(--gold); color: var(--navy); }
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; align-items: start; }
+.settings-grid > .card, .settings-activity > .card { margin: 0; max-width: none; padding: 1.75rem; }
+.setting-description { color: var(--muted); font-size: .85rem; margin: -.25rem 0 1.5rem; max-width: 55ch; }
+.settings-activity { margin-top: 1.5rem; }
+.danger-zone { margin-top: 2rem; }
+.danger-zone .card { max-width: none; border-color: #f0d6d2; background: #fffdfc; }
+.danger-zone h2 { color: var(--danger); }
+.danger-zone a { color: var(--danger); }
+.security-page .row { align-items: center; }
+.security-page .codes { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.team-grid { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 1.5rem; align-items: start; }
+.team-grid > div { min-width: 0; }
+.team-grid .card { margin-top: 0; max-width: none; }
+.team-grid .inline-form { display: block; border-top: 1px solid var(--line); padding-top: 1.25rem; margin-top: 1.25rem; }
+.team-grid .inline-form .primary { width: 100%; }
+.team-grid .row { flex-wrap: wrap; }
+.team-grid .empty { padding: 1.5rem 1rem; }
+.team-grid .table small { display: inline-block; margin-top: .3rem; }
+.role-guide { padding: 1rem .5rem; }
+.role-guide h2 { font-size: .9rem; }
+.role-guide dl { margin: 0; font-size: .8rem; }
+.role-guide dt { font-weight: 650; color: var(--navy); margin-top: 1rem; }
+.role-guide dd { margin: .25rem 0 0; color: var(--muted); }
+.onboarding > p:not(.eyebrow) { color: var(--muted); }
+.onboarding .card { box-shadow: none; background: #fafbfe; }
+.auth-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 0; align-items: stretch; justify-items: stretch; }
+.auth-story { padding: 3rem 4rem; background: var(--navy); color: #c9d3e5; display: flex; flex-direction: column; justify-content: space-between; gap: 4rem; min-height: 100dvh; }
+.auth-story .brand { color: white; }
+.auth-story h2 { font-size: clamp(2rem, 3.5vw, 3.5rem); line-height: 1.12; letter-spacing: -.04em; color: white; margin: 1rem 0 1.5rem; }
+.auth-story .eyebrow { color: #ffc76c; }
+.auth-story p:not(.brand):not(.eyebrow) { max-width: 36ch; line-height: 1.8; }
+.auth-story ul { list-style: none; padding: 0; margin-top: 2rem; }
+.auth-story li { margin: 1rem 0; font-size: .9rem; }
+.auth-story li::before { content: '✓'; color: var(--gold); margin-right: .75rem; }
+.auth-story small { color: #a9b6ce; font-size: .75rem; letter-spacing: .08em; }
+.auth-form-area { display: grid; place-items: center; padding: 3rem 2rem; background: white; }
+.auth-split .auth-card { border: 0; box-shadow: none; padding: 0; max-width: 27rem; }
+.auth-form-brand { color: var(--gold-dark); font-weight: 700; margin: 0 0 1.5rem; }
+.auth-split h1 { margin-bottom: 1.5rem; }
+.auth-split .primary { padding: .85rem; }
+@media (max-width: 1150px) { .team-grid { grid-template-columns: minmax(0, 1fr); } .auth-story { padding: 2.5rem; } }
+@media (max-width: 860px) { .settings-grid { grid-template-columns: minmax(0, 1fr); } .auth-split { grid-template-columns: minmax(0, 1fr); } .auth-story { display: none; } .auth-form-area { min-height: 100dvh; padding: 2rem 1.25rem; } }
+@media (max-width: 640px) { .settings-grid > .card, .settings-activity > .card { padding: 1.25rem; } }
+
+.password-input { position: relative; }
+.password-input input { width: 100%; padding-right: 3rem; }
+.password-toggle { position: absolute; right: .25rem; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; padding: .5rem; border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
+.password-toggle svg { width: 20px; height: 20px; }
+.password-toggle:hover { background: var(--bg); color: var(--navy); }

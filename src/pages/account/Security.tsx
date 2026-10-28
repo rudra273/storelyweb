@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
+import { AccountHeader } from '../../components/AccountHeader'
 import { api, setAccessToken } from '../../api/client'
 import type { MfaSetup, MfaStatus, SecurityEvent, Session } from '../../api/types'
 import { useAuth } from '../../auth/context'
@@ -10,12 +11,13 @@ import { when } from '../../components/format'
 
 export function Security() {
   return (
-    <div>
-      <h1>Security</h1>
+    <div className="settings-page security-page">
+      <AccountHeader title="Security" description="Protect your account and stay in control of where you’re signed in." />
+      <div className="settings-grid">
       <PasswordCard />
       <TwoFactorCard />
       <SessionsCard />
-      <ActivityCard />
+      </div><div className="settings-activity"><ActivityCard /></div>
     </div>
   )
 }
@@ -47,11 +49,12 @@ function PasswordCard() {
 
   return (
     <Card title="Password">
+      <p className="setting-description">Use a unique password. Changing it signs out your other devices.</p>
       <form onSubmit={submit} noValidate>
         {error && <Alert>{error}</Alert>}
         {done && <Alert kind="success">Password changed. Your other devices were signed out.</Alert>}
         <Field label="Current password" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
-        <Field label="New password" type="password" autoComplete="new-password" hint="At least 10 characters." value={next} onChange={(e) => setNext(e.target.value)} required />
+        <Field label="New password" type="password" autoComplete="new-password" hint="At least 8 characters." value={next} onChange={(e) => setNext(e.target.value)} required />
         <Field label="Repeat new password" type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} required />
         <button className="primary" disabled={busy || !current || !next}>Change password</button>
       </form>
@@ -100,8 +103,9 @@ function TwoFactorCard() {
 
   return (
     <Card title="Two-step sign-in">
+      <p className="setting-description">Add a second layer of protection with an authenticator app.</p>
       {status.isPending && <Loading />}
-      {status.error && <Alert>Could not load this setting.</Alert>}
+      {status.error && <Alert>Could not load this setting. <button className="link" onClick={() => void status.refetch()}>Retry setting</button></Alert>}
       {action.error && <Alert>{action.error}</Alert>}
 
       {codes && (
@@ -182,7 +186,7 @@ function SessionsCard() {
   return (
     <Card title="Where you are signed in">
       {sessions.isPending && <Loading />}
-      {sessions.error && <Alert>Could not load your sessions.</Alert>}
+      {sessions.error && <Alert>Could not load your sessions. <button className="link" onClick={() => void sessions.refetch()}>Retry sessions</button></Alert>}
       {action.error && <Alert>{action.error}</Alert>}
       <ul className="plain">
         {sessions.data?.map((s) => (
@@ -206,7 +210,7 @@ function ActivityCard() {
   return (
     <Card title="Recent security activity">
       {events.isPending && <Loading />}
-      {events.error && <Alert>Could not load activity.</Alert>}
+      {events.error && <Alert>Could not load activity. <button className="link" onClick={() => void events.refetch()}>Retry activity</button></Alert>}
       {events.data?.length === 0 && <p className="muted">Nothing yet.</p>}
       {!!events.data?.length && (
         <div className="table-wrap"><table className="table">

@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '../api/schema'
 import { ApiError, api, request } from '../api/client'
 import { downloadFile } from '../lib/download'
@@ -49,7 +49,7 @@ export function useProducts(query: ProductQuery) {
     queryKey: ['products', shop, params.toString()],
     queryFn: () => api.get<ProductPage>(`/v1/shops/${shop}/products?${params}`),
     enabled: !!shop,
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === shop ? previous : undefined,
   })
 }
 

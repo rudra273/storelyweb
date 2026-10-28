@@ -71,6 +71,8 @@ export function ListsManager({ onClose }: { onClose: () => void }) {
   const units = useUnits()
   return (
     <Modal title="Categories and units" onClose={onClose} wide>
+      {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
+      {units.error && <Alert>Units could not be loaded. <button className="link" onClick={() => void units.refetch()}>Retry units</button></Alert>}
       <div className="two-col">
         <Section kind="categories" title="Categories" items={categories.data} loading={categories.isPending} />
         <Section kind="units" title="Units" items={units.data} loading={units.isPending} />

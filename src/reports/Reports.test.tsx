@@ -117,3 +117,14 @@ test('a report failure offers a retry without losing the selected period', async
   const navigation = screen.getByRole('navigation', { name: 'Reports' })
   expect(within(navigation).getByRole('link', { name: 'Profit and loss' })).toHaveAttribute('href', '/reports/profit-loss?p=custom&from=2026-09-01&to=2026-09-30')
 })
+
+test('switching shops never shows the previous shop report while the next loads', async () => {
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'First Shop', role: 'owner' }, { shop_id: 's2', name: 'Second Shop', role: 'owner' }]), ok('GET', REPORT, KPIS)])
+  const original = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => path.includes('/shops/s2/') ? new Promise<Response>(() => {}) : original(path, init))
+  renderApp('/reports')
+  await screen.findByText('₹205.90')
+  await userEvent.selectOptions(screen.getByLabelText('Shop'), 's2')
+  expect(screen.queryByText('₹205.90')).not.toBeInTheDocument()
+  expect(screen.getByRole('status')).toHaveTextContent('Working out the numbers')
+})

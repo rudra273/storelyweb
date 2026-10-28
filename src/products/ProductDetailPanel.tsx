@@ -35,7 +35,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
         </button>
       </div>
       {detail.isPending && <Loading />}
-      {detail.error && <Alert>{describeError(detail.error)}</Alert>}
+      {detail.error && <Alert>{describeError(detail.error)} <button className="link" onClick={() => void detail.refetch()}>Retry product</button></Alert>}
       {error && <Alert>{error}</Alert>}
       {p && (
         <>
