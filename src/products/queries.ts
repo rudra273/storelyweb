@@ -10,6 +10,7 @@ export type ProductPage = S['ProductPage']
 export type ProductDetail = S['ProductDetail']
 export type Category = S['CategoryOut']
 export type Unit = S['UnitOut']
+export type Supplier = S['SupplierOut']
 export type ImportReport = S['ImportReport']
 
 export const REASONS: { value: S['AdjustIn']['reason']; label: string; removes: boolean }[] = [
@@ -72,6 +73,16 @@ export function useUnits() {
   return useQuery({ queryKey: ['units', shop], queryFn: () => api.get<Unit[]>(`/v1/shops/${shop}/units`), enabled: !!shop })
 }
 
+export function useSuppliers() {
+  const shop = useShopId()
+  return useQuery({ queryKey: ['suppliers', shop], queryFn: () => api.get<Supplier[]>(`/v1/shops/${shop}/suppliers`), enabled: !!shop })
+}
+
+export const saveSupplier = (shop: string, input: { id?: string; body: S['SupplierIn'] }) =>
+  input.id
+    ? api.patch<Supplier>(`/v1/shops/${shop}/suppliers/${input.id}`, input.body)
+    : api.post<Supplier>(`/v1/shops/${shop}/suppliers`, input.body)
+
 /** Anything that changes products or stock refreshes every product view. */
 export function useProductMutation<TIn, TOut>(run: (shop: string, input: TIn) => Promise<TOut>) {
   const shop = useShopId()
@@ -84,6 +95,7 @@ export function useProductMutation<TIn, TOut>(run: (shop: string, input: TIn) =>
         client.invalidateQueries({ queryKey: ['product', shop] }),
         client.invalidateQueries({ queryKey: ['categories', shop] }),
         client.invalidateQueries({ queryKey: ['units', shop] }),
+        client.invalidateQueries({ queryKey: ['suppliers', shop] }),
       ])
     },
   })

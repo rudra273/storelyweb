@@ -22,6 +22,7 @@ const page = (items: object[], extra: object = {}) => ({ items, total: items.len
 function setup(role: string, items: object[]) {
   return fakeApi([
     ...SIGNED_IN, SHOP(role), CATS, UNITS,
+    ok('GET', '/v1/shops/s1/suppliers', []),
     ok('GET', /^\/v1\/shops\/s1\/products\?/, page(items)),
     ok('GET', '/v1/shops/s1/products/p1', { product: items[0], movements: [{ uuid: 'm1', type: 'purchase', quantity_delta: '50', reason: null, notes: null, batch_no: null, expiry_date: null, created_at: '2026-10-01T00:00:10Z' }] }),
   ])

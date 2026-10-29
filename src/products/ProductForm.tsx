@@ -1,10 +1,11 @@
+import { SupplierEditor } from './Suppliers'
 import { useRef, useState, type FormEvent } from 'react'
 import { Button, FormSection } from '../components/workspace'
 import { Modal } from '../components/Modal'
 import { Alert, Field } from '../components/ui'
 import { useAction } from '../components/useAction'
 import { decimalOrNull, isAmount } from '../lib/money'
-import { saveProduct, useCategories, useProductMutation, useUnits, type Product } from './queries'
+import { saveProduct, useCategories, useProductMutation, useUnits, useSuppliers, type Product } from './queries'
 
 const GST = ['0', '0.25', '3', '5', '12', '18', '28', '40']
 
@@ -17,9 +18,12 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   const save = useProductMutation(saveProduct)
   const categories = useCategories()
   const units = useUnits()
+  const suppliers = useSuppliers()
+  const [addingSupplier, setAddingSupplier] = useState(false)
   const { busy, error, run, setError } = useAction()
   const [f, setF] = useState({
     name: product?.name ?? '',
+    supplier: product?.supplier_uuid ?? '',
     code: product?.product_code ?? '',
     barcode: product?.barcode ?? '',
     category: product?.category_uuid ?? '',
@@ -59,6 +63,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
       track_stock: f.track,
     }
     // The cost fields exist for owners and admins only; a staff member never sees this form.
+    body.supplier_uuid = f.supplier || null
     body.purchase_price = decimalOrNull(f.purchase)
     if (!editing && decimalOrNull(f.opening)) body.opening_quantity = decimalOrNull(f.opening)
     sending.current = true
@@ -99,6 +104,17 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
           </select>
         </div>
           </FormSection>
+          <div className="field">
+            <label htmlFor="pf-supplier">Preferred supplier (optional)</label>
+            <select id="pf-supplier" value={f.supplier} onChange={set('supplier')} disabled={suppliers.isPending || suppliers.isError}>
+              <option value="">None</option>
+              {f.supplier && !suppliers.data?.some(s => s.uuid === f.supplier) && <option value={f.supplier}>Current supplier</option>}
+              {suppliers.data?.map(s => <option key={s.uuid} value={s.uuid}>{s.name}</option>)}
+            </select>
+            {suppliers.error && <Alert>Suppliers could not be loaded. <button type="button" className="link" onClick={() => void suppliers.refetch()}>Retry suppliers</button></Alert>}
+            <Button onClick={() => setAddingSupplier(true)}>Add supplier</Button>
+            <small className="muted">Used as a suggestion for future purchases.</small>
+          </div>
           <FormSection title="Pricing" description="Set your selling price and purchase cost.">
             <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} />
             <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} />
@@ -132,6 +148,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
           <Button type="submit" variant="primary" disabled={busy || !f.name.trim()}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
         </div>
       </form>
+      {addingSupplier && <SupplierEditor onClose={() => setAddingSupplier(false)} onSaved={supplier => { setF(current => ({ ...current, supplier: supplier.uuid })); setAddingSupplier(false) }} />}
     </Modal>
   )
 }
