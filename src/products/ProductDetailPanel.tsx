@@ -1,3 +1,4 @@
+import { PurchaseComposer } from '../purchases/PurchaseComposer'
 import { useState } from 'react'
 import { Button } from '../components/workspace'
 import { Alert, Loading } from '../components/ui'
@@ -12,7 +13,7 @@ const KIND: Record<string, string> = { purchase: 'Stock in', sale: 'Sold', adjus
 
 export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEdit: boolean; onClose: () => void }) {
   const detail = useProduct(id)
-  const [mode, setMode] = useState<null | 'edit' | 'adjust'>(null)
+  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase'>(null)
   const remove = useProductMutation(removeProduct)
   const { error, run, busy } = useAction()
   const p = detail.data?.product
@@ -82,6 +83,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
               <Button variant="primary" disabled={busy} onClick={() => setMode('edit')}>
                 Edit
               </Button>
+              {p.track_stock && <Button disabled={busy} onClick={() => setMode('purchase')}>Restock</Button>}
               <Button disabled={busy} onClick={() => setMode('adjust')}>Adjust stock</Button>
               <Button variant="danger" disabled={busy} onClick={confirmDelete}>
                 {busy ? 'Deleting…' : 'Delete'}
@@ -110,6 +112,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
               </li>
             ))}
           </ul>
+          {mode === 'purchase' && <PurchaseComposer initialProduct={p} onClose={() => setMode(null)} />}
           {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => setMode(null)} />}
           {mode === 'adjust' && <AdjustStock key={p.uuid} product={p} onClose={() => setMode(null)} />}
         </>

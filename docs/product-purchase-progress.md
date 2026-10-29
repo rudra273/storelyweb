@@ -22,3 +22,11 @@ payments, returns, reconciliation and advanced capabilities.
 
 Existing unrelated changes in all three repositories must remain outside upgrade
 commits. No deployment or database migration was performed in stage 1.
+
+## Stage 3 — purchase composer and recovery
+
+Added Add purchase, product-detail Restock, purchase history/detail, exact receipt
+subtotals, supplier/date/lot entry, account+shop-scoped local drafts and frozen retry
+payloads. Fixed shared native dialog event handling discovered by real browser checks.
+All 139 web tests, TypeScript, lint, production build and desktop/narrow Chromium
+fixture checks pass. See docs/purchase-composer.md for recovery rules and remaining scope.

@@ -1,3 +1,5 @@
+import { PurchaseComposer } from '../purchases/PurchaseComposer'
+import { PurchaseHistory } from '../purchases/PurchaseHistory'
 import { SuppliersManager } from './Suppliers'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
@@ -47,7 +49,7 @@ function ProductsWorkspace() {
 
   const [search, setSearch] = useState(query.q)
   const settled = useDebounced(search, 300)
-  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'suppliers'>(null)
+  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'suppliers' | 'purchase' | 'purchases'>(null)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [exportError, setExportError] = useState<string | null>(null)
 
@@ -96,7 +98,8 @@ function ProductsWorkspace() {
     <div className="split catalogue">
       <div className="split-main">
         <PageHeader eyebrow="INVENTORY" title="Products" description="Your catalogue, stock and pricing in one place." actions={<>
-          {canEdit && <Button variant="primary" onClick={() => setDialog('new')}>Add product</Button>}
+          {canEdit && <Button variant="primary" onClick={() => setDialog('purchase')}>Add purchase</Button>}
+          {canEdit && <Button onClick={() => setDialog('new')}>Add product</Button>}
           {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
           <Button disabled={picked.size === 0} onClick={() => setDialog('labels')}>Print labels{picked.size ? ` (${picked.size})` : ''}</Button>
           {(canEdit || canExport) && <ActionMenu>
@@ -104,6 +107,7 @@ function ProductsWorkspace() {
               <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'csv').catch(e => setExportError(describeError(e)))}>Export CSV</Button>
               <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'xlsx').catch(e => setExportError(describeError(e)))}>Export Excel</Button>
             </>}
+            {canEdit && <Button onClick={() => setDialog('purchases')}>Purchase history</Button>}
             {canEdit && <Button onClick={() => setDialog('suppliers')}>Suppliers</Button>}
             {canEdit && <Button onClick={() => setDialog('lists')}>Categories &amp; units</Button>}
           </ActionMenu>}
@@ -204,6 +208,8 @@ function ProductsWorkspace() {
       </div>
 
       {selectedId && <ProductDetailPanel id={selectedId} canEdit={canEdit} onClose={() => open(null)} />}
+      {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
+      {dialog === 'purchases' && <PurchaseHistory onClose={() => setDialog(null)} />}
       {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); open(id) }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'suppliers' && <SuppliersManager onClose={() => setDialog(null)} />}
