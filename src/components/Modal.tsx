@@ -20,7 +20,15 @@ export function Modal({ title, onClose, children, wide = false, canClose = true 
     }
   }, [])
   return (
-    <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} aria-label={title} onClose={onClose} onCancel={e => { if (canClose) onClose(); else e.preventDefault() }}>
+    <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} aria-label={title} onClose={e => {
+      // StrictMode closes and reopens the native dialog during effect replay.
+      // Ignore that queued close event, and close events from nested dialogs.
+      if (e.target === e.currentTarget && !e.currentTarget.open) onClose()
+    }} onCancel={e => {
+      if (e.target !== e.currentTarget) return
+      e.preventDefault()
+      if (canClose) onClose()
+    }}>
       <div className="modal-head">
         <h2>{title}</h2>
         <button className="link" onClick={onClose} aria-label="Close" disabled={!canClose}>

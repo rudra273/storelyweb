@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { Modal } from './Modal'
 
 function Example() {
@@ -17,4 +17,18 @@ test('unmounting a dialog restores focus to the control that opened it', async (
   await userEvent.click(screen.getByRole('button', { name: 'Close' }))
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(opener).toHaveFocus()
+})
+
+
+test('queued close events after reopening and child-dialog events do not close the parent', () => {
+  const parentClose = vi.fn(), childClose = vi.fn()
+  render(<Modal title="Parent" onClose={parentClose}><Modal title="Child" onClose={childClose}>Child content</Modal></Modal>)
+  const parent = screen.getByRole('dialog', { name: 'Parent' })
+  const child = screen.getByRole('dialog', { name: 'Child' })
+  fireEvent(parent, new Event('close', { bubbles: false }))
+  expect(parentClose).not.toHaveBeenCalled()
+  child.removeAttribute('open')
+  fireEvent(child, new Event('close', { bubbles: false }))
+  expect(childClose).toHaveBeenCalledTimes(1)
+  expect(parentClose).not.toHaveBeenCalled()
 })
