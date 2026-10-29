@@ -4,17 +4,7 @@ import { api } from '../api/client'
 import type { Role, Shop } from '../api/types'
 import { ShopContext, type ShopValue } from './context'
 
-const KEY = 'storely.shop'
-
-// Which shop was last open is a convenience, not a secret, so localStorage is fine.
-// It can be blocked or empty, so it is always read and written defensively.
-function remembered(): string | null {
-  try {
-    return localStorage.getItem(KEY)
-  } catch {
-    return null
-  }
-}
+import { remembered, rememberShop } from './selection'
 
 export function ShopProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<string | null>(remembered)
@@ -32,11 +22,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       error,
       select: (shopId) => {
         setSelected(shopId)
-        try {
-          localStorage.setItem(KEY, shopId)
-        } catch {
-          // the choice just will not be remembered
-        }
+        rememberShop(shopId)
       },
       refresh: () => refetch(),
     }

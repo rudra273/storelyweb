@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
 import { api } from '../api/client'
 import type { MyInvite } from '../api/types'
 import { useAction } from '../components/useAction'
-import { Alert, Card, Field, Loading } from '../components/ui'
+import { Alert, Card, Loading } from '../components/ui'
 import { when } from '../components/format'
 import { useShop } from '../shops/context'
+import { RequestStatus } from '../subscriptions/Status'
+import { Link } from 'react-router'
 
 /** Shown to a signed-in person who belongs to no shop yet. */
 export function Onboarding() {
@@ -13,8 +14,6 @@ export function Onboarding() {
   const queryClient = useQueryClient()
   const invites = useQuery({ queryKey: ['invites', 'pending'], queryFn: () => api.get<MyInvite[]>('/v1/invites/pending') })
   const accept = useAction()
-  const create = useAction()
-  const [name, setName] = useState('')
 
   async function acceptInvite(shopId: string) {
     const ok = await accept.run(async () => {
@@ -28,20 +27,10 @@ export function Onboarding() {
     }
   }
 
-  async function createShop(e: FormEvent) {
-    e.preventDefault()
-    const made = await create.run(() => api.post<{ shop_id: string }>('/v1/shops', { name: name.trim() }))
-    if (made) {
-      await queryClient.invalidateQueries({ queryKey: ['shops'] })
-      select(made.shop_id)
-      await refresh()
-    }
-  }
-
   return (
     <div className="onboarding">
       <p className="eyebrow">LET’S GET STARTED</p><h1>Welcome to Storely</h1>
-      <p>You are not part of a shop yet. Accept an invitation, or set up your own shop.</p>
+      <p>Web access is included with Premium. Request it here for your Android shop or a new web shop, or accept an invitation.</p>
 
       <Card title="Invitations for you">
         {invites.isPending && <Loading />}
@@ -62,15 +51,14 @@ export function Onboarding() {
         </ul>
       </Card>
 
-      <Card title="Start a new shop">
-        <form onSubmit={createShop} noValidate>
-          {create.error && <Alert>{create.error}</Alert>}
-          <Field label="Shop name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
-          <button className="primary" disabled={create.busy || name.trim().length < 2}>
-            {create.busy ? 'Creating…' : 'Create shop'}
-          </button>
-        </form>
+      <Card title="Start on Android">
+        <p><Link to="/request-premium">Request Premium from the web</Link></p>
+        <p>Use Storely free on your phone with all data stored locally. Request Premium from Store → Cloud Backup &amp; Sync, provide your contact phone, and wait for our team to approve your verified account.</p>
+        <p>Then activate from that phone after backing up and consenting to upload. Creating another shop here would not activate your existing data.</p>
+        <p>For renewals, contact the Storely team to update your existing subscription.</p>
+        <Link to="/account/security">Account security</Link>
       </Card>
+      <RequestStatus />
     </div>
   )
 }

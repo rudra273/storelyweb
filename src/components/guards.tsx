@@ -16,8 +16,11 @@ export function RequireAuth() {
 /** Pages for signed-out visitors only (login, sign-up); signed-in visitors go home. */
 export function PublicOnly() {
   const { status } = useAuth()
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from
+  const destination = from?.startsWith('/') && !from.startsWith('//') ? from : '/'
   if (status === 'loading') return <Loading label="Starting…" />
-  if (status === 'authenticated') return <Navigate to="/" replace />
+  if (status === 'authenticated') return <Navigate to={destination} replace />
   return <Outlet />
 }
 

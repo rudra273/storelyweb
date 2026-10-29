@@ -1,12 +1,13 @@
-import { Outlet } from 'react-router'
+import { Link, Outlet } from 'react-router'
 import { useAuth } from '../auth/context'
 import { Alert, Loading } from '../components/ui'
 import { Onboarding } from '../pages/Onboarding'
 import { useShop } from './context'
+import { AccessProvider } from '../subscriptions/AccessProvider'
 
 /** Signed in, but a shop must be chosen (or created) before the main screens. */
 export function ShopGate() {
-  const { shops, loading, error, refresh } = useShop()
+  const { shops, current, loading, error, refresh } = useShop()
   const { logout } = useAuth()
   if (loading) return <Loading />
   if (error) {
@@ -15,6 +16,7 @@ export function ShopGate() {
         <div className="auth-card">
           <Alert>{error.message}</Alert>
           <button className="primary" onClick={() => void refresh()}>Try again</button>
+          <p><Link to="/account/security">Account security</Link></p>
           <button className="link" onClick={() => void logout()}>Sign out</button>
         </div>
       </main>
@@ -30,5 +32,5 @@ export function ShopGate() {
       </main>
     )
   }
-  return <Outlet />
+  return <AccessProvider key={`${current?.shop_id}:${current?.role}`}><Outlet /></AccessProvider>
 }

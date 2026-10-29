@@ -126,5 +126,5 @@ test('switching shops never shows the previous shop report while the next loads'
   await screen.findByText('₹205.90')
   await userEvent.selectOptions(screen.getByLabelText('Shop'), 's2')
   expect(screen.queryByText('₹205.90')).not.toBeInTheDocument()
-  expect(screen.getByRole('status')).toHaveTextContent('Working out the numbers')
+  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Checking subscription')
 })

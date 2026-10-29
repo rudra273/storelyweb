@@ -3,15 +3,17 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../auth/context'
 import { NAV, can } from '../permissions'
 import { useShop } from '../shops/context'
+import { useShopAccess } from '../subscriptions/context'
 
 export function AppLayout() {
   const { user, logout } = useAuth()
   const { shops, current, role, select } = useShop()
+  const { active } = useShopAccess()
   const navigate = useNavigate()
   const location = useLocation()
-  const page = NAV.find(item => location.pathname.startsWith(item.to))?.label ?? (location.pathname.startsWith('/account') ? 'Your account' : 'Overview')
+  const page = NAV.find(item => location.pathname.startsWith(item.to))?.label ?? (location.pathname.startsWith('/account') ? 'Your account' : location.pathname === '/subscription' ? 'Cloud subscription' : 'Overview')
   const [open, setOpen] = useState(false)
-  const items = NAV.filter((item) => can(role, item.needs))
+  const items = active ? NAV.filter((item) => can(role, item.needs)) : []
 
   return (
     <div className="shell"><a className="skip-link" href="#main-content">Skip to content</a>
@@ -26,7 +28,7 @@ export function AppLayout() {
           {shops.length > 1 ? (
             <label className="shop-switch">
               <span>Shop</span>
-              <select value={current?.shop_id ?? ''} onChange={(e) => select(e.target.value)}>
+              <select aria-label="Shop" value={current?.shop_id ?? ''} onChange={(e) => select(e.target.value)}>
                 {shops.map((s) => (
                   <option key={s.shop_id} value={s.shop_id}>
                     {s.name}
@@ -47,6 +49,7 @@ export function AppLayout() {
                 <NavIcon path={item.to} />{item.label}
               </NavLink>
             ))}
+            <NavLink to="/subscription" onClick={() => setOpen(false)}>Cloud subscription</NavLink>
           </nav>
           <nav aria-label="Account" className="account-nav">
             <NavLink to="/account" onClick={() => setOpen(false)}>

@@ -61,7 +61,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .menu-toggle { display: none; background: transparent; color: #fff; border: 1px solid rgb(255 255 255 / .4); border-radius: 8px; padding: .35rem .7rem; }
 .shop-name { font-weight: 700; margin: .5rem 0 0; }
 .shop-switch { display: block; margin: .5rem 0; font-size: .85rem; }
-.shop-switch select { width: 100%; margin-top: .25rem; }
+.shop-switch select { width: 100%; margin-top: .25rem; color: var(--navy); background: var(--surface); }
 .role-badge { display: inline-block; margin: .25rem 0 1rem; padding: .05rem .6rem; border-radius: 99px; background: var(--gold); color: var(--navy); font-size: .75rem; font-weight: 700; text-transform: uppercase; }
 .sidebar nav { display: flex; flex-direction: column; gap: .15rem; }
 .sidebar nav a, .sidebar .link { color: #e5e9f2; text-decoration: none; padding: .5rem .7rem; border-radius: 8px; text-align: left; }
@@ -428,3 +428,6 @@ input[type=checkbox] { accent-color: var(--navy); width: 16px; height: 16px; fle
 .password-toggle { position: absolute; right: .25rem; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; padding: .5rem; border: 0; border-radius: 6px; background: transparent; color: var(--muted); }
 .password-toggle svg { width: 20px; height: 20px; }
 .password-toggle:hover { background: var(--bg); color: var(--navy); }
+
+.authenticator-qr { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: .5rem; margin: .25rem 0 .75rem; max-width: 100%; }
+.authenticator-qr svg { display: block; width: 224px; max-width: 100%; height: auto; }

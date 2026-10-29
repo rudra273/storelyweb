@@ -1,4 +1,5 @@
 import type { LoginResult } from './types'
+import { reportShopAccess } from './shopAccessEvents'
 
 /**
  * The only module that talks to the API. Two rules live here:
@@ -140,7 +141,14 @@ export async function request<T>(
       onSessionLost?.()
     }
   }
-  if (!response.ok) throw await parseError(response)
+  if (!response.ok) {
+    const error = await parseError(response)
+    const match = /^\/v1\/shops\/([^/]+)\/(?!entitlement(?:\?|$))/.exec(path)
+    if (match?.[1] && (error.code === 'premium_required' || error.code === 'forbidden' || (error.status === 404 && error.message === 'No such shop.'))) {
+      reportShopAccess({ shopId: decodeURIComponent(match[1]), membership: error.code !== 'premium_required', roleOnly: error.code === 'forbidden' })
+    }
+    throw error
+  }
   if (response.status === 204) return undefined as T
   if (options.as === 'blob') return (await response.blob()) as T
   return (await response.json()) as T

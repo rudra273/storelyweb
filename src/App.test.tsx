@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { SIGNED_IN, fakeApi, ok, renderApp } from './test-utils'
+import { SIGNED_IN, PAID_SHOP, fakeApi, ok, renderApp } from './test-utils'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -17,6 +17,7 @@ test('a visitor with no session is sent to the sign-in page', async () => {
 test('signing in lands on the home page for the shop and role', async () => {
   const calls = fakeApi([
     SIGNED_OUT,
+    ...PAID_SHOP,
     ok('POST', '/v1/auth/login', { access_token: 't', token_type: 'bearer', expires_in: 900, mfa_required: false }),
     ok('GET', '/v1/me', { id: 'u1', email: 'a@b.c', full_name: 'Asha', email_verified: true }),
     SHOP('owner'),
@@ -33,6 +34,7 @@ test('signing in lands on the home page for the shop and role', async () => {
 test('two-step sign-in asks for the code and sends it with the challenge token', async () => {
   const calls = fakeApi([
     SIGNED_OUT,
+    ...PAID_SHOP,
     ok('POST', '/v1/auth/login', { mfa_required: true, mfa_token: 'chal-1', expires_in: 300, token_type: 'bearer' }),
     ok('POST', '/v1/auth/mfa/verify', { access_token: 't', token_type: 'bearer', expires_in: 900, mfa_required: false }),
     ok('GET', '/v1/me', { id: 'u1', email: 'a@b.c', full_name: null, email_verified: true }),
@@ -78,7 +80,7 @@ test('owner and admin menus include reports, team and shop activity', async () =
     fakeApi([...SIGNED_IN, SHOP(role)])
     const view = renderApp('/')
     await screen.findByRole('heading', { name: 'Hello, Asha' })
-    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Team', 'Shop activity'])
+    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Team', 'Shop activity', 'Cloud subscription'])
     view.unmount()
   }
 })
@@ -87,7 +89,7 @@ test('a staff menu has only products and billing', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff')])
   renderApp('/')
   await screen.findByRole('heading', { name: 'Hello, Asha' })
-  expect(menu()).toEqual(['Home', 'Products', 'Billing'])
+  expect(menu()).toEqual(['Home', 'Products', 'Billing', 'Cloud subscription'])
 })
 
 test('staff who type an admin address get "No access" and the page never loads its data', async () => {
@@ -100,12 +102,13 @@ test('staff who type an admin address get "No access" and the page never loads i
   }
 })
 
-test('a person with no shop sees invitations and can start a shop', async () => {
+test('a person with no shop sees invitations and Android activation guidance', async () => {
   fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', []), ok('GET', '/v1/invites/pending', [{ shop_id: 's9', role: 'staff', created_at: '2026-10-25T10:00:00Z' }])])
   renderApp('/')
   expect(await screen.findByRole('heading', { name: 'Welcome to Storely' })).toBeInTheDocument()
   expect(await screen.findByRole('button', { name: 'Accept' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Create shop' })).toBeDisabled()
+  expect(screen.queryByRole('button', { name: 'Create shop' })).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Start on Android' })).toBeInTheDocument()
 })
 
 test('when the server ends the session the visitor sees why', async () => {

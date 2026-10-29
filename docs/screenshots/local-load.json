@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-10-28T18:16:50.934Z",
+  "environment": "local-compose TLS",
+  "requests": 100,
+  "concurrency": 4,
+  "failures": 0,
+  "duration_ms": 1238,
+  "requests_per_second": 80.79,
+  "response_ms": {
+    "p50": 46,
+    "p95": 55,
+    "max": 114
+  },
+  "scope": "authenticated metadata/catalogue reads on development fixture; not production capacity or write/sync stress",
+  "acceptance": {
+    "zero_failures": true,
+    "p95_under_5000ms": true
+  }
+}

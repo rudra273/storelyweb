@@ -1,0 +1,26 @@
+.platform-shell { min-height: 100vh; }
+.platform-bar { display: flex; align-items: center; gap: 1.25rem; padding: 1rem 2rem; background: var(--surface); border-bottom: 1px solid var(--line); }
+.platform-bar .brand { margin-right: auto; text-decoration: none; }
+.platform-badge { font-size: .65rem; letter-spacing: .08em; background: var(--gold); border-radius: 5px; padding: .25rem .4rem; }
+.platform-nav { display: flex; gap: .5rem; flex-wrap: wrap; padding: .65rem 2rem; background: var(--navy); }
+.platform-nav a { color: white; text-decoration: none; padding: .5rem .85rem; border-radius: 6px; }
+.platform-nav a.active { background: var(--gold); color: var(--navy); }
+.platform-main { max-width: 1440px; margin: auto; padding: 2rem; }
+.platform-kpis { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1rem; margin: 1rem 0; }
+.platform-kpis .card { margin: 0; }
+.platform-number { font-size: 2.5rem; color: var(--navy); line-height: 1.2; }
+.platform-table { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.platform-table table { width: 100%; border-collapse: collapse; }
+.platform-table th, .platform-table td { text-align: left; padding: 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.platform-table th { background: var(--bg); color: var(--muted); font-size: .8rem; }
+.platform-table small { display: block; color: var(--muted); margin-top: .35rem; overflow-wrap: anywhere; }
+.platform-status { display: inline-block; font-size: .8rem; padding: .2rem .55rem; border-radius: 6px; background: var(--bg); text-transform: capitalize; }
+.status-active, .status-activated { background: #e7f6ed; color: var(--ok); }
+.status-suspended, .status-rejected, .status-expired { background: #fff0ee; color: var(--danger); }
+.status-pending, .status-contacted, .status-approved, .status-scheduled { background: #fff5db; color: var(--gold-dark); }
+.platform-pager, .platform-filters { display: flex; align-items: center; gap: 1rem; justify-content: flex-end; }
+.platform-filters { justify-content: flex-start; align-items: end; }
+.platform-filters .field { margin: 0; flex: 1; max-width: 28rem; }
+.platform-main .modal form > label { display: block; margin-bottom: 1rem; }
+@media(max-width: 900px) { .platform-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } .platform-main { padding: 1rem; } .platform-bar { flex-wrap: wrap; padding: 1rem; } }
+@media(max-width: 520px) { .platform-kpis { grid-template-columns: 1fr; } .platform-nav { padding: .5rem; } }

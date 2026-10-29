@@ -23,6 +23,14 @@ import { Profile } from './pages/account/Profile'
 import { Security } from './pages/account/Security'
 import { ShopGate } from './shops/ShopGate'
 import { ShopProvider } from './shops/ShopProvider'
+import { PlatformLayout, PlatformGate } from './platform/PlatformLayout'
+import { PlatformOverview } from './platform/Overview'
+import { PlatformShops } from './platform/Shops'
+import { PlatformRequests } from './platform/Requests'
+import { PlatformHistory } from './platform/History'
+import { RequirePaid, SubscriptionStatus } from './subscriptions/Status'
+import { PremiumRequestPage } from './subscriptions/PremiumRequestPage'
+import { AccountLayout } from './components/AccountLayout'
 
 function NotFound() {
   return (
@@ -49,6 +57,21 @@ export default function App() {
         </Route>
         <Route path="/delete-account" element={<DeleteAccount />} />
         <Route element={<RequireAuth />}>
+          <Route element={<AccountLayout />}><Route path="request-premium" element={<PremiumRequestPage />} /></Route>
+          <Route path="account" element={<AccountLayout />}>
+            <Route index element={<Profile />} />
+            <Route path="security" element={<Security />} />
+          </Route>
+          <Route path="platform" element={<PlatformLayout />}>
+            <Route path="account/security" element={<Security />} />
+            <Route path="account" element={<Profile />} />
+            <Route element={<PlatformGate />}>
+              <Route index element={<PlatformOverview />} />
+              <Route path="shops" element={<PlatformShops />} />
+              <Route path="requests" element={<PlatformRequests />} />
+              <Route path="history" element={<PlatformHistory />} />
+            </Route>
+          </Route>
           <Route
             element={
               <ShopProvider>
@@ -57,9 +80,9 @@ export default function App() {
             }
           >
             <Route element={<AppLayout />}>
+              <Route path="subscription" element={<SubscriptionStatus />} />
+              <Route element={<RequirePaid />}>
               <Route index element={<Home />} />
-              <Route path="account" element={<Profile />} />
-              <Route path="account/security" element={<Security />} />
               <Route element={<RequireCapability needs="products.view" />}>
                 <Route path="products" element={<ProductsPage />} />
                 <Route path="products/:id" element={<ProductsPage />} />
@@ -86,6 +109,7 @@ export default function App() {
               </Route>
               <Route element={<RequireCapability needs="shop.events" />}>
                 <Route path="activity" element={<ShopActivity />} />
+              </Route>
               </Route>
             </Route>
           </Route>

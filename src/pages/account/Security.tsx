@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
+import { QRCodeSVG } from 'qrcode.react'
 import { AccountHeader } from '../../components/AccountHeader'
 import { api, setAccessToken } from '../../api/client'
 import type { MfaSetup, MfaStatus, SecurityEvent, Session } from '../../api/types'
@@ -125,7 +126,11 @@ function TwoFactorCard() {
 
       {setup && (
         <form onSubmit={enable} noValidate>
-          <p>In your authenticator app, add an account using this key, then enter the 6-digit code it shows.</p>
+          <p>In your authenticator app, add an account and scan this QR code. Then enter the 6-digit code it shows.</p>
+          <div className="authenticator-qr">
+            <QRCodeSVG value={setup.otpauth_uri} size={224} level="M" marginSize={4} bgColor="#ffffff" fgColor="#000000" role="img" aria-label="Authenticator setup QR code" title="Scan with your authenticator app" />
+          </div>
+          <p className="muted">Can’t scan? Add a time-based account manually using this setup key.</p>
           <pre className="codes" aria-label="Setup key">{setup.secret}</pre>
           <Field label="6-digit code" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} required autoFocus />
           <button className="primary" disabled={action.busy || code.length !== 6}>Turn on</button>

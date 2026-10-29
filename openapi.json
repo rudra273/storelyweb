@@ -141,6 +141,21 @@
     "title": "AgeingCustomer",
     "type": "object"
    },
+   "AndroidWebClaimIn": {
+    "additionalProperties": false,
+    "properties": {
+     "shop_id": {
+      "pattern": "^[A-Za-z0-9_-]{8,64}$",
+      "title": "Shop Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "shop_id"
+    ],
+    "title": "AndroidWebClaimIn",
+    "type": "object"
+   },
    "BillDetail": {
     "properties": {
      "bill": {
@@ -1526,6 +1541,104 @@
     "title": "EmailIn",
     "type": "object"
    },
+   "EntitlementOut": {
+    "properties": {
+     "cloud_sync": {
+      "title": "Cloud Sync",
+      "type": "boolean"
+     },
+     "effective_status": {
+      "enum": [
+       "free",
+       "active",
+       "expired",
+       "suspended",
+       "scheduled"
+      ],
+      "title": "Effective Status",
+      "type": "string"
+     },
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "plan": {
+      "enum": [
+       "free",
+       "premium"
+      ],
+      "title": "Plan",
+      "type": "string"
+     },
+     "revision": {
+      "title": "Revision",
+      "type": "integer"
+     },
+     "server_time": {
+      "format": "date-time",
+      "title": "Server Time",
+      "type": "string"
+     },
+     "shop_id": {
+      "title": "Shop Id",
+      "type": "string"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "free",
+       "active",
+       "expired",
+       "suspended"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     },
+     "web_access": {
+      "title": "Web Access",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "shop_id",
+     "plan",
+     "status",
+     "effective_status",
+     "starts_at",
+     "ends_at",
+     "revision",
+     "updated_at",
+     "server_time",
+     "cloud_sync",
+     "web_access"
+    ],
+    "title": "EntitlementOut",
+    "type": "object"
+   },
    "EventOut": {
     "properties": {
      "created_at": {
@@ -2616,6 +2729,103 @@
     "title": "MyInviteOut",
     "type": "object"
    },
+   "MyPremiumRequestOut": {
+    "properties": {
+     "channel": {
+      "default": "android",
+      "enum": [
+       "android",
+       "web"
+      ],
+      "title": "Channel",
+      "type": "string"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "local_shop_id": {
+      "title": "Local Shop Id",
+      "type": "string"
+     },
+     "request_kind": {
+      "default": "existing_android",
+      "enum": [
+       "existing_android",
+       "new_cloud"
+      ],
+      "title": "Request Kind",
+      "type": "string"
+     },
+     "revision": {
+      "title": "Revision",
+      "type": "integer"
+     },
+     "shop_name": {
+      "title": "Shop Name",
+      "type": "string"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "pending",
+       "contacted",
+       "approved",
+       "rejected",
+       "activated"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "local_shop_id",
+     "status",
+     "revision",
+     "created_at",
+     "updated_at",
+     "starts_at",
+     "ends_at",
+     "shop_name"
+    ],
+    "title": "MyPremiumRequestOut",
+    "type": "object"
+   },
    "NoteRow": {
     "properties": {
      "bill_number": {
@@ -2841,6 +3051,497 @@
      "received_at"
     ],
     "title": "PaymentRow",
+    "type": "object"
+   },
+   "PlatformAuditOut": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "actor_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor Id"
+     },
+     "after_state": {
+      "$ref": "#/components/schemas/PlatformAuditState"
+     },
+     "before_state": {
+      "$ref": "#/components/schemas/PlatformAuditState"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "shop_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Id"
+     }
+    },
+    "required": [
+     "id",
+     "actor_id",
+     "action",
+     "shop_id",
+     "reason",
+     "created_at",
+     "before_state",
+     "after_state"
+    ],
+    "title": "PlatformAuditOut",
+    "type": "object"
+   },
+   "PlatformAuditState": {
+    "properties": {
+     "ends_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "plan": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plan"
+     },
+     "request_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Request Id"
+     },
+     "revision": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Revision"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     }
+    },
+    "required": [
+     "status",
+     "plan",
+     "starts_at",
+     "ends_at",
+     "revision",
+     "request_id"
+    ],
+    "title": "PlatformAuditState",
+    "type": "object"
+   },
+   "PlatformHistoryOut": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PlatformAuditOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "items",
+     "total"
+    ],
+    "title": "PlatformHistoryOut",
+    "type": "object"
+   },
+   "PlatformKpisOut": {
+    "properties": {
+     "active_premium": {
+      "title": "Active Premium",
+      "type": "integer"
+     },
+     "as_of": {
+      "format": "date-time",
+      "title": "As Of",
+      "type": "string"
+     },
+     "expired": {
+      "title": "Expired",
+      "type": "integer"
+     },
+     "expiring_7d": {
+      "title": "Expiring 7D",
+      "type": "integer"
+     },
+     "oldest_request_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Oldest Request At"
+     },
+     "registered_shops": {
+      "title": "Registered Shops",
+      "type": "integer"
+     },
+     "request_backlog": {
+      "title": "Request Backlog",
+      "type": "integer"
+     },
+     "scheduled": {
+      "title": "Scheduled",
+      "type": "integer"
+     },
+     "suspended": {
+      "title": "Suspended",
+      "type": "integer"
+     },
+     "synced_24h": {
+      "title": "Synced 24H",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "as_of",
+     "registered_shops",
+     "active_premium",
+     "scheduled",
+     "expired",
+     "suspended",
+     "expiring_7d",
+     "synced_24h",
+     "request_backlog",
+     "oldest_request_at"
+    ],
+    "title": "PlatformKpisOut",
+    "type": "object"
+   },
+   "PlatformRequestOut": {
+    "properties": {
+     "approved_email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved Email"
+     },
+     "channel": {
+      "default": "android",
+      "enum": [
+       "android",
+       "web"
+      ],
+      "title": "Channel",
+      "type": "string"
+     },
+     "consent_at": {
+      "format": "date-time",
+      "title": "Consent At",
+      "type": "string"
+     },
+     "contact_name": {
+      "title": "Contact Name",
+      "type": "string"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "local_shop_id": {
+      "title": "Local Shop Id",
+      "type": "string"
+     },
+     "phone": {
+      "title": "Phone",
+      "type": "string"
+     },
+     "request_kind": {
+      "default": "existing_android",
+      "enum": [
+       "existing_android",
+       "new_cloud"
+      ],
+      "title": "Request Kind",
+      "type": "string"
+     },
+     "requested_email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Requested Email"
+     },
+     "revision": {
+      "title": "Revision",
+      "type": "integer"
+     },
+     "shop_name": {
+      "title": "Shop Name",
+      "type": "string"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "pending",
+       "contacted",
+       "approved",
+       "rejected",
+       "activated"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "local_shop_id",
+     "status",
+     "revision",
+     "created_at",
+     "updated_at",
+     "starts_at",
+     "ends_at",
+     "shop_name",
+     "contact_name",
+     "phone",
+     "consent_at",
+     "approved_email"
+    ],
+    "title": "PlatformRequestOut",
+    "type": "object"
+   },
+   "PlatformShopOut": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "device_count": {
+      "title": "Device Count",
+      "type": "integer"
+     },
+     "effective_status": {
+      "enum": [
+       "free",
+       "active",
+       "expired",
+       "suspended",
+       "scheduled"
+      ],
+      "title": "Effective Status",
+      "type": "string"
+     },
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "last_sync_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Sync At"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "plan": {
+      "enum": [
+       "free",
+       "premium"
+      ],
+      "title": "Plan",
+      "type": "string"
+     },
+     "revision": {
+      "title": "Revision",
+      "type": "integer"
+     },
+     "shop_id": {
+      "title": "Shop Id",
+      "type": "string"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "free",
+       "active",
+       "expired",
+       "suspended"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "shop_id",
+     "name",
+     "created_at",
+     "plan",
+     "status",
+     "effective_status",
+     "starts_at",
+     "ends_at",
+     "revision",
+     "device_count",
+     "last_sync_at"
+    ],
+    "title": "PlatformShopOut",
+    "type": "object"
+   },
+   "PlatformShopsOut": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PlatformShopOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "items",
+     "total"
+    ],
+    "title": "PlatformShopsOut",
     "type": "object"
    },
    "Preview": {
@@ -3782,7 +4483,9 @@
        "bill_payments",
        "stock_movements",
        "expenses",
-       "audit_log"
+       "audit_log",
+       "held_bills",
+       "user_preferences"
       ],
       "title": "Table",
       "type": "string"
@@ -3938,7 +4641,9 @@
        "bill_payments",
        "stock_movements",
        "expenses",
-       "audit_log"
+       "audit_log",
+       "held_bills",
+       "user_preferences"
       ],
       "title": "Table",
       "type": "string"
@@ -3985,6 +4690,21 @@
     "title": "QuantityOut",
     "type": "object"
    },
+   "Receipt": {
+    "additionalProperties": false,
+    "properties": {
+     "receipt_secret": {
+      "pattern": "^[A-Za-z0-9_-]{43,128}$",
+      "title": "Receipt Secret",
+      "type": "string"
+     }
+    },
+    "required": [
+     "receipt_secret"
+    ],
+    "title": "Receipt",
+    "type": "object"
+   },
    "RefreshIn": {
     "properties": {
      "refresh_token": {
@@ -4021,6 +4741,133 @@
     "title": "Rejected",
     "type": "object"
    },
+   "RequestIn": {
+    "additionalProperties": false,
+    "properties": {
+     "contact_consent": {
+      "const": true,
+      "title": "Contact Consent",
+      "type": "boolean"
+     },
+     "contact_name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Contact Name",
+      "type": "string"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "local_shop_id": {
+      "pattern": "^[A-Za-z0-9_-]{8,64}$",
+      "title": "Local Shop Id",
+      "type": "string"
+     },
+     "phone": {
+      "pattern": "^\\+[1-9][0-9]{7,14}$",
+      "title": "Phone",
+      "type": "string"
+     },
+     "receipt_secret": {
+      "pattern": "^[A-Za-z0-9_-]{43,128}$",
+      "title": "Receipt Secret",
+      "type": "string"
+     },
+     "shop_name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Shop Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "receipt_secret",
+     "id",
+     "local_shop_id",
+     "shop_name",
+     "contact_name",
+     "phone",
+     "contact_consent"
+    ],
+    "title": "RequestIn",
+    "type": "object"
+   },
+   "RequestOut": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "local_shop_id": {
+      "title": "Local Shop Id",
+      "type": "string"
+     },
+     "revision": {
+      "title": "Revision",
+      "type": "integer"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "pending",
+       "contacted",
+       "approved",
+       "rejected",
+       "activated"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "local_shop_id",
+     "status",
+     "revision",
+     "created_at",
+     "updated_at",
+     "starts_at",
+     "ends_at"
+    ],
+    "title": "RequestOut",
+    "type": "object"
+   },
    "ResetIn": {
     "properties": {
      "code": {
@@ -4047,6 +4894,75 @@
      "new_password"
     ],
     "title": "ResetIn",
+    "type": "object"
+   },
+   "ReviewIn": {
+    "additionalProperties": false,
+    "properties": {
+     "approved_email": {
+      "anyOf": [
+       {
+        "format": "email",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approved Email"
+     },
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "expected_revision": {
+      "maximum": 9.223372036854776e+18,
+      "minimum": 0.0,
+      "title": "Expected Revision",
+      "type": "integer"
+     },
+     "reason": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "contacted",
+       "approved",
+       "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "status",
+     "expected_revision",
+     "reason"
+    ],
+    "title": "ReviewIn",
     "type": "object"
    },
    "RoleChangeIn": {
@@ -4418,6 +5334,64 @@
      "sale_value"
     ],
     "title": "StockValueRow",
+    "type": "object"
+   },
+   "SubscriptionChange": {
+    "additionalProperties": false,
+    "properties": {
+     "ends_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ends At"
+     },
+     "expected_revision": {
+      "maximum": 9.223372036854776e+18,
+      "minimum": 0.0,
+      "title": "Expected Revision",
+      "type": "integer"
+     },
+     "reason": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+     },
+     "starts_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Starts At"
+     },
+     "status": {
+      "enum": [
+       "free",
+       "active",
+       "expired",
+       "suspended"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "status",
+     "expected_revision",
+     "reason"
+    ],
+    "title": "SubscriptionChange",
     "type": "object"
    },
    "SupplierIn": {
@@ -4908,6 +5882,83 @@
      "code"
     ],
     "title": "VerifyIn",
+    "type": "object"
+   },
+   "WebActivationIn": {
+    "additionalProperties": false,
+    "properties": {
+     "confirm_new_shop": {
+      "const": true,
+      "title": "Confirm New Shop",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "confirm_new_shop"
+    ],
+    "title": "WebActivationIn",
+    "type": "object"
+   },
+   "WebRequestIn": {
+    "additionalProperties": false,
+    "properties": {
+     "contact_consent": {
+      "const": true,
+      "title": "Contact Consent",
+      "type": "boolean"
+     },
+     "contact_name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Contact Name",
+      "type": "string"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "phone": {
+      "pattern": "^\\+[1-9][0-9]{7,14}$",
+      "title": "Phone",
+      "type": "string"
+     },
+     "request_kind": {
+      "enum": [
+       "existing_android",
+       "new_cloud"
+      ],
+      "title": "Request Kind",
+      "type": "string"
+     },
+     "shop_id": {
+      "anyOf": [
+       {
+        "pattern": "^[A-Za-z0-9_-]{8,64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Id"
+     },
+     "shop_name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Shop Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "request_kind",
+     "shop_name",
+     "contact_name",
+     "phone",
+     "contact_consent"
+    ],
+    "title": "WebRequestIn",
     "type": "object"
    }
   }
@@ -5810,6 +6861,176 @@
     ]
    }
   },
+  "/v1/me/premium-requests": {
+   "get": {
+    "operationId": "my_requests_v1_me_premium_requests_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/MyPremiumRequestOut"
+         },
+         "title": "Response My Requests V1 Me Premium Requests Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "My Requests",
+    "tags": [
+     "premium requests"
+    ]
+   },
+   "post": {
+    "operationId": "submit_web_v1_me_premium_requests_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WebRequestIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MyPremiumRequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Submit Web",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
+  "/v1/me/premium-requests/{request_id}/activate": {
+   "post": {
+    "operationId": "activate_web_v1_me_premium_requests__request_id__activate_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "request_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Request Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WebActivationIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Activate Web",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
+  "/v1/me/premium-requests/{request_id}/claim-android": {
+   "post": {
+    "operationId": "claim_android_web_v1_me_premium_requests__request_id__claim_android_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "request_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Request Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AndroidWebClaimIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Claim Android Web",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
   "/v1/me/security-events": {
    "get": {
     "operationId": "my_security_events_v1_me_security_events_get",
@@ -5893,6 +7114,589 @@
     "summary": "Revoke Session",
     "tags": [
      "me"
+    ]
+   }
+  },
+  "/v1/platform/access": {
+   "get": {
+    "operationId": "platform_access_v1_platform_access_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "boolean"
+         },
+         "title": "Response Platform Access V1 Platform Access Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Platform Access",
+    "tags": [
+     "subscriptions"
+    ]
+   }
+  },
+  "/v1/platform/history": {
+   "get": {
+    "operationId": "history_v1_platform_history_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "shop_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 64,
+         "minLength": 1,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Shop Id"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 25,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlatformHistoryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "History",
+    "tags": [
+     "platform"
+    ]
+   }
+  },
+  "/v1/platform/kpis": {
+   "get": {
+    "operationId": "kpis_v1_platform_kpis_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlatformKpisOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Kpis",
+    "tags": [
+     "platform"
+    ]
+   }
+  },
+  "/v1/platform/premium-requests": {
+   "get": {
+    "operationId": "queue_v1_platform_premium_requests_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "pending",
+          "contacted",
+          "approved",
+          "rejected",
+          "activated"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 50,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PlatformRequestOut"
+         },
+         "title": "Response Queue V1 Platform Premium Requests Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Queue",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
+  "/v1/platform/premium-requests/{request_id}": {
+   "put": {
+    "operationId": "review_v1_platform_premium_requests__request_id__put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "request_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Request Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Review",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
+  "/v1/platform/shops": {
+   "get": {
+    "operationId": "shops_v1_platform_shops_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+       "default": "",
+       "maxLength": 120,
+       "title": "Search",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "default": "all",
+       "enum": [
+        "all",
+        "free",
+        "active",
+        "expired",
+        "suspended",
+        "scheduled"
+       ],
+       "title": "Status",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 25,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlatformShopsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shops",
+    "tags": [
+     "platform"
+    ]
+   }
+  },
+  "/v1/platform/shops/{shop_id}/subscription": {
+   "get": {
+    "operationId": "platform_subscription_v1_platform_shops__shop_id__subscription_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EntitlementOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Platform Subscription",
+    "tags": [
+     "subscriptions"
+    ]
+   },
+   "put": {
+    "operationId": "change_subscription_v1_platform_shops__shop_id__subscription_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SubscriptionChange"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EntitlementOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Change Subscription",
+    "tags": [
+     "subscriptions"
+    ]
+   }
+  },
+  "/v1/premium-requests": {
+   "post": {
+    "operationId": "submit_v1_premium_requests_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RequestIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Submit",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
+  "/v1/premium-requests/{request_id}/claim": {
+   "post": {
+    "operationId": "claim_v1_premium_requests__request_id__claim_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "request_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Request Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Receipt"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Claim",
+    "tags": [
+     "premium requests"
+    ]
+   }
+  },
+  "/v1/premium-requests/{request_id}/status": {
+   "post": {
+    "operationId": "status_v1_premium_requests__request_id__status_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "request_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Request Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Receipt"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RequestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Status",
+    "tags": [
+     "premium requests"
     ]
    }
   },
@@ -6817,6 +8621,48 @@
     "summary": "Find Customers",
     "tags": [
      "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/entitlement": {
+   "get": {
+    "operationId": "entitlement_v1_shops__shop_id__entitlement_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EntitlementOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Entitlement",
+    "tags": [
+     "subscriptions"
     ]
    }
   },

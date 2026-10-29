@@ -17,7 +17,8 @@ COPY --chown=node:node . .
 RUN npm run build
 
 # The upstream 2.11.7 image carries Go 1.26.8 and x/net 0.59.0. Rebuild the same
-# Caddy release with patched dependencies; go.mod/go.sum lock the full graph.
+# Caddy release with patched dependencies (including go-jose/v4 4.1.6);
+# go.mod/go.sum lock the full graph.
 FROM golang:1.26.10-alpine AS caddy-build
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local
 WORKDIR /src
@@ -25,7 +26,7 @@ COPY docker/caddy-build/go.mod docker/caddy-build/go.sum ./
 RUN go mod download
 COPY docker/caddy-build/main.go ./
 RUN go build -mod=readonly -trimpath -tags nobadger,nomysql,nopgx \
-    -ldflags="-s -w -X github.com/caddyserver/caddy/v2.CustomVersion=v2.11.7-storely.1" \
+    -ldflags="-s -w -X github.com/caddyserver/caddy/v2.CustomVersion=v2.11.7-storely.2" \
     -o /out/caddy .
 
 # Shared by the front proxy and static web server. Keep security package fixes
