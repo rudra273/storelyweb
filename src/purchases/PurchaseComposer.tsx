@@ -1,3 +1,5 @@
+import { NewProductDraft } from './NewProductDraft'
+import { PurchaseImport } from './PurchaseImport'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/context'
@@ -31,10 +33,13 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
   const [storageError, setStorageError] = useState(loaded.error)
   const [conflict, setConflict] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [duplicateImport, setDuplicateImport] = useState(false)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
   const [search, setSearch] = useState('')
   const query = useDebounced(search, 250)
   const [page, setPage] = useState(0)
+  const [productEditor, setProductEditor] = useState<DraftLine | 'new' | null>(null)
+  const [importing, setImporting] = useState(false)
   const [addingSupplier, setAddingSupplier] = useState(false)
   const suppliers = useSuppliers()
   const products = useProducts({ q: query, category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page })
@@ -108,9 +113,10 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
       catch { setStorageError('Purchase saved. The local draft could not be removed; reopening it will safely recover this same receipt.') }
     } catch (failure) {
       setError(describeError(failure))
+      setDuplicateImport(failure instanceof ApiError && failure.code === 'duplicate_purchase_import')
       // Only definitive rejections permit editing. Network/server failures and
       // key conflicts must keep the frozen request for safe resolution.
-      if (failure instanceof ApiError && failure.status >= 400 && failure.status < 500 && failure.code !== 'request_conflict' && failure.status !== 408 && (!active.submitted || failure.status === 422 || failure.code === 'duplicate_invoice')) {
+      if (failure instanceof ApiError && failure.status >= 400 && failure.status < 500 && failure.code !== 'request_conflict' && failure.status !== 408 && (!active.submitted || failure.status === 422 || ['duplicate_invoice', 'duplicate_purchase_import'].includes(failure.code))) {
         const editable = { ...active, submitted: null }
         draftRef.current = editable
         setDraft(editable)
@@ -125,7 +131,7 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
       localStorage.removeItem(key)
       lastStored.current = null
       const fresh = newDraft()
-      draftRef.current = fresh; setDraft(fresh); setStorageError(null); setError(null)
+      draftRef.current = fresh; setDraft(fresh); setStorageError(null); setError(null); setDuplicateImport(false)
     } catch { setStorageError('The local draft could not be removed. Enable browser storage and try again.') }
   }
   const total = subtotal(draft)
@@ -141,6 +147,7 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
       {conflict && <Alert>This draft changed in another tab. Close and reopen it to load the latest version.</Alert>}
       {storageError && <Alert>{storageError} {!loaded.error && <Button onClick={() => persist(draftRef.current)}>Retry saving draft</Button>}</Alert>}
       {error && <Alert>{error}</Alert>}
+      {duplicateImport && !draft.submitted && draft.items.some(line => line.import_key) && <label className="check"><input type="checkbox" checked={!!draft.allow_duplicate_import_keys?.length} onChange={e => change({ ...draftRef.current, allow_duplicate_import_keys: e.target.checked ? [...new Set(draft.items.flatMap(line => line.import_key ? [line.import_key] : []))] : [] })} />I reviewed the file history and intend to import these quantities again</label>}
       {draft.submitted && <Alert kind="info">The save needs confirmation. Retry the same purchase to recover its result before making changes.</Alert>}
       <form onSubmit={confirm} noValidate aria-busy={busy}>
         <fieldset disabled={locked}>
@@ -158,13 +165,15 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
             {products.data && !products.data.items.some(p => p.track_stock) && <p className="muted">No stock-tracked products on this page. Try another search or page.</p>}
             <div className="actions"><Button disabled={page === 0 || products.isFetching} onClick={() => setPage(page - 1)}>Previous products</Button><Button disabled={!products.data?.next_cursor || products.isFetching} onClick={() => setPage(page + 1)}>More products</Button></div>
           </section>
+          <div className="actions"><Button disabled={draft.items.length >= 200} onClick={() => setProductEditor('new')}>New product</Button><Button disabled={draft.items.length >= 200} onClick={() => setImporting(true)}>Import purchase file</Button></div>
           <h3>Purchase items ({draft.items.length})</h3>
           {!draft.items.length && <p className="muted">Select a product above to start. Add the same product again for a different batch or cost.</p>}
           <ol className="plain purchase-lines">{draft.items.map((line, index) => {
             const amount = amountInCents(line.quantity, line.unit_cost)
             return <li key={line.id} className="purchase-line" ref={node => {
               if (node && focusLine.current === line.id) { focusLine.current = null; node.querySelector('input')?.focus() }
-            }}><div className="row"><strong>{index + 1}. {line.name}{line.unit && ` (${line.unit})`}</strong><Button onClick={() => change({ ...draft, items: draft.items.filter(item => item.id !== line.id) })}>Remove item {index + 1}</Button></div>
+            }}><div className="row"><strong>{index + 1}. {line.name}{line.new_product && <span className="badge">New</span>}{line.unit && ` (${line.unit})`}</strong><Button onClick={() => change({ ...draft, items: draft.items.filter(item => item.id !== line.id) })}>Remove item {index + 1}</Button></div>
+              {line.new_product && <div className="actions"><Button onClick={() => setProductEditor(line)}>Edit new product {index + 1}</Button><Button disabled={draft.items.length >= 200} onClick={() => change({ ...draftRef.current, items: [...draftRef.current.items, { ...line, id: crypto.randomUUID(), batch_no: '', expiry_date: '' }] })}>Add another lot of {line.name}</Button></div>}
               <div className="purchase-line-fields"><Field label={`Quantity · item ${index + 1}`} inputMode="decimal" value={line.quantity} onChange={e => updateLine(line.id, { quantity: e.target.value })} /><Field label={`Unit cost (₹) · item ${index + 1}`} inputMode="decimal" value={line.unit_cost} onChange={e => updateLine(line.id, { unit_cost: e.target.value })} /><p>Amount: <strong>{amount === null ? '—' : receiptMoney(centsText(amount))}</strong></p></div>
               <details><summary>Batch and expiry (optional)</summary><div className="purchase-line-fields"><Field label={`Batch · item ${index + 1}`} maxLength={100} value={line.batch_no} onChange={e => updateLine(line.id, { batch_no: e.target.value })} /><Field label={`Expiry · item ${index + 1}`} type="date" value={line.expiry_date} onChange={e => updateLine(line.id, { expiry_date: e.target.value })} /></div></details>
             </li>
@@ -172,6 +181,15 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
         </fieldset>
         <div className="purchase-footer"><p>Stock cost subtotal: <strong>{total === null ? 'Complete quantities and costs' : receiptMoney(total)}</strong></p><small className="muted">Payment, tax and additional charges are not recorded here.</small><div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div>
       </form>
+      {productEditor && <NewProductDraft line={productEditor === 'new' ? undefined : productEditor} onClose={() => setProductEditor(null)} onStage={line => {
+        const active = draftRef.current
+        const items = productEditor === 'new' ? [...active.items, line] : active.items.map(item => item.id === line.id ? line : item.new_product?.client_key === line.new_product?.client_key ? { ...item, new_product: line.new_product, name: line.name, unit: line.unit } : item)
+        if (items.length <= 200) { change({ ...active, items }); focusLine.current = line.id; setProductEditor(null) }
+      }} />}
+      {importing && <PurchaseImport existingKeys={draft.items.flatMap(line => line.import_key ? [line.import_key] : [])} available={200 - draft.items.length} onClose={() => setImporting(false)} onStage={(lines, allowDuplicate) => {
+        const active = draftRef.current
+        if (active.items.length + lines.length <= 200) { change({ ...active, items: [...active.items, ...lines], allow_duplicate_import_keys: [...new Set([...(active.allow_duplicate_import_keys ?? []), ...lines.flatMap(line => allowDuplicate && line.import_key ? [line.import_key] : [])])] }); setImporting(false) }
+      }} />}
       {addingSupplier && <SupplierEditor onClose={() => setAddingSupplier(false)} onSaved={supplier => { change({ ...draftRef.current, supplier_uuid: supplier.uuid }); setAddingSupplier(false) }} />}
     </>}
   </Modal>

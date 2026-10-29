@@ -13,3 +13,6 @@
 
 @media (max-width: 600px) { .purchase-footer .actions > .primary { order: -1; flex-basis: 100%; } .purchase-footer .actions > button { flex-grow: 1; } }
 .purchase-results button { flex-shrink: 0; white-space: nowrap; }
+
+.purchase-line { overflow-wrap: anywhere; }
+.purchase-line select { max-width: 100%; }

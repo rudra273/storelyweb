@@ -30,3 +30,17 @@ subtotals, supplier/date/lot entry, account+shop-scoped local drafts and frozen 
 payloads. Fixed shared native dialog event handling discovered by real browser checks.
 All 139 web tests, TypeScript, lint, production build and desktop/narrow Chromium
 fixture checks pass. See docs/purchase-composer.md for recovery rules and remaining scope.
+
+
+## Stage 4 — staged new products and purchase-file imports
+
+Added a local-only new-product editor with shared lot identities, recoverable metadata,
+and atomic API creation at confirmation. Added read-only CSV/XLSX preview, explicit
+name-match review and bad-row exclusion, preserved units/prices, original source-row
+provenance and per-file duplicate acknowledgement across dates/filenames. Stage-3
+request hashes and browser drafts remain compatible.
+
+Validation: 143 web tests, typecheck/lint/build, real Chromium staging fixture checks;
+264 API unit tests and 80 purchase/product/sync/report integration tests. API migration
+0015 adds fingerprint history. Native Android document sync/composer parity and the
+remaining payments/tax/returns work are still open.

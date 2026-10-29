@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '../api/client'
+import { api, request } from '../api/client'
 import { useShop } from '../shops/context'
-import type { Receipt, ReceiptInput } from './contracts'
+import type { ImportPreview, Receipt, ReceiptInput } from './contracts'
 
 export const RECEIPT_PAGE_SIZE = 25
 export function useReceipts(page: number) {
@@ -15,9 +15,14 @@ export function useConfirmReceipt() {
   return useMutation({ retry: false,
     mutationFn: (input: ReceiptInput) => api.post<Receipt>(`/v1/shops/${shop}/purchase-receipts`, input),
     onSuccess: () => {
-      for (const key of ['purchase-receipts', 'products', 'product', 'report']) {
+      for (const key of ['purchase-receipts', 'products', 'product', 'report', 'categories', 'units']) {
         void client.invalidateQueries({ queryKey: [key, shop] })
       }
     },
   })
+}
+
+export function previewPurchaseImport(shop: string, file: File): Promise<ImportPreview> {
+  const query = new URLSearchParams({ filename: file.name })
+  return request<ImportPreview>('POST', `/v1/shops/${shop}/purchase-receipts/import-preview?${query}`, { body: file })
 }

@@ -156,3 +156,81 @@ test('access loss after an uncertain save cannot unlock or discard that request'
   expect(screen.getByLabelText('Quantity · item 1')).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Discard draft' })).toBeDisabled()
 })
+
+test('new products stay staged, recover after closing, and are created only by the receipt request', async () => {
+  const calls = setup(); renderApp('/products'); await openPurchase()
+  await userEvent.click(screen.getByRole('button', { name: 'New product' }))
+  await userEvent.type(screen.getByLabelText('New product name'), 'New Tea')
+  await userEvent.type(screen.getByLabelText('New product unit cost (₹)'), '12.50')
+  await userEvent.type(screen.getByLabelText('Selling price (₹, optional)'), '20')
+  await userEvent.click(screen.getByRole('button', { name: 'Stage product' }))
+  expect(calls.some(c => c.method === 'POST' && (c.path.endsWith('/products') || c.path.endsWith('/purchase-receipts')))).toBe(false)
+  await userEvent.click(screen.getByRole('button', { name: 'Close and keep draft' }))
+  await openPurchase()
+  expect(screen.getByRole('button', { name: 'Edit new product 1' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await screen.findByRole('dialog', { name: 'Purchase saved' })
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))?.body).toMatchObject({ items: [{ product_uuid: null, new_product: { name: 'New Tea', selling_price: '20' }, unit_cost: '12.50' }] })
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/products'))).toBe(false)
+})
+
+test('editing a new product updates its identity on all staged lots', async () => {
+  setup(); renderApp('/products'); await openPurchase()
+  await userEvent.click(screen.getByRole('button', { name: 'New product' }))
+  await userEvent.type(screen.getByLabelText('New product name'), 'Tea')
+  await userEvent.type(screen.getByLabelText('New product unit cost (₹)'), '10')
+  await userEvent.click(screen.getByRole('button', { name: 'Stage product' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Add another lot of Tea' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Edit new product 1' }))
+  await userEvent.clear(screen.getByLabelText('New product name'))
+  await userEvent.type(screen.getByLabelText('New product name'), 'Assam Tea')
+  await userEvent.click(screen.getByRole('button', { name: 'Update staged product' }))
+  const stored = JSON.parse(localStorage.getItem(draftKey('u1', 's1'))!)
+  expect(stored.items.map((line: { new_product: { name: string } }) => line.new_product.name)).toEqual(['Assam Tea', 'Assam Tea'])
+  expect(stored.items[0].new_product.client_key).toBe(stored.items[1].new_product.client_key)
+})
+
+function importFixture(duplicate = false) {
+  const fingerprint = 'a'.repeat(64)
+  return { fingerprint, possible_duplicate: duplicate, warnings: ['Existing product prices are preserved.'], rows: [
+    { number: 2, name: 'Rice', item: { product_uuid: null, new_product: { client_key: 'import-product-key', name: 'Rice' }, quantity: '2', unit_cost: '15', batch_no: 'B1', expiry_date: null }, candidates: [{ uuid: 'p1', name: 'Rice', unit_name: 'kg' }], requires_choice: true, error: null },
+    { number: 3, name: 'Bad row', item: null, candidates: [], requires_choice: false, error: 'Quantity is required' },
+  ] }
+}
+function mockImportPreview(preview: ReturnType<typeof importFixture>) {
+  const previous = globalThis.fetch
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).includes('/purchase-receipts/import-preview?')) return Promise.resolve(new Response(JSON.stringify(preview), { status: 200 }))
+    return previous(input, init)
+  })
+}
+
+test('import requires name resolution and explicit exclusion of bad rows before staging', async () => {
+  const calls = setup(); mockImportPreview(importFixture()); renderApp('/products'); await openPurchase()
+  await userEvent.click(screen.getByRole('button', { name: 'Import purchase file' }))
+  await userEvent.upload(screen.getByLabelText('Purchase CSV or Excel file'), new File(['preview fixture'], 'purchase.csv', { type: 'text/csv' }))
+  const stage = await screen.findByRole('button', { name: 'Stage 2 purchase items' })
+  expect(stage).toBeDisabled()
+  await userEvent.selectOptions(screen.getByLabelText('Match row 2'), 'p1')
+  await userEvent.click(screen.getByLabelText('Exclude row 3'))
+  await userEvent.click(screen.getByRole('button', { name: 'Stage 1 purchase items' }))
+  expect(screen.getByLabelText('Quantity · item 1')).toHaveValue('2')
+  expect(calls.some(c => c.method === 'POST' && (c.path.endsWith('/products') || c.path.endsWith('/purchase-receipts')))).toBe(false)
+  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await screen.findByRole('dialog', { name: 'Purchase saved' })
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))?.body).toMatchObject({ import_keys: ['a'.repeat(64)], items: [{ product_uuid: 'p1', import_row_number: 2, unit_cost: '15' }] })
+})
+
+test('duplicate import acknowledgement is required and is scoped to the reviewed file', async () => {
+  setup(); mockImportPreview(importFixture(true)); renderApp('/products'); await openPurchase()
+  await userEvent.click(screen.getByRole('button', { name: 'Import purchase file' }))
+  await userEvent.upload(screen.getByLabelText('Purchase CSV or Excel file'), new File(['preview fixture'], 'purchase.csv', { type: 'text/csv' }))
+  await screen.findByLabelText('Match row 2')
+  await userEvent.selectOptions(screen.getByLabelText('Match row 2'), 'p1')
+  await userEvent.click(screen.getByLabelText('Exclude row 3'))
+  expect(screen.getByRole('button', { name: 'Stage 1 purchase items' })).toBeDisabled()
+  await userEvent.click(screen.getByLabelText('I intend to add these quantities again'))
+  await userEvent.click(screen.getByRole('button', { name: 'Stage 1 purchase items' }))
+  const draft = JSON.parse(localStorage.getItem(draftKey('u1', 's1'))!)
+  expect(draft.allow_duplicate_import_keys).toEqual(['a'.repeat(64)])
+})

@@ -38,10 +38,9 @@ The API remains the authority for idempotency and stock posting.
 
 ## Scope
 
-This stage records received stock for existing tracked products through the stage-2 API.
+The composer records received stock for existing tracked products or staged new products through the receipt API.
 It shows a stock-cost subtotal and explicit Payment: Not recorded. It does not claim a
-final tax invoice total or supplier payable. New product creation inside a purchase,
-purchase-file import, payments, tax/discount/freight totals, attachments, returns,
+final tax invoice total or supplier payable. Payments, tax/discount/freight totals, attachments, returns,
 advanced filters and native Android purchase-document sync remain later stages.
 
 The shared Modal component was also fixed: queued native close events from React
@@ -71,3 +70,33 @@ node e2e/purchases.cjs
 Serve the app at http://127.0.0.1:5175 first, or set PURCHASE_WEB_ORIGIN. Optional
 PLAYWRIGHT_MODULE, CHROME_EXECUTABLE and PURCHASE_SCREENSHOTS configure local tooling.
 No backend, remote deployment, or database migration is performed in this stage.
+
+
+## Stage 4: staged products and files
+
+New product opens a quick editor (name, quantity/cost, optional selling price and unit;
+unit defaults to pcs). Codes, category and tax settings are expandable. Stage product
+writes only the local draft. Edit new product updates metadata on every lot sharing
+that staged identity. Add another lot preserves product identity and keeps lot details
+separate. The API creates the product and lookup names atomically with the receipt.
+
+Import purchase file previews up to 200 rows from CSV/XLSX, with original row numbers,
+matched/new identities, warnings and errors. Name-only matches require a selection;
+invalid rows must be corrected in the file or explicitly excluded. Quantities/costs
+remain editable in the parent draft, and new-product metadata uses the same staged
+editor. No preview or staging action creates products or stock. Unit conversion is
+not inferred: incompatible existing units are blocked/reviewed by the API.
+
+Repeated files warn across dates and filenames and require explicit per-file approval.
+The server rechecks at confirmation. A concurrent duplicate rejection can be resolved
+by reviewing history and acknowledging source files in the retained draft. Source
+fingerprints and row numbers survive edits/reloads and are recorded with stock.
+Removing all rows from a source removes that source key from the confirmation.
+Drafts support at most 200 items and 20 source files. Stage-3 drafts/retries remain valid.
+
+Validation for this stage: all 143 web tests, TypeScript, lint and production build;
+real Chromium staging fixture test with new products, explicit import matching/error
+exclusion, narrow layout, reload and identical retry payload. Run with
+PURCHASE_STAGING=1 to exercise it through e2e/purchases.cjs. API validation uses real
+PostgreSQL separately (264 unit tests and 80 integration tests). Migration 0015 is
+required before enabling these endpoints. No remote deployment is included.
