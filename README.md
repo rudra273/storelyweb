@@ -6,6 +6,43 @@ configures API forwarding, SPA routes, and security headers. Use Node 24.x,
 `npm run build`, and output directory `dist`. Full production setup is in
 `../storelyapi/docs/DEPLOYMENT.md`.
 
+## First Vercel deployment
+
+Import `rudra273/storelyweb` as a new Vercel project. This frontend currently uses
+`main`; the API's `dev` workflow does not change the frontend branch. Select Vite,
+repository root `./`, Node 24.x, install command `npm ci`, build command
+`npm run build`, and output directory `dist`.
+
+Before deploying, add this environment variable for **Production**:
+
+```dotenv
+STORELY_API_ORIGIN=https://storelyapi.rosmox.com
+```
+
+The backend is deployed on Render with Supabase PostgreSQL and Brevo delivery.
+API development and testing use `dev` in `storelyapi`, with PRs merged into `main`
+for automatic production deployment. Confirm the manually created
+Render service's Branch setting tracks `main` with auto-deploy enabled. Local Git branch changes and
+`render.yaml` edits do not update a manually created Render service automatically.
+
+`vercel.ts` exports the named `config` required by Vercel and reads the API origin
+at build time. Do not add `/v1` to the value or use a `VITE_*` variable. Browser
+requests stay on the frontend's origin and Vercel forwards them to the API,
+including the secure refresh cookie. No Brevo key, database password, or API
+signing/encryption keys belong in the frontend project.
+
+Leave Preview disconnected from production unless deliberately testing against
+the live database. For an isolated preview, supply a separate backend origin;
+without this variable the Vercel configuration intentionally refuses to build.
+Redeploy after changing the variable.
+
+After deploying, check `/health/ready` on the Vercel hostname, refresh `/login`
+directly, then verify signup/email confirmation, login, reload/session refresh,
+password reset and logout. A successful static build does not verify live cookie
+forwarding or account flows.
+
+## Local development
+
 For a future Cloud Run frontend, build Docker target `platform` and set
 `STORELY_API_ORIGIN` to the backend HTTPS origin. That container serves HTTP on
 `PORT` behind platform HTTPS and forwards API requests on the same origin.
@@ -64,7 +101,8 @@ to the verified account UUID. Pending requests remain tracked privately on Andro
 
 In the API repo, `make test-subscription-lifecycle` exercises real browser access,
 expiry/renewal and staff revocation; `make test-local-load` adds a bounded local TLS
-read load. Production remains deferred; see `../storelyapi/docs/OPERATIONS.md`.
+read load. The API is deployed; hosted frontend account-flow acceptance and the
+remaining operational checks are still pending. See `../storelyapi/docs/OPERATIONS.md`.
 
 Authenticator setup on both account-security routes includes a locally generated
 QR code and manual-key fallback. Secrets are not sent to a QR service or saved in

@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { vercelConfig } from './vercel-config.ts'
 
 describe('hosted frontend routing', () => {
+  it('exports the named Vercel configuration using the build environment', async () => {
+    vi.stubEnv('STORELY_API_ORIGIN', 'https://storelyapi.rosmox.com')
+    try {
+      const entry = await import('../vercel.ts')
+      expect(entry.config.rewrites[0]?.destination)
+        .toBe('https://storelyapi.rosmox.com/v1/:path*')
+      expect(entry.config.framework).toBe('vite')
+      expect(entry.config.outputDirectory).toBe('dist')
+    } finally {
+      vi.unstubAllEnvs()
+      vi.resetModules()
+    }
+  })
+
   it('routes auth and business requests before the SPA fallback', () => {
     const config = vercelConfig('https://storely-api.onrender.com/')
     expect(config.rewrites[0]).toEqual({
