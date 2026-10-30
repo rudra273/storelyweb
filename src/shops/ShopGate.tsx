@@ -24,12 +24,16 @@ export function ShopGate() {
   }
   if (shops.length === 0) {
     return (
-      <main className="auth">
-        <div className="auth-card wide">
-          <Onboarding />
-          <button className="link" onClick={() => void logout()}>Sign out</button>
-        </div>
-      </main>
+      <div className="onboarding-shell">
+        <header className="onboarding-header">
+          <span className="brand">Storely<span className="onboarding-brand-dot" aria-hidden="true" /></span>
+          <nav aria-label="Account" className="onboarding-account">
+            <Link to="/account/security">Account security</Link>
+            <button className="ui-button" onClick={() => void logout()}>Sign out</button>
+          </nav>
+        </header>
+        <main className="onboarding-content"><Onboarding /></main>
+      </div>
     )
   }
   return <AccessProvider key={`${current?.shop_id}:${current?.role}`}><Outlet /></AccessProvider>

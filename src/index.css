@@ -402,8 +402,65 @@ input[type=checkbox] { accent-color: var(--navy); width: 16px; height: 16px; fle
 .role-guide dl { margin: 0; font-size: .8rem; }
 .role-guide dt { font-weight: 650; color: var(--navy); margin-top: 1rem; }
 .role-guide dd { margin: .25rem 0 0; color: var(--muted); }
-.onboarding > p:not(.eyebrow) { color: var(--muted); }
-.onboarding .card { box-shadow: none; background: #fafbfe; }
+/* No-shop welcome dashboard: separate from the narrow authentication forms. */
+.onboarding-shell { min-height: 100dvh; }
+.onboarding-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 16px 32px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.onboarding-brand-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gold); }
+.onboarding-account { display: flex; align-items: center; flex-wrap: wrap; gap: 1.25rem; }
+.onboarding-account a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; text-decoration: none; }
+.onboarding-shell .ui-button, .onboarding-shell button.primary, .onboarding-shell button.link { min-height: 44px; }
+.onboarding-content { width: 100%; max-width: 1440px; padding: 28px 32px 32px; margin: 0 auto; }
+.onboarding-intro { margin-bottom: 24px; }
+.onboarding-intro .eyebrow { margin: 0 0 .5rem; }
+.onboarding-intro > p:last-child { margin: .5rem 0 0; color: var(--muted); max-width: 75ch; }
+.onboarding-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.onboarding-premium { min-width: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); overflow-wrap: anywhere; }
+.onboarding-premium-top { padding: 28px; background: linear-gradient(120deg, #fff8e9, #ffffff 85%); border-radius: 16px 16px 0 0; }
+.onboarding-label { display: inline-block; padding: .3rem .65rem; background: #ffedc4; color: var(--gold-dark); border-radius: 6px; font-size: .75rem; font-weight: 750; letter-spacing: .08em; }
+.onboarding-premium-top h2 { font-size: clamp(1.6rem, 2.4vw, 2.25rem); line-height: 1.2; letter-spacing: -.035em; margin: 1rem 0 .75rem; }
+.onboarding-premium-top > p { max-width: 48ch; margin: .75rem 0; }
+.onboarding-benefits { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; list-style: none; padding: 0; margin: 1.25rem 0; font-weight: 600; font-size: .9rem; color: var(--navy); }
+.onboarding-benefits li::before { content: '✓'; color: var(--gold-dark); margin-right: .5rem; }
+.onboarding-cta { text-decoration: none; gap: 1.5rem; padding: .8rem 1.25rem; }
+.onboarding-premium-top .onboarding-note { color: var(--muted); font-size: .85rem; margin: .75rem 0 0; }
+.onboarding-android { padding: 20px 28px; border-top: 1px solid var(--line); }
+.onboarding-android-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1rem; }
+.onboarding-android-heading h2 { margin: 0; }
+.onboarding-android-heading a { text-decoration: none; }
+.onboarding-android > p { color: var(--muted); margin: .5rem 0; }
+.onboarding-help summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 44px; cursor: pointer; font-weight: 650; color: var(--navy); list-style: none; }
+.onboarding-help summary::-webkit-details-marker { display: none; }
+.onboarding-help summary::after { content: '+'; font-size: 1.3rem; }
+.onboarding-help[open] summary::after { content: '−'; }
+.onboarding-help summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
+.onboarding-help ol { padding-left: 1.25rem; margin: .5rem 0; }
+.onboarding-help li + li { margin-top: .75rem; }
+.onboarding-help > p { color: var(--muted); }
+.onboarding-panels { display: grid; gap: 20px; min-width: 0; }
+.onboarding-panels .card { margin: 0; max-width: none; padding: 24px; box-shadow: none; }
+.onboarding-panels .card > h2 { margin-bottom: .75rem; }
+.onboarding-panels .card > p { margin: 0; }
+.onboarding-panels .loading { padding: .5rem 0; }
+.onboarding-panels .plain:empty { display: none; }
+.onboarding-panels .row { flex-wrap: wrap; }
+.onboarding-panels .row > span { flex: 1 1 12rem; }
+.onboarding-panels .row > button { flex-shrink: 0; }
+.onboarding-panels .plain > li + li { border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 1rem; }
+.onboarding-panels .plain .check { min-height: 44px; }
+.onboarding-request-empty p { margin: 0 0 .5rem; }
+.onboarding-request-empty + .ui-button { margin-top: .5rem; }
+@media (max-width: 959px) {
+  .onboarding-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .onboarding-header { padding: 12px 16px; }
+  .onboarding-content { padding: 24px 16px; }
+  .onboarding-cta { width: 100%; }
+}
+@media (max-width: 480px) {
+  .onboarding-header { flex-wrap: wrap; gap: .25rem .75rem; }
+  .onboarding-account { gap: .75rem; }
+  .onboarding-account a, .onboarding-account button { font-size: .85rem; }
+  .onboarding-premium-top, .onboarding-android, .onboarding-panels .card { padding: 20px; }
+}
 .auth-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 0; align-items: stretch; justify-items: stretch; }
 .auth-story { padding: 3rem 4rem; background: var(--navy); color: #c9d3e5; display: flex; flex-direction: column; justify-content: space-between; gap: 4rem; min-height: 100dvh; }
 .auth-story .brand { color: white; }
