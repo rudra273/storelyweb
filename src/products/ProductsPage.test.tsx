@@ -389,3 +389,17 @@ test('a cost + margin product shows the server breakdown, including where GST ca
   expect(body).toMatchObject({ price_mode: 'formula', purchase_price: '100', profit_margin_percent: '10' })
   expect(body).not.toHaveProperty('selling_price')
 })
+
+test('the product panel shows how it is priced and where its GST rate comes from', async () => {
+  const pricing = { price_mode: 'fixed', selling_price: '25.50', pre_gst_selling_price: '25.50', output_gst_amount: '0.00', purchase_price: '18.00', purchase_gst_amount: '0.90', overhead_cost: '1.00', total_cost: '19.90', profit_margin_percent: '0', profit_amount: '5.60', gst_percent: '5', gst_source: 'category', category_name: 'Grains', gst_registered: false }
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, price_mode: 'fixed' }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST, price_mode: 'fixed' }, movements: [], pricing }),
+  ])
+  renderApp('/products/p1')
+  const panel = await screen.findByRole('complementary', { name: 'Product details' })
+  expect(await within(panel).findByText('5% · from Grains')).toBeInTheDocument()
+  expect(within(panel).getByText('Selling price you set')).toBeInTheDocument()
+  expect(within(panel).getByText('Profit per unit')).toBeInTheDocument()
+})
+

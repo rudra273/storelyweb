@@ -94,7 +94,7 @@ export function ProfitLossPage() {
                   <tr className="total"><td>Net profit</td><td className={Number(p.net_profit) < 0 ? 'bad' : undefined}>{formatMoney(p.net_profit)}</td></tr>
                 </tbody>
               </table>
-              <p className="muted">GST collected in this period, which is not income: {formatMoney(p.gst_collected)}. Sales and cost are after returns.</p>
+              <p className="muted">GST collected in this period, which is not income: {formatMoney(p.gst_collected)}. Sales and cost are after returns.{!p.gst_registered && ' Your shop is not GST-registered, so cost of goods includes the GST paid when buying stock (see Stock value for the rate per product).'}</p>
             </>
           )}
         </State>

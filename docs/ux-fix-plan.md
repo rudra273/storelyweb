@@ -60,9 +60,14 @@ from cost + margin", with a live breakdown from the server
 came from (product, category or shop default), overhead, margin, GST charged,
 final price. The GST rate now sits in Pricing, not in the optional details.
 
-**Next up:** show the GST used in reports and the product panel (rest of item 11),
-custom bill lines without a product, the standard invoice with a settings editor
-and live preview, then Phase 4 polish.
+✅ **GST shown everywhere it counts (2 Nov 2026):** the product panel shows how the
+product is priced, the GST rate used and its source, and the price breakdown; 0
+stock says "Out of stock". Stock value shows GST and cost per unit with a note;
+profit and loss, the tax report and the stock-at-cost cards say when GST paid on
+purchase is part of cost (shop not GST-registered). Items 11, 12 and 16 done.
+
+**Next up:** custom bill lines without a product, the standard invoice with a
+settings editor and live preview, then Phase 4 polish.
 
 ## Phase 2: missing features customers expect (Android has them)
 
@@ -83,7 +88,7 @@ and live preview, then Phase 4 polish.
 
 ## Phase 3: confusing numbers (money shown without explanation)
 
-11. **Cost includes a hidden 18% GST.** Unregistered shop, product GST not set:
+11. ✅ **Cost includes a hidden 18% GST.** Unregistered shop, product GST not set:
     cost ₹8 becomes ₹9.44 in reports, so a ₹10 sale shows ₹0.56 gross profit and
     stock at cost ₹689.12 for 73 × ₹8. This follows the Android pricing rule
     (`billing_math.resolve_price`: default GST 18%, purchase GST is a cost when
@@ -91,7 +96,7 @@ and live preview, then Phase 4 polish.
     cost field doesn't say "before GST". [decide] keep the rule? Then [web] show
     the GST rate actually used (incl. "default 18%") and "landed cost" on the
     product, and label the cost field.
-12. **Tax report lists a sale under "18%" with ₹0 tax** for an unregistered shop.
+12. ✅ **Tax report lists a sale under "18%" with ₹0 tax** for an unregistered shop.
     [web] explain "not GST-registered: no tax charged" or hide rates.
 13. **Report period shows one date** ("2026-11-01") for "This month". [web] show
     the range, e.g. "1–30 Nov 2026".
@@ -105,7 +110,7 @@ and live preview, then Phase 4 polish.
     payment methods, roles and adjustment reasons.
 15. **"Premium is active active"** duplicated word on Cloud subscription; the page
     still offers "Request Premium from the web" while Premium is active.
-16. **Stock labels.** 0 in stock shows "Low stock" instead of "Out of stock";
+16. ✅ **Stock labels.** 0 in stock shows "Low stock" instead of "Out of stock";
     product panel doesn't show the unit or GST rate used.
 17. **Billing screen.** Items table has no price or line total; the "Not enough
     stock" message appears in the summary (not by the quantity) with a useless

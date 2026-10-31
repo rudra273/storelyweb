@@ -99,6 +99,7 @@ export function TaxPage() {
             {(t) => (
               <>
                 <DownloadBar save={saveTax} />
+                {!t.gst_registered && <Alert kind="info">Your shop is not GST-registered, so no GST is charged on bills and the tax columns stay at ₹0. Rates are shown for your records.</Alert>}
                 {t.rates.length === 0 ? <Empty title="No sales with GST in this period" /> : (
                   <div className="table-wrap"><table className="table">
                     <thead><tr><th>GST rate</th><th>Taxable value</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Total tax</th></tr></thead>
@@ -145,15 +146,18 @@ export function StockValuePage() {
       {(v) => (
         <>
           <DownloadBar save={save} />
+          <p className="muted report-note">{v.gst_registered
+            ? 'Cost per unit is the cost price plus overhead. GST you pay on purchases is claimed back, so it is not part of cost.'
+            : 'Your shop is not GST-registered, so GST paid on purchases is part of cost: cost per unit is the cost price plus that GST (at the rate shown) and any overhead.'}</p>
           {v.items.length === 0 ? <Empty title="No stock on hand" /> : (
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>Product</th><th>Category</th><th>Quantity</th><th>At cost</th><th>At selling price</th></tr></thead>
+              <thead><tr><th>Product</th><th>Category</th><th>Quantity</th><th className="num">GST</th><th className="num">Cost per unit</th><th className="num">At cost</th><th className="num">At selling price</th></tr></thead>
               <tbody>
                 {v.items.map((i, n) => (
-                  <tr key={`${i.name}-${n}`}><td>{i.name}</td><td>{i.category ?? '—'}</td><td>{formatQty(i.quantity)} {i.unit ?? ''}</td><td>{formatMoney(i.cost_value)}</td><td>{formatMoney(i.sale_value)}</td></tr>
+                  <tr key={`${i.name}-${n}`}><td>{i.name}</td><td>{i.category ?? '—'}</td><td>{formatQty(i.quantity)} {i.unit ?? ''}</td><td className="num">{formatQty(i.gst_percent)}%</td><td className="num">{formatMoney(i.unit_cost)}</td><td className="num">{formatMoney(i.cost_value)}</td><td className="num">{formatMoney(i.sale_value)}</td></tr>
                 ))}
               </tbody>
-              <tfoot><tr><th colSpan={3}>Total</th><th>{formatMoney(v.total_cost)}</th><th>{formatMoney(v.total_sale)}</th></tr></tfoot>
+              <tfoot><tr><th colSpan={5}>Total</th><th className="num">{formatMoney(v.total_cost)}</th><th className="num">{formatMoney(v.total_sale)}</th></tr></tfoot>
             </table></div>
           )}
         </>

@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -2288,6 +2288,11 @@ export interface components {
             gross_profit: string;
             /** Gst Collected */
             gst_collected: string;
+            /**
+             * Gst Registered
+             * @default false
+             */
+            gst_registered: boolean;
             /** Inventory Value */
             inventory_value: string;
             /** Invoices */
@@ -3023,6 +3028,7 @@ export interface components {
         ProductDetail: {
             /** Movements */
             movements: components["schemas"]["MovementOut"][];
+            pricing?: components["schemas"]["PricePreviewOut"] | null;
             product: components["schemas"]["ProductOut"];
         };
         /**
@@ -3141,6 +3147,11 @@ export interface components {
             gross_profit: string;
             /** Gst Collected */
             gst_collected: string;
+            /**
+             * Gst Registered
+             * @default false
+             */
+            gst_registered: boolean;
             /** Net Profit */
             net_profit: string;
             /** Sales */
@@ -3561,6 +3572,8 @@ export interface components {
         };
         /** StockValuation */
         StockValuation: {
+            /** Gst Registered */
+            gst_registered: boolean;
             /** Items */
             items: components["schemas"]["StockValueRow"][];
             /** Total Cost */
@@ -3574,6 +3587,8 @@ export interface components {
             category: string | null;
             /** Cost Value */
             cost_value: string;
+            /** Gst Percent */
+            gst_percent: string;
             /** Name */
             name: string;
             /** Quantity */
@@ -3582,6 +3597,8 @@ export interface components {
             sale_value: string;
             /** Unit */
             unit: string | null;
+            /** Unit Cost */
+            unit_cost: string;
         };
         /** SubscriptionChange */
         SubscriptionChange: {
@@ -3665,6 +3682,11 @@ export interface components {
         TaxSummary: {
             /** From */
             from: string;
+            /**
+             * Gst Registered
+             * @default false
+             */
+            gst_registered: boolean;
             /** Rates */
             rates: components["schemas"]["TaxRate"][];
             /** To */
@@ -3784,7 +3806,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3806,7 +3828,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;

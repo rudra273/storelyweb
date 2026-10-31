@@ -44,7 +44,7 @@ function DailySummary() {
         <Tile label="Today’s sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'} · net of returns`} />
         <Tile label="Money received today" value={formatMoney(k.collected)} />
         <Tile label="Outstanding payments" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid bill${k.unpaid_count === 1 ? '' : 's'} · all time`} tone={k.unpaid_count ? 'bad' : undefined} />
-        <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note="Current inventory value" />
+        <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={k.gst_registered ? 'Current inventory value' : 'Current inventory value, incl. GST paid on purchase'} />
       </div>
       <div className="attention-strip"><div><span className="attention-dot" aria-hidden="true" /><strong>Stock watch</strong><span>{k.low_stock_count} running low · {k.out_of_stock_count} out of stock</span></div><Link to="/products?low=1">Review stock →</Link></div>
     </>}</State>

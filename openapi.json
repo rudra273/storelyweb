@@ -2358,6 +2358,11 @@
       "title": "Gst Collected",
       "type": "string"
      },
+     "gst_registered": {
+      "default": false,
+      "title": "Gst Registered",
+      "type": "boolean"
+     },
      "inventory_value": {
       "title": "Inventory Value",
       "type": "string"
@@ -4732,6 +4737,16 @@
       "title": "Movements",
       "type": "array"
      },
+     "pricing": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PricePreviewOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "product": {
       "$ref": "#/components/schemas/ProductOut"
      }
@@ -5291,6 +5306,11 @@
      "gst_collected": {
       "title": "Gst Collected",
       "type": "string"
+     },
+     "gst_registered": {
+      "default": false,
+      "title": "Gst Registered",
+      "type": "boolean"
      },
      "net_profit": {
       "title": "Net Profit",
@@ -6611,6 +6631,10 @@
    },
    "StockValuation": {
     "properties": {
+     "gst_registered": {
+      "title": "Gst Registered",
+      "type": "boolean"
+     },
      "items": {
       "items": {
        "$ref": "#/components/schemas/StockValueRow"
@@ -6629,6 +6653,7 @@
     },
     "required": [
      "items",
+     "gst_registered",
      "total_cost",
      "total_sale"
     ],
@@ -6650,6 +6675,10 @@
      },
      "cost_value": {
       "title": "Cost Value",
+      "type": "string"
+     },
+     "gst_percent": {
+      "title": "Gst Percent",
       "type": "string"
      },
      "name": {
@@ -6674,6 +6703,10 @@
        }
       ],
       "title": "Unit"
+     },
+     "unit_cost": {
+      "title": "Unit Cost",
+      "type": "string"
      }
     },
     "required": [
@@ -6681,6 +6714,8 @@
      "category",
      "unit",
      "quantity",
+     "unit_cost",
+     "gst_percent",
      "cost_value",
      "sale_value"
     ],
@@ -7023,6 +7058,11 @@
       "title": "From",
       "type": "string"
      },
+     "gst_registered": {
+      "default": false,
+      "title": "Gst Registered",
+      "type": "boolean"
+     },
      "rates": {
       "items": {
        "$ref": "#/components/schemas/TaxRate"
@@ -7323,7 +7363,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -7332,7 +7372,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -7347,7 +7387,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -7356,7 +7396,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
