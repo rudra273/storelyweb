@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -1794,12 +1794,28 @@ export interface components {
             /** Place Of Supply State Code */
             place_of_supply_state_code?: string | null;
         };
-        /** CartItem */
+        /**
+         * CartItem
+         * @description A catalogue product, or (owner/admin only) a line that is not in the catalogue:
+         *     then name, unit_price and gst_percent are given and no stock is moved.
+         */
         CartItem: {
+            /** Cost */
+            cost?: number | string | null;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Name */
+            name?: string | null;
             /** Product Uuid */
-            product_uuid: string;
+            product_uuid?: string | null;
             /** Quantity */
             quantity: number | string;
+            /** Unit */
+            unit?: string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
         };
         /** CategoryIn */
         CategoryIn: {
@@ -2922,7 +2938,7 @@ export interface components {
             /** Name */
             name: string;
             /** Product Uuid */
-            product_uuid: string;
+            product_uuid: string | null;
             /** Quantity */
             quantity: string;
             /** Taxable Value */
@@ -3806,7 +3822,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -3828,7 +3844,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;

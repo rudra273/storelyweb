@@ -185,3 +185,33 @@ test('business bills expand the required tax details', async () => {
   expect(screen.getByLabelText('GSTIN')).toBeRequired()
   expect(screen.getByLabelText('GSTIN').closest('details')).toHaveAttribute('open')
 })
+
+test('an owner can bill an item that is not in the product list, with its own GST rate', async () => {
+  const priced = { ...preview, total: '118.00', lines: [{ product_uuid: null, name: 'Gift wrap', quantity: '2', unit_price: '59.00', taxable_value: '100.00', gst: '18.00', amount: '118.00' }] }
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), products, ok('POST', '/v1/shops/s1/bills/preview', priced), ok('POST', '/v1/shops/s1/bills', detail), ok('GET', '/v1/shops/s1/bills/b1', detail)])
+  renderApp('/billing/new')
+  await userEvent.click(await screen.findByRole('button', { name: '+ Item not in the list' }))
+  const dialog = screen.getByRole('dialog', { name: 'Item not in the product list' })
+  await userEvent.type(within(dialog).getByLabelText('Item name'), 'Gift wrap')
+  await userEvent.type(within(dialog).getByLabelText('Price (₹)'), '59')
+  await userEvent.clear(within(dialog).getByLabelText('Quantity'))
+  await userEvent.type(within(dialog).getByLabelText('Quantity'), '2')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add to bill' }))
+  expect(within(dialog).getByText('Choose the GST rate (0% if none).')).toBeInTheDocument()
+  await userEvent.selectOptions(within(dialog).getByLabelText('GST rate'), '18')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add to bill' }))
+  const row = (await screen.findByText('Gift wrap')).closest('tr')!
+  expect(await within(row).findByText('₹118.00')).toBeInTheDocument()
+  expect(within(row).getByText('Not in list · GST 18%')).toBeInTheDocument()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await userEvent.click(screen.getByRole('button', { name: 'Create bill' }))
+  await screen.findByRole('heading', { name: bill.bill_number })
+  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [{ name: 'Gift wrap', quantity: '2', unit_price: '59', gst_percent: '18', cost: null }] })
+})
+
+test('staff do not get the option to bill items outside the product list', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), products])
+  renderApp('/billing/new')
+  await screen.findByRole('button', { name: /Rice · 8901/ })
+  expect(screen.queryByRole('button', { name: '+ Item not in the list' })).not.toBeInTheDocument()
+})

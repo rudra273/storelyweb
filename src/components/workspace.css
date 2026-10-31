@@ -72,3 +72,5 @@
 .report-note { margin: .25rem 0 .75rem; font-size: .875rem; }
 .detail-pricing { margin-top: 1rem; }
 .detail-pricing h3 { font-size: .95rem; margin: 0 0 .5rem; color: var(--navy); }
+
+.checkout-section-title .checkout-custom { margin-left: auto; font-size: .9rem; }

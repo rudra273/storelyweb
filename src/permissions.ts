@@ -11,6 +11,7 @@ export type Capability =
   | 'customers.view'
   | 'billing.create'
   | 'billing.cancel'
+  | 'billing.custom'
   | 'reports.view'
   | 'data.export'
   | 'team.manage'
@@ -22,6 +23,7 @@ const ADMIN: Capability[] = [
   ...STAFF,
   'products.edit',
   'billing.cancel',
+  'billing.custom',
   'reports.view',
   'data.export',
   'team.manage',

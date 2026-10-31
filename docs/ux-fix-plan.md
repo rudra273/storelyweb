@@ -66,8 +66,13 @@ stock says "Out of stock". Stock value shows GST and cost per unit with a note;
 profit and loss, the tax report and the stock-at-cost cards say when GST paid on
 purchase is part of cost (shop not GST-registered). Items 11, 12 and 16 done.
 
-**Next up:** custom bill lines without a product, the standard invoice with a
-settings editor and live preview, then Phase 4 polish.
+✅ **Items not in the product list (2 Nov 2026):** owners and admins add a line
+with name, price, quantity and an explicit GST rate (optional cost, HSN, unit). The
+server prices it like any fixed-price line, moves no stock (as Android does), and
+returns work on it. Staff are refused by the API and don't see the button.
+
+**Next up:** the standard invoice with a settings editor and live preview, then
+Phase 4 polish.
 
 ## Phase 2: missing features customers expect (Android has them)
 

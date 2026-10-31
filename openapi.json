@@ -917,12 +917,77 @@
    },
    "CartItem": {
     "additionalProperties": false,
+    "description": "A catalogue product, or (owner/admin only) a line that is not in the catalogue:\nthen name, unit_price and gst_percent are given and no stock is moved.",
     "properties": {
+     "cost": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost"
+     },
+     "gst_percent": {
+      "anyOf": [
+       {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Percent"
+     },
+     "hsn_code": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hsn Code"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
      "product_uuid": {
-      "maxLength": 128,
-      "minLength": 1,
-      "title": "Product Uuid",
-      "type": "string"
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
      },
      "quantity": {
       "anyOf": [
@@ -936,10 +1001,37 @@
        }
       ],
       "title": "Quantity"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "unit_price": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Price"
      }
     },
     "required": [
-     "product_uuid",
      "quantity"
     ],
     "title": "CartItem",
@@ -4254,8 +4346,15 @@
       "type": "string"
      },
      "product_uuid": {
-      "title": "Product Uuid",
-      "type": "string"
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
      },
      "quantity": {
       "title": "Quantity",
@@ -7363,7 +7462,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -7372,7 +7471,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -7387,7 +7486,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -7396,7 +7495,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }

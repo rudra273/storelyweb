@@ -9,6 +9,8 @@ import { formatMoney, isAmount } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
 import { useProducts, type Product } from '../products/queries'
 import { useShop } from '../shops/context'
+import { can } from '../permissions'
+import { CustomItemEditor, type CustomLine } from './CustomItem'
 import { createBill, useBillingMutation, useBillingQuery, type BillInput, type CartInput, type Customer, type Preview } from './queries'
 
 const METHODS: { value: BillInput['payment']['method']; label: string }[] = [
@@ -23,7 +25,11 @@ export function NewBill() {
 }
 
 function BillForm() {
-  const shop = useShop().current!.shop_id
+  const { current, role } = useShop()
+  const shop = current!.shop_id
+  const canCustom = can(role, 'billing.custom')
+  const [custom, setCustom] = useState<CustomLine[]>([])
+  const [addingCustom, setAddingCustom] = useState(false)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [items, setItems] = useState<{ product: Product; quantity: string }[]>([])
@@ -42,9 +48,12 @@ function BillForm() {
   const products = useProducts({ q: useDebounced(search, 250), category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
   const customerSearch = useDebounced(customer.customer_name, 300)
   const customers = useBillingQuery<Customer[]>('customers', `customers?q=${encodeURIComponent(customerSearch)}`, customerSearch.trim().length >= 2)
-  const cart: CartInput = { ...customer, customer_gstin: customer.customer_gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: items.map(i => ({ product_uuid: i.product.uuid, quantity: i.quantity })) }
-  const preview = useQuery({ queryKey: ['bill-preview', shop, cart], queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, cart), enabled: items.length > 0 && items.every(i => Number(i.quantity) > 0) && !attempt, retry: false })
+  const cart: CartInput = { ...customer, customer_gstin: customer.customer_gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: [...items.map(i => ({ product_uuid: i.product.uuid, quantity: i.quantity })), ...custom.map(c => ({ name: c.name, quantity: c.quantity, unit_price: c.unit_price, gst_percent: c.gst_percent, cost: c.cost || null, hsn_code: c.hsn_code || null, unit: c.unit || null }))] }
+  const lineCount = items.length + custom.length
+  // The server prices catalogue lines first, then the other lines in the order added.
+  const preview = useQuery({ queryKey: ['bill-preview', shop, cart], queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, cart), enabled: lineCount > 0 && [...items, ...custom].every(i => Number(i.quantity) > 0) && !attempt, retry: false })
   const locked = !!attempt || mutation.isPending
+  const customPreview = preview.data?.lines?.filter(l => l.product_uuid === null) ?? []
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (sending.current || (!attempt && (!preview.data || preview.isFetching || preview.error))) return
@@ -88,17 +97,17 @@ function BillForm() {
           <Field label="Place of supply state code" maxLength={2} pattern="[0-9]{2}" placeholder="27" value={customer.place_of_supply_state_code} onChange={e => setCustomer({ ...customer, place_of_supply_state_code: e.target.value })} />
           <Field label="Address" maxLength={300} value={customer.customer_address} onChange={e => setCustomer({ ...customer, customer_address: e.target.value })} />
         </div></details></section>
-        <section className="card wide"><div className="checkout-section-title"><span>02</span><h2>Items <small>{items.length ? `(${items.length})` : ''}</small></h2></div><Field label="Find product or barcode" type="search" value={search} onChange={e => setSearch(e.target.value)} />
+        <section className="card wide"><div className="checkout-section-title"><span>02</span><h2>Items <small>{lineCount ? `(${lineCount})` : ''}</small></h2>{canCustom && <button type="button" className="link checkout-custom" disabled={locked || lineCount >= 200} onClick={() => setAddingCustom(true)}>+ Item not in the list</button>}</div><Field label="Find product or barcode" type="search" value={search} onChange={e => setSearch(e.target.value)} />
           {products.isPending && <Loading />}{products.error && <Alert>{describeError(products.error)}</Alert>}
-          {products.data && <><ul className="product-picker plain">{products.data.items.map(p => <li key={p.uuid}><button type="button" className="link" disabled={items.some(i => i.product.uuid === p.uuid) || items.length >= 200} onClick={() => setItems([...items, { product: p, quantity: '1' }])}>{[p.name, p.barcode || p.product_code, formatMoney(p.selling_price)].filter(Boolean).join(' · ')}</button></li>)}</ul>{!products.data.items.length && <Empty title="No matching products" />}</>}
-          {!items.length && <div className="cart-empty"><strong>Your bill starts here</strong><p>Choose a product above to add it to this bill.</p></div>}
-          <div className="table-wrap cart-table"><table className="table"><thead><tr><th>Product</th><th>Quantity</th><th className="num">Price</th><th className="num">Amount</th><th>Action</th></tr></thead><tbody>{items.map((i, index) => { const line = preview.data?.lines?.find(l => l.product_uuid === i.product.uuid); return <tr key={i.product.uuid}><td>{i.product.name}</td><td><input aria-label={`Quantity for ${i.product.name}`} type="number" min="0.001" max="1000000" step="0.001" required value={i.quantity} onChange={e => setItems(items.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} /></td><td className="num">{line ? formatMoney(line.unit_price) : '—'}</td><td className="num">{line ? formatMoney(line.amount) : '—'}</td><td><button type="button" className="link" aria-label={`Remove ${i.product.name}`} onClick={() => setItems(items.filter((_, n) => n !== index))}>Remove</button></td></tr> })}</tbody></table></div>
+          {products.data && <><ul className="product-picker plain">{products.data.items.map(p => <li key={p.uuid}><button type="button" className="link" disabled={items.some(i => i.product.uuid === p.uuid) || lineCount >= 200} onClick={() => setItems([...items, { product: p, quantity: '1' }])}>{[p.name, p.barcode || p.product_code, formatMoney(p.selling_price)].filter(Boolean).join(' · ')}</button></li>)}</ul>{!products.data.items.length && <Empty title="No matching products" />}</>}
+          {!lineCount && <div className="cart-empty"><strong>Your bill starts here</strong><p>Choose a product above to add it to this bill{canCustom ? ', or add an item that is not in the list' : ''}.</p></div>}
+          <div className="table-wrap cart-table"><table className="table"><thead><tr><th>Product</th><th>Quantity</th><th className="num">Price</th><th className="num">Amount</th><th>Action</th></tr></thead><tbody>{items.map((i, index) => { const line = preview.data?.lines?.find(l => l.product_uuid === i.product.uuid); return <tr key={i.product.uuid}><td>{i.product.name}</td><td><input aria-label={`Quantity for ${i.product.name}`} type="number" min="0.001" max="1000000" step="0.001" required value={i.quantity} onChange={e => setItems(items.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} /></td><td className="num">{line ? formatMoney(line.unit_price) : '—'}</td><td className="num">{line ? formatMoney(line.amount) : '—'}</td><td><button type="button" className="link" aria-label={`Remove ${i.product.name}`} onClick={() => setItems(items.filter((_, n) => n !== index))}>Remove</button></td></tr> })}{custom.map((c, index) => { const line = customPreview[index]; return <tr key={c.key}><td>{c.name} <span className="badge">Not in list · GST {c.gst_percent}%</span></td><td><input aria-label={`Quantity for ${c.name}`} type="number" min="0.001" max="1000000" step="0.001" required value={c.quantity} onChange={e => setCustom(custom.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} /></td><td className="num">{line ? formatMoney(line.unit_price) : '—'}</td><td className="num">{line ? formatMoney(line.amount) : '—'}</td><td><button type="button" className="link" aria-label={`Remove ${c.name}`} onClick={() => setCustom(custom.filter((_, n) => n !== index))}>Remove</button></td></tr> })}</tbody></table></div>
           <Field label="Discount (%)" type="number" min="0" max="100" step="0.01" required value={discount} onChange={e => setDiscount(e.target.value)} />
         </section>
       </fieldset>
       <aside className="checkout-summary" aria-label="Bill summary">
-      {!items.length && <section className="card wide"><h2>Bill summary</h2><p className="muted">Your totals and payment options will appear here when you add an item.</p></section>}
-      {items.length > 0 && <section className="card wide"><div className="checkout-section-title"><span>03</span><h2>Bill summary</h2></div><p className="muted">Review pricing and payment before saving.</p>{preview.isFetching && <Loading label="Pricing this cart…" />}{preview.error && <Alert>{describeError(preview.error)} <button type="button" className="link" onClick={() => void preview.refetch()}>Retry pricing</button></Alert>}
+      {!lineCount && <section className="card wide"><h2>Bill summary</h2><p className="muted">Your totals and payment options will appear here when you add an item.</p></section>}
+      {lineCount > 0 && <section className="card wide"><div className="checkout-section-title"><span>03</span><h2>Bill summary</h2></div><p className="muted">Review pricing and payment before saving.</p>{preview.isFetching && <Loading label="Pricing this cart…" />}{preview.error && <Alert>{describeError(preview.error)} <button type="button" className="link" onClick={() => void preview.refetch()}>Retry pricing</button></Alert>}
         {preview.data && !preview.isFetching && !preview.error && <><dl className="bill-totals">{[['Subtotal', preview.data.subtotal], ['Discount', preview.data.discount_amount], ['Taxable', preview.data.taxable_amount], ['CGST', preview.data.cgst_amount], ['SGST', preview.data.sgst_amount], ['IGST', preview.data.igst_amount], ['Round-off', preview.data.round_off_amount], ['Total', preview.data.total]].map(([k, v]) => <div className={k === 'Total' ? 'row grand-total' : 'row'} key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></>}
         {items.some(i => { const line = preview.data?.lines?.find(line => line.product_uuid === i.product.uuid); return line && i.product.mrp_price != null && Number(line.unit_price) > Number(i.product.mrp_price) }) && <Alert kind="info">A product’s selling price is above its MRP. Check the price before creating the bill.</Alert>}
         <fieldset className="payment-choice" disabled={locked} aria-invalid={paidError ? true : undefined} aria-describedby={paidError ? 'paid-error' : undefined}>
@@ -110,8 +119,9 @@ function BillForm() {
         </fieldset>
       </section>}
       {mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Your cart is locked. Retry to safely retrieve or create this same bill.' : 'Check your cart and try again.'}</Alert>}
-      <div className="actions checkout-submit"><button className="primary" disabled={mutation.isPending || (!attempt && (!preview.data || !!preview.error || preview.isFetching || !items.length))}>{mutation.isPending ? 'Saving…' : attempt ? 'Retry saving bill' : 'Create bill'}</button></div>
+      <div className="actions checkout-submit"><button className="primary" disabled={mutation.isPending || (!attempt && (!preview.data || !!preview.error || preview.isFetching || !lineCount))}>{mutation.isPending ? 'Saving…' : attempt ? 'Retry saving bill' : 'Create bill'}</button></div>
       </aside>
     </form>
+    {addingCustom && <CustomItemEditor onClose={() => setAddingCustom(false)} onAdd={line => { setCustom([...custom, line]); setAddingCustom(false) }} />}
   </div>
 }
