@@ -1,5 +1,5 @@
 import { SupplierEditor } from './Suppliers'
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FormSection } from '../components/workspace'
 import { Modal } from '../components/Modal'
 import { Alert, Field } from '../components/ui'
@@ -20,7 +20,13 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   const units = useUnits()
   const suppliers = useSuppliers()
   const [addingSupplier, setAddingSupplier] = useState(false)
-  const { busy, error, run, setError } = useAction()
+  const { busy, error, run, setError, fieldErrors, setFieldErrors } = useAction()
+  const formRef = useRef<HTMLFormElement>(null)
+  const [invalid, setInvalid] = useState<Record<string, string>>({})
+  const errors = { ...fieldErrors, ...invalid }
+  const [focusTick, setFocusTick] = useState(0)
+  // After a failed save, take the shop owner straight to the first field that needs fixing.
+  useEffect(() => { if (focusTick) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus() }, [focusTick])
   const [f, setF] = useState({
     name: product?.name ?? '',
     supplier: product?.supplier_uuid ?? '',
@@ -37,19 +43,35 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     track: product?.track_stock ?? true,
     opening: '',
   })
-  const set = (key: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [key]: e.target.value })
+  // Form keys → the API field each one is saved as, so a server complaint lands on the right input.
+  const API: Partial<Record<keyof typeof f, string>> = { name: 'name', code: 'product_code', barcode: 'barcode', hsn: 'hsn_code', selling: 'selling_price', mrp: 'mrp_price', purchase: 'purchase_price', reorder: 'reorder_level', opening: 'opening_quantity', gst: 'gst_percent', category: 'category_uuid', unit: 'unit_uuid', supplier: 'supplier_uuid' }
+  const set = (key: keyof typeof f) => (e: { target: { value: string } }) => {
+    setF({ ...f, [key]: e.target.value })
+    const api = API[key]
+    if (api && errors[api]) {
+      const drop = (all: Record<string, string>) => { const rest = { ...all }; delete rest[api]; return rest }
+      setInvalid(drop)
+      setFieldErrors(drop)
+    }
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (sending.current) return
-    if (!f.name.trim()) { setError('Product name is required.'); return }
-    const amounts: [string, string][] = [['Selling price', f.selling], ['MRP', f.mrp], ['Cost price', f.purchase], ['Reorder level', f.reorder], ['Opening stock', f.opening]]
-    for (const [label, value] of amounts) {
-      if (value.trim() !== '' && !isAmount(value)) {
-        setError(`${label} must be a number like 25 or 25.5.`)
-        return
-      }
+    const problems: Record<string, string> = {}
+    if (!f.name.trim()) problems.name = 'Enter a product name.'
+    const amounts: [string, string, string][] = [['selling_price', 'Selling price', f.selling], ['purchase_price', 'Cost price', f.purchase], ['mrp_price', 'MRP', f.mrp], ['opening_quantity', 'Opening stock', f.opening], ['reorder_level', 'Reorder level', f.reorder]]
+    for (const [api, label, value] of amounts) {
+      if (value.trim() !== '' && !isAmount(value)) problems[api] = `${label} must be a number, like 25 or 25.5.`
     }
+    setInvalid(problems)
+    setFieldErrors({})
+    if (Object.keys(problems).length) {
+      setError(Object.keys(problems).length === 1 ? Object.values(problems)[0]! : 'Some details need fixing. Check the highlighted fields.')
+      setFocusTick(t => t + 1)
+      return
+    }
+    setError(null)
     const body: Record<string, unknown> = {
       name: f.name.trim(),
       product_code: decimalOrNull(f.code),
@@ -71,18 +93,20 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     try {
       const saved = await run(() => save.mutateAsync({ id: product?.uuid, body }))
       if (saved) onSaved(saved.product.uuid)
+      else setFocusTick(t => t + 1)
     } finally { sending.current = false }
   }
 
   return (
     <Modal title={editing ? 'Edit product' : 'Add product'} onClose={close} canClose={!busy} wide>
-      <form onSubmit={submit} noValidate className="product-form" aria-busy={busy}>
+      <form ref={formRef} onSubmit={submit} noValidate className="product-form" aria-busy={busy}>
         {error && <Alert>{error}</Alert>}
+        <p className="muted form-legend">Fields marked <span className="required-mark" aria-hidden="true">*</span> are required. Everything else is optional and can be added later.</p>
         {categories.error && <Alert>Categories could not be loaded. <button type="button" className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
         {units.error && <Alert>Units could not be loaded. <button type="button" className="link" onClick={() => void units.refetch()}>Retry units</button></Alert>}
         <fieldset disabled={busy}>
           <FormSection title="Product details" description="Start with the name and how you organise this product.">
-            <Field label="Product name" value={f.name} onChange={set('name')} maxLength={200} required autoFocus />
+            <Field label="Product name" value={f.name} onChange={set('name')} maxLength={200} required autoFocus error={errors.name} />
             <div className="field">
           <label htmlFor="pf-cat">Category</label>
           <select id="pf-cat" disabled={categories.isPending || categories.isError} value={f.category} onChange={set('category')}>
@@ -117,20 +141,20 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
             <small className="muted">Used as a suggestion for future purchases.</small>
           </div>
           <FormSection title="Pricing" description="Set your selling price and purchase cost.">
-            <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} />
-            <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} />
-            <Field label="MRP (₹)" inputMode="decimal" value={f.mrp} onChange={set('mrp')} />
+            <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} error={errors.selling_price} />
+            <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} error={errors.purchase_price} />
+            <Field label="MRP (₹)" inputMode="decimal" value={f.mrp} onChange={set('mrp')} error={errors.mrp_price} />
             {isAmount(f.selling) && isAmount(f.mrp) && Number(f.selling) > Number(f.mrp) && <Alert kind="info">Selling price is above MRP. Check the price before saving.</Alert>}
           </FormSection>
           <FormSection title="Stock" description="Track availability and choose when to reorder.">
             <label className="check wide-row"><input type="checkbox" checked={f.track} onChange={e => setF({ ...f, track: e.target.checked })} />Track stock for this product</label>
-            {!editing && <Field label="Opening stock" inputMode="decimal" value={f.opening} onChange={set('opening')} hint="What is on the shelf today." />}<Field label="Reorder level" inputMode="decimal" value={f.reorder} onChange={set('reorder')} />
+            {!editing && <Field label="Opening stock" inputMode="decimal" value={f.opening} onChange={set('opening')} hint="What is on the shelf today." error={errors.opening_quantity} />}<Field label="Reorder level" inputMode="decimal" value={f.reorder} onChange={set('reorder')} error={errors.reorder_level} />
           </FormSection>
-          <details className="optional-fields" open={editing ? true : undefined}>
+          <details className="optional-fields" open={editing || ['product_code', 'barcode', 'hsn_code', 'gst_percent'].some(k => errors[k]) ? true : undefined}>
             <summary>Codes and tax details (optional)</summary><div className="form-grid">
-              <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} />
-            <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} />
-            <Field label="HSN / SAC code" value={f.hsn} onChange={set('hsn')} maxLength={20} />
+              <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} error={errors.product_code} />
+            <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} error={errors.barcode} />
+            <Field label="HSN / SAC code" value={f.hsn} onChange={set('hsn')} maxLength={20} error={errors.hsn_code} />
             <div className="field">
           <label htmlFor="pf-gst">GST %</label>
           <select id="pf-gst" value={f.gst} onChange={set('gst')}>

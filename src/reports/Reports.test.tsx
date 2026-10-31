@@ -64,7 +64,7 @@ test('an empty period says so instead of drawing empty charts', async () => {
 test('a server error is shown in words, not left spinning', async () => {
   fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', REPORT, { error: { code: 'internal_error', message: 'Something went wrong.' } }, 500)])
   renderApp('/reports')
-  expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong.')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong on our side.')
 })
 
 test('the day book lists the bills and the cash drawer change', async () => {
