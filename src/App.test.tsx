@@ -75,12 +75,12 @@ function menu() {
     .map((a) => a.textContent)
 }
 
-test('owner and admin menus include reports, team and shop activity', async () => {
+test('owner and admin menus include reports, team, shop activity and settings', async () => {
   for (const role of ['owner', 'admin']) {
     fakeApi([...SIGNED_IN, SHOP(role)])
     const view = renderApp('/')
     await screen.findByRole('heading', { name: 'Hello, Asha' })
-    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Team', 'Shop activity', 'Cloud subscription'])
+    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Team', 'Shop activity', 'Shop settings', 'Cloud subscription'])
     view.unmount()
   }
 })

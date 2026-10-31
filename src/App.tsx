@@ -5,6 +5,7 @@ import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
 import { BillsPage } from './billing/BillsPage'
 import { NewBill } from './billing/NewBill'
 import { BillDetailPage } from './billing/BillDetailPage'
+import { InvoiceSettingsPage } from './billing/InvoiceSettingsPage'
 import { ProductsPage } from './products/ProductsPage'
 import { Overview } from './reports/Overview'
 import { ExpiringPage, PurchasesPage, StockValuePage, TaxPage } from './reports/Registers'
@@ -109,6 +110,9 @@ export default function App() {
               </Route>
               <Route element={<RequireCapability needs="shop.events" />}>
                 <Route path="activity" element={<ShopActivity />} />
+              </Route>
+              <Route element={<RequireCapability needs="shop.settings" />}>
+                <Route path="settings" element={<InvoiceSettingsPage />} />
               </Route>
               </Route>
             </Route>

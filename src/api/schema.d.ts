@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -974,7 +974,12 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit Invoice Settings
+         * @description Save the shop's details and invoice layout to the same synced rows the phone uses,
+         *     so a change on either side shows on both.
+         */
+        patch: operations["edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch"];
         trace?: never;
     };
     "/v1/shops/{shop_id}/members": {
@@ -2261,6 +2266,11 @@ export interface components {
             footer_text: string;
             /** Gst Registered */
             gst_registered: boolean;
+            /**
+             * Gst Scheme
+             * @enum {string}
+             */
+            gst_scheme: "regular" | "composition" | "unregistered";
             /** Invoice Title */
             invoice_title: string;
             /** Paper Size */
@@ -2277,10 +2287,50 @@ export interface components {
             shop_name: string;
             /** Shop Phone */
             shop_phone: string | null;
+            /** Show */
+            show: {
+                [key: string]: boolean;
+            };
             /** Terms Text */
             terms_text: string | null;
             /** Upi Id */
             upi_id: string | null;
+        };
+        /**
+         * InvoiceSettingsIn
+         * @description Owner/admin edits to the shop's details and how invoices look. Omitted fields stay.
+         */
+        InvoiceSettingsIn: {
+            /** Bank Details */
+            bank_details?: string | null;
+            /** Footer Text */
+            footer_text?: string | null;
+            /** Gst Scheme */
+            gst_scheme?: ("regular" | "composition" | "unregistered") | null;
+            /** Invoice Title */
+            invoice_title?: string | null;
+            /** Paper Size */
+            paper_size?: ("a4" | "a5") | null;
+            /** Round Off Total */
+            round_off_total?: boolean | null;
+            /** Shop Address */
+            shop_address?: string | null;
+            /** Shop Email */
+            shop_email?: string | null;
+            /** Shop Gstin */
+            shop_gstin?: string | null;
+            /** Shop Name */
+            shop_name?: string | null;
+            /** Shop Phone */
+            shop_phone?: string | null;
+            /** Show */
+            show?: {
+                [key: string]: boolean;
+            } | null;
+            /** Terms Text */
+            terms_text?: string | null;
+            /** Upi Id */
+            upi_id?: string | null;
         };
         /** Kpis */
         Kpis: {
@@ -3822,7 +3872,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3844,7 +3894,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5778,6 +5828,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceSettingsIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

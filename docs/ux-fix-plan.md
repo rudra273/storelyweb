@@ -71,16 +71,31 @@ with name, price, quantity and an explicit GST rate (optional cost, HSN, unit). 
 server prices it like any fixed-price line, moves no stock (as Android does), and
 returns work on it. Staff are refused by the API and don't see the button.
 
-**Next up:** the standard invoice with a settings editor and live preview, then
-Phase 4 polish.
+✅ **Standard invoice and Shop settings (2 Nov 2026):** one invoice layout for the
+bill page and the settings preview, following the phone's BillSettings switches
+and title rule (Tax Invoice / Bill of Supply / Bill, composition note): shop and
+customer blocks, place of supply with state name, intra/inter-state, columns by
+switch, totals, amount in words, tax summary by HSN, payments, UPI QR for the
+balance, bank details, terms, signatory, footer. Papers: A4, A5, 80 mm and 58 mm
+receipts. Shop settings page (owner/admin): shop details, GST scheme, invoice
+text, paper, round-off and every show/hide switch, with a live scaled preview.
+Saved to the same synced rows as the phone (`PATCH /invoice-settings`); a newer
+phone edit is reported (409) rather than silently lost. Items 6 and 7 done;
+item 26 (subscription icon) done.
+
+Not yet: shop logo and signature images (the phone stores them; the web does not
+upload them yet), and customer pages (item 9), expenses (item 8).
+
+**Next up:** Phase 4 polish (raw dates and codes on screen, empty states, success
+messages, alignment).
 
 ## Phase 2: missing features customers expect (Android has them)
 
-6. **Shop and invoice settings.** No web page to set shop address, phone,
+6. ✅ **Shop and invoice settings.** No web page to set shop address, phone,
    GSTIN/GST scheme, invoice series, round-off, default GST. The invoice prints
    only the shop name. [web] Settings page using `/shops/{id}` and
    `/invoice-settings`; [api] add whatever is missing.
-7. **Invoice content.** Always says "TAX INVOICE" even for an unregistered shop
+7. ✅ **Invoice content.** Always says "TAX INVOICE" even for an unregistered shop
    (should be "Bill of Supply"/"Invoice"), no address/GSTIN/phone, no amount in
    words, no thermal (58/80 mm) size. [web] `Invoice.tsx`, paper CSS. [decide]
    match Android's invoice layout.
@@ -137,7 +152,7 @@ Phase 4 polish.
     "shop created" appears. [api] log sign-ins, or [web] fix the description.
 25. **Account.** "Your password" label under Change email is unclear; session list
     mixes "Web browser" and "web" labels.
-26. **Accessibility.** Low stock / Expiring filters are checkboxes named "on";
+26. ✅ **Accessibility.** Low stock / Expiring filters are checkboxes named "on";
     sidebar "Cloud subscription" has no icon.
 
 ## How we will work

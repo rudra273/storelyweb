@@ -49,7 +49,7 @@ export function AppLayout() {
                 <NavIcon path={item.to} />{item.label}
               </NavLink>
             ))}
-            <NavLink to="/subscription" onClick={() => setOpen(false)}>Cloud subscription</NavLink>
+            <NavLink to="/subscription" onClick={() => setOpen(false)}><NavIcon path="/subscription" />Cloud subscription</NavLink>
           </nav>
           <nav aria-label="Account" className="account-nav">
             <NavLink to="/account" onClick={() => setOpen(false)}>
@@ -80,6 +80,8 @@ function NavIcon({ path }: { path: string }) {
     '/billing': 'M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6',
     '/team': 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m18 0v-2a4 4 0 0 0-3-3.9M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-7a4 4 0 0 1 0 7',
     '/activity': 'M3 12h4l3-8 4 16 3-8h4',
+    '/settings': 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7.5 7.5 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7.5 7.5 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z',
+    '/subscription': 'M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18Z',
   }
   return <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[path]} /></svg>
 }

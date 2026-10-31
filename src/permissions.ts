@@ -58,4 +58,5 @@ export const NAV: NavItem[] = [
   { to: '/billing', label: 'Billing', needs: 'billing.create' },
   { to: '/team', label: 'Team', needs: 'team.manage' },
   { to: '/activity', label: 'Shop activity', needs: 'shop.events' },
+  { to: '/settings', label: 'Shop settings', needs: 'shop.settings' },
 ]

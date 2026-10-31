@@ -2298,6 +2298,15 @@
       "title": "Gst Registered",
       "type": "boolean"
      },
+     "gst_scheme": {
+      "enum": [
+       "regular",
+       "composition",
+       "unregistered"
+      ],
+      "title": "Gst Scheme",
+      "type": "string"
+     },
      "invoice_title": {
       "title": "Invoice Title",
       "type": "string"
@@ -2358,6 +2367,13 @@
       ],
       "title": "Shop Phone"
      },
+     "show": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "title": "Show",
+      "type": "object"
+     },
      "terms_text": {
       "anyOf": [
        {
@@ -2388,15 +2404,243 @@
      "shop_gstin",
      "shop_address",
      "gst_registered",
+     "gst_scheme",
      "invoice_title",
      "footer_text",
      "paper_size",
      "upi_id",
      "terms_text",
      "bank_details",
-     "round_off_total"
+     "round_off_total",
+     "show"
     ],
     "title": "InvoiceSettings",
+    "type": "object"
+   },
+   "InvoiceSettingsIn": {
+    "additionalProperties": false,
+    "description": "Owner/admin edits to the shop's details and how invoices look. Omitted fields stay.",
+    "properties": {
+     "bank_details": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bank Details"
+     },
+     "footer_text": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Footer Text"
+     },
+     "gst_scheme": {
+      "anyOf": [
+       {
+        "enum": [
+         "regular",
+         "composition",
+         "unregistered"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Scheme"
+     },
+     "invoice_title": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Title"
+     },
+     "paper_size": {
+      "anyOf": [
+       {
+        "enum": [
+         "a4",
+         "a5"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Paper Size"
+     },
+     "round_off_total": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Total"
+     },
+     "shop_address": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Address"
+     },
+     "shop_email": {
+      "anyOf": [
+       {
+        "maxLength": 254,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Email"
+     },
+     "shop_gstin": {
+      "anyOf": [
+       {
+        "maxLength": 15,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Gstin"
+     },
+     "shop_name": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Name"
+     },
+     "shop_phone": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Phone"
+     },
+     "show": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "type": "boolean"
+        },
+        "propertyNames": {
+         "enum": [
+          "show_invoice_title",
+          "show_shop_name",
+          "show_shop_address",
+          "show_shop_phone",
+          "show_shop_email",
+          "show_shop_gstin",
+          "show_customer_name",
+          "show_customer_phone",
+          "show_customer_address",
+          "show_customer_gstin",
+          "show_customer_legal_name",
+          "show_customer_trade_name",
+          "show_customer_place_of_supply",
+          "show_invoice_number",
+          "show_invoice_date",
+          "show_invoice_place_of_supply",
+          "show_invoice_supply_type",
+          "show_payment_details",
+          "show_gst_breakdown",
+          "show_item_serial_column",
+          "show_item_name_column",
+          "show_hsn_column",
+          "show_quantity_column",
+          "show_rate_column",
+          "show_gst_percent_column",
+          "show_gst_amount_column",
+          "show_amount_column",
+          "show_subtotal",
+          "show_discount",
+          "show_taxable_amount",
+          "show_cgst_sgst_igst",
+          "show_gst_total",
+          "show_grand_total",
+          "show_footer_text",
+          "show_upi_qr",
+          "show_amount_in_words",
+          "show_hsn_summary"
+         ]
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Show"
+     },
+     "terms_text": {
+      "anyOf": [
+       {
+        "maxLength": 1000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Terms Text"
+     },
+     "upi_id": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Upi Id"
+     }
+    },
+    "title": "InvoiceSettingsIn",
     "type": "object"
    },
    "Kpis": {
@@ -7462,7 +7706,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -7471,7 +7715,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -7486,7 +7730,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -7495,7 +7739,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -10359,6 +10603,57 @@
      }
     },
     "summary": "Invoice Settings",
+    "tags": [
+     "billing"
+    ]
+   },
+   "patch": {
+    "description": "Save the shop's details and invoice layout to the same synced rows the phone uses,\nso a change on either side shows on both.",
+    "operationId": "edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InvoiceSettingsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvoiceSettings"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Edit Invoice Settings",
     "tags": [
      "billing"
     ]
