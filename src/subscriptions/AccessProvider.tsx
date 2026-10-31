@@ -12,10 +12,10 @@ export function AccessProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient()
   const [blockedGeneration, setBlockedGeneration] = useState<number | null>(null)
   const generation = useRef(0)
-  const query = useQuery({ queryKey: ['entitlement', shop], queryFn: async () => { const received = Date.now(); const value = await api.get<Entitlement>(`/v1/shops/${encodeURIComponent(shop)}/entitlement`); return { value, received, generation: ++generation.current } }, enabled: !!shop, staleTime: 0, refetchOnMount: 'always', refetchInterval: 60_000, retry: false })
+  const query = useQuery({ queryKey: ['entitlement', shop], queryFn: async () => { const received = Date.now(); const value = await api.get<Entitlement>(`/v1/shops/${encodeURIComponent(shop)}/entitlement`); return { value, received, generation: ++generation.current } }, enabled: !!shop, staleTime: 60_000, refetchInterval: 60_000, retry: false })
   const blocked = blockedGeneration !== null && blockedGeneration === (query.data?.generation ?? 0)
   const value = query.data?.value
-  const active = query.isFetchedAfterMount && !!value?.web_access && value.shop_id === shop && !blocked && !query.error
+  const active = !!value?.web_access && value.shop_id === shop && !blocked && !query.error
   useEffect(() => subscribeShopAccess(event => {
     if (event.shopId !== shop) return
     if (event.roleOnly) {
@@ -55,5 +55,5 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     void client.cancelQueries(filter)
     client.removeQueries(filter)
   }, [client, shop])
-  return <AccessContext.Provider value={{ active, pending: !query.isFetchedAfterMount || query.isPending || (blocked && query.isFetching), error: query.error, entitlement: value, refresh: () => { setBlockedGeneration(query.data?.generation ?? 0); void query.refetch() } }}>{children}</AccessContext.Provider>
+  return <AccessContext.Provider value={{ active, pending: query.isPending || (blocked && query.isFetching), error: query.error, entitlement: value, refresh: () => { setBlockedGeneration(query.data?.generation ?? 0); void query.refetch() } }}>{children}</AccessContext.Provider>
 }

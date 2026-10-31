@@ -42,6 +42,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (sending.current) return
+    if (!f.name.trim()) { setError('Product name is required.'); return }
     const amounts: [string, string][] = [['Selling price', f.selling], ['MRP', f.mrp], ['Cost price', f.purchase], ['Reorder level', f.reorder], ['Opening stock', f.opening]]
     for (const [label, value] of amounts) {
       if (value.trim() !== '' && !isAmount(value)) {
@@ -119,6 +120,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
             <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} />
             <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} />
             <Field label="MRP (₹)" inputMode="decimal" value={f.mrp} onChange={set('mrp')} />
+            {isAmount(f.selling) && isAmount(f.mrp) && Number(f.selling) > Number(f.mrp) && <Alert kind="info">Selling price is above MRP. Check the price before saving.</Alert>}
           </FormSection>
           <FormSection title="Stock" description="Track availability and choose when to reorder.">
             <label className="check wide-row"><input type="checkbox" checked={f.track} onChange={e => setF({ ...f, track: e.target.checked })} />Track stock for this product</label>
@@ -145,7 +147,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
         </fieldset>
         <div className="actions form-footer">
           <Button disabled={busy} onClick={close}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={busy || !f.name.trim()}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
+          <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
         </div>
       </form>
       {addingSupplier && <SupplierEditor onClose={() => setAddingSupplier(false)} onSaved={supplier => { setF(current => ({ ...current, supplier: supplier.uuid })); setAddingSupplier(false) }} />}

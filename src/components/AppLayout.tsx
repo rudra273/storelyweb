@@ -8,12 +8,12 @@ import { useShopAccess } from '../subscriptions/context'
 export function AppLayout() {
   const { user, logout } = useAuth()
   const { shops, current, role, select } = useShop()
-  const { active } = useShopAccess()
+  const { active, pending } = useShopAccess()
   const navigate = useNavigate()
   const location = useLocation()
   const page = NAV.find(item => location.pathname.startsWith(item.to))?.label ?? (location.pathname.startsWith('/account') ? 'Your account' : location.pathname === '/subscription' ? 'Cloud subscription' : 'Overview')
   const [open, setOpen] = useState(false)
-  const items = active ? NAV.filter((item) => can(role, item.needs)) : []
+  const items = active || pending ? NAV.filter((item) => can(role, item.needs)) : []
 
   return (
     <div className="shell"><a className="skip-link" href="#main-content">Skip to content</a>
