@@ -173,7 +173,7 @@ test('switching shops clears the previous catalogue, selection and dialogs while
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Basmati Rice' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Print labels' })).not.toBeInTheDocument()
-  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Checking subscription')
+  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Opening your workspace')
   expect(calls.length).toBeGreaterThan(0)
 })
 

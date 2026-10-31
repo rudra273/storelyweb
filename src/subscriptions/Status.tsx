@@ -50,5 +50,8 @@ export function SubscriptionStatus() {
 }
 export function RequirePaid() {
   const access = useShopAccess()
+  // While the check is in flight, wait quietly; showing the subscription page here
+  // flashes it at every paying shop right after sign-in.
+  if (access.pending) return <Loading label="Opening your workspace…" />
   return access.active ? <Outlet /> : <SubscriptionStatus />
 }
