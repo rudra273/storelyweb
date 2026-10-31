@@ -239,6 +239,39 @@ test('stock adjustment rejects invalid quantity and preserves input after server
   expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))?.body).toMatchObject({ delta: '-51.25' })
 })
 
+test('a category with its own GST can be created from the product form and is selected', async () => {
+  const made = { uuid: 'c2', name: 'Biscuits', hsn_code: null, gst_percent: '18', product_count: 0 }
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', '/v1/shops/s1/suppliers', []),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([])),
+    ok('POST', '/v1/shops/s1/categories', made, 201),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  await userEvent.type(screen.getByLabelText('Product name'), 'Marie')
+  await userEvent.click(screen.getByRole('button', { name: '+ New category' }))
+  const editor = screen.getByRole('dialog', { name: 'New category' })
+  await userEvent.type(within(editor).getByLabelText('Category name'), 'Biscuits')
+  await userEvent.selectOptions(within(editor).getByLabelText('GST % (optional)'), '18')
+  await userEvent.click(within(editor).getByRole('button', { name: 'Add category' }))
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/categories'))?.body).toEqual({ name: 'Biscuits', gst_percent: '18', hsn_code: null })
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'New category' })).not.toBeInTheDocument())
+  expect(screen.getByLabelText('Product name')).toHaveValue('Marie')
+})
+
+test('a product without a selling price is stopped with a message on the price field', async () => {
+  const calls = setup('owner', [{ ...RICE, ...COST }])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const dialog = await screen.findByRole('dialog', { hidden: true })
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'Tea')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  expect(within(dialog).getByLabelText('Selling price (₹)')).toHaveAttribute('aria-invalid', 'true')
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('Enter the price you sell this product at.')
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/products'))).toBe(false)
+})
+
 for (const kind of ['product', 'stock']) {
   test(`${kind} saving freezes fields and close controls until completion`, async () => {
     setup('owner', [{ ...RICE, ...COST }])
@@ -255,6 +288,7 @@ for (const kind of ['product', 'stock']) {
     if (kind === 'product') {
       await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
       await userEvent.type(screen.getByLabelText('Product name'), 'Tea')
+      await userEvent.type(screen.getByLabelText('Selling price (₹)'), '20')
     } else {
       await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
       await userEvent.click(await screen.findByRole('button', { name: 'Adjust stock' }))

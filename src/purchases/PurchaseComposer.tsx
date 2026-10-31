@@ -146,7 +146,6 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
       <p className="muted">Record stock you have received. Drafts stay on this browser for this account and shop.</p>
       {conflict && <Alert>This draft changed in another tab. Close and reopen it to load the latest version.</Alert>}
       {storageError && <Alert>{storageError} {!loaded.error && <Button onClick={() => persist(draftRef.current)}>Retry saving draft</Button>}</Alert>}
-      {error && <Alert>{error}</Alert>}
       {duplicateImport && !draft.submitted && draft.items.some(line => line.import_key) && <label className="check"><input type="checkbox" checked={!!draft.allow_duplicate_import_keys?.length} onChange={e => change({ ...draftRef.current, allow_duplicate_import_keys: e.target.checked ? [...new Set(draft.items.flatMap(line => line.import_key ? [line.import_key] : []))] : [] })} />I reviewed the file history and intend to import these quantities again</label>}
       {draft.submitted && <Alert kind="info">The save needs confirmation. Retry the same purchase to recover its result before making changes.</Alert>}
       <form onSubmit={confirm} noValidate aria-busy={busy}>
@@ -179,7 +178,7 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
             </li>
           })}</ol>
         </fieldset>
-        <div className="purchase-footer"><p>Stock cost subtotal: <strong>{total === null ? 'Complete quantities and costs' : receiptMoney(total)}</strong></p><small className="muted">Payment, tax and additional charges are not recorded here.</small><div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div>
+        <div className="purchase-footer"><p>Stock cost subtotal: <strong>{total === null ? 'Complete quantities and costs' : receiptMoney(total)}</strong></p><small className="muted">Payment, tax and additional charges are not recorded here.</small>{error && <Alert>{error}</Alert>}<div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div>
       </form>
       {productEditor && <NewProductDraft line={productEditor === 'new' ? undefined : productEditor} onClose={() => setProductEditor(null)} onStage={line => {
         const active = draftRef.current

@@ -50,3 +50,11 @@
 
 .field-error { color: var(--danger, #b42318); font-size: .875rem; }
 .field input[aria-invalid='true'] { border-color: var(--danger, #b42318); }
+
+.field-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.field-label-row .link { font-size: .875rem; white-space: nowrap; }
+
+.table .num { text-align: right; white-space: nowrap; }
+.payment-choice { border: 0; padding: 0; margin: 1rem 0 0; display: grid; gap: .5rem; }
+.payment-choice legend { font-weight: 600; margin-bottom: .25rem; }
+.payment-choice[aria-invalid='true'] legend { color: var(--danger, #b42318); }

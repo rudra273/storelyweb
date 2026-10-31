@@ -1,13 +1,12 @@
 import { SupplierEditor } from './Suppliers'
+import { CategoryEditor, UnitEditor } from './QuickCreate'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FormSection } from '../components/workspace'
 import { Modal } from '../components/Modal'
 import { Alert, Field } from '../components/ui'
 import { useAction } from '../components/useAction'
 import { decimalOrNull, isAmount } from '../lib/money'
-import { saveProduct, useCategories, useProductMutation, useUnits, useSuppliers, type Product } from './queries'
-
-const GST = ['0', '0.25', '3', '5', '12', '18', '28', '40']
+import { GST_RATES, saveProduct, useCategories, useProductMutation, useUnits, useSuppliers, type Product } from './queries'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
@@ -20,6 +19,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   const units = useUnits()
   const suppliers = useSuppliers()
   const [addingSupplier, setAddingSupplier] = useState(false)
+  const [adding, setAdding] = useState<'category' | 'unit' | null>(null)
   const { busy, error, run, setError, fieldErrors, setFieldErrors } = useAction()
   const formRef = useRef<HTMLFormElement>(null)
   const [invalid, setInvalid] = useState<Record<string, string>>({})
@@ -60,6 +60,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     if (sending.current) return
     const problems: Record<string, string> = {}
     if (!f.name.trim()) problems.name = 'Enter a product name.'
+    if (!f.selling.trim()) problems.selling_price = 'Enter the price you sell this product at.'
     const amounts: [string, string, string][] = [['selling_price', 'Selling price', f.selling], ['purchase_price', 'Cost price', f.purchase], ['mrp_price', 'MRP', f.mrp], ['opening_quantity', 'Opening stock', f.opening], ['reorder_level', 'Reorder level', f.reorder]]
     for (const [api, label, value] of amounts) {
       if (value.trim() !== '' && !isAmount(value)) problems[api] = `${label} must be a number, like 25 or 25.5.`
@@ -100,7 +101,6 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   return (
     <Modal title={editing ? 'Edit product' : 'Add product'} onClose={close} canClose={!busy} wide>
       <form ref={formRef} onSubmit={submit} noValidate className="product-form" aria-busy={busy}>
-        {error && <Alert>{error}</Alert>}
         <p className="muted form-legend">Fields marked <span className="required-mark" aria-hidden="true">*</span> are required. Everything else is optional and can be added later.</p>
         {categories.error && <Alert>Categories could not be loaded. <button type="button" className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
         {units.error && <Alert>Units could not be loaded. <button type="button" className="link" onClick={() => void units.refetch()}>Retry units</button></Alert>}
@@ -108,40 +108,32 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
           <FormSection title="Product details" description="Start with the name and how you organise this product.">
             <Field label="Product name" value={f.name} onChange={set('name')} maxLength={200} required autoFocus error={errors.name} />
             <div className="field">
-          <label htmlFor="pf-cat">Category</label>
-          <select id="pf-cat" disabled={categories.isPending || categories.isError} value={f.category} onChange={set('category')}>
-            <option value="">None</option>
-            {categories.data?.map((c) => (
-              <option key={c.uuid} value={c.uuid}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div><div className="field">
-          <label htmlFor="pf-unit">Unit</label>
-          <select id="pf-unit" disabled={units.isPending || units.isError} value={f.unit} onChange={set('unit')}>
-            <option value="">None</option>
-            {units.data?.map((u) => (
-              <option key={u.uuid} value={u.uuid}>
-                {u.name}
-              </option>
-            ))}
-          </select>
-        </div>
+              <div className="field-label-row"><label htmlFor="pf-cat">Category</label><button type="button" className="link" onClick={() => setAdding('category')}>+ New category</button></div>
+              <select id="pf-cat" disabled={categories.isPending || categories.isError} value={f.category} onChange={set('category')}>
+                <option value="">None</option>
+                {categories.data?.map((c) => <option key={c.uuid} value={c.uuid}>{c.gst_percent === null ? c.name : `${c.name} · GST ${c.gst_percent}%`}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <div className="field-label-row"><label htmlFor="pf-unit">Unit</label><button type="button" className="link" onClick={() => setAdding('unit')}>+ New unit</button></div>
+              <select id="pf-unit" disabled={units.isPending || units.isError} value={f.unit} onChange={set('unit')}>
+                <option value="">None</option>
+                {units.data?.map((u) => <option key={u.uuid} value={u.uuid}>{u.name}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <div className="field-label-row"><label htmlFor="pf-supplier">Preferred supplier (optional)</label><button type="button" className="link" onClick={() => setAddingSupplier(true)}>+ New supplier</button></div>
+              <select id="pf-supplier" value={f.supplier} onChange={set('supplier')} disabled={suppliers.isPending || suppliers.isError}>
+                <option value="">None</option>
+                {f.supplier && !suppliers.data?.some(s => s.uuid === f.supplier) && <option value={f.supplier}>Current supplier</option>}
+                {suppliers.data?.map(s => <option key={s.uuid} value={s.uuid}>{s.name}</option>)}
+              </select>
+              {suppliers.error && <Alert>Suppliers could not be loaded. <button type="button" className="link" onClick={() => void suppliers.refetch()}>Retry suppliers</button></Alert>}
+              <small className="hint">Suggested when you record a purchase.</small>
+            </div>
           </FormSection>
-          <div className="field">
-            <label htmlFor="pf-supplier">Preferred supplier (optional)</label>
-            <select id="pf-supplier" value={f.supplier} onChange={set('supplier')} disabled={suppliers.isPending || suppliers.isError}>
-              <option value="">None</option>
-              {f.supplier && !suppliers.data?.some(s => s.uuid === f.supplier) && <option value={f.supplier}>Current supplier</option>}
-              {suppliers.data?.map(s => <option key={s.uuid} value={s.uuid}>{s.name}</option>)}
-            </select>
-            {suppliers.error && <Alert>Suppliers could not be loaded. <button type="button" className="link" onClick={() => void suppliers.refetch()}>Retry suppliers</button></Alert>}
-            <Button onClick={() => setAddingSupplier(true)}>Add supplier</Button>
-            <small className="muted">Used as a suggestion for future purchases.</small>
-          </div>
           <FormSection title="Pricing" description="Set your selling price and purchase cost.">
-            <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} error={errors.selling_price} />
+            <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} required error={errors.selling_price} />
             <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} error={errors.purchase_price} />
             <Field label="MRP (₹)" inputMode="decimal" value={f.mrp} onChange={set('mrp')} error={errors.mrp_price} />
             {isAmount(f.selling) && isAmount(f.mrp) && Number(f.selling) > Number(f.mrp) && <Alert kind="info">Selling price is above MRP. Check the price before saving.</Alert>}
@@ -159,7 +151,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
           <label htmlFor="pf-gst">GST %</label>
           <select id="pf-gst" value={f.gst} onChange={set('gst')}>
             <option value="">Not set</option>
-            {GST.map((g) => (
+            {GST_RATES.map((g) => (
               <option key={g} value={g}>
                 {g}%
               </option>
@@ -169,11 +161,15 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
             </div>
           </details>
         </fieldset>
+        {/* Next to the Save button, where the eye is after clicking it. */}
+        {error && <Alert>{error}</Alert>}
         <div className="actions form-footer">
           <Button disabled={busy} onClick={close}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
         </div>
       </form>
+      {adding === 'category' && <CategoryEditor onClose={() => setAdding(null)} onSaved={category => { setF(current => ({ ...current, category: category.uuid })); setAdding(null) }} />}
+      {adding === 'unit' && <UnitEditor onClose={() => setAdding(null)} onSaved={unit => { setF(current => ({ ...current, unit: unit.uuid })); setAdding(null) }} />}
       {addingSupplier && <SupplierEditor onClose={() => setAddingSupplier(false)} onSaved={supplier => { setF(current => ({ ...current, supplier: supplier.uuid })); setAddingSupplier(false) }} />}
     </Modal>
   )

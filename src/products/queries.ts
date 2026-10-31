@@ -13,6 +13,9 @@ export type Unit = S['UnitOut']
 export type Supplier = S['SupplierOut']
 export type ImportReport = S['ImportReport']
 
+/** GST slabs offered for products and categories. */
+export const GST_RATES = ['0', '0.25', '3', '5', '12', '18', '28', '40']
+
 export const REASONS: { value: S['AdjustIn']['reason']; label: string; removes: boolean }[] = [
   { value: 'damage', label: 'Damaged', removes: true },
   { value: 'expired', label: 'Expired', removes: true },
