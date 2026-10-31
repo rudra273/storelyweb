@@ -58,3 +58,13 @@
 .payment-choice { border: 0; padding: 0; margin: 1rem 0 0; display: grid; gap: .5rem; }
 .payment-choice legend { font-weight: 600; margin-bottom: .25rem; }
 .payment-choice[aria-invalid='true'] legend { color: var(--danger, #b42318); }
+
+.price-mode { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.price-mode legend { font-weight: 600; margin-bottom: .4rem; }
+.price-breakdown { background: var(--surface-muted, #f6f7f9); border: 1px solid var(--line); border-radius: 10px; padding: .75rem 1rem; display: grid; gap: .5rem; }
+.price-breakdown dl { margin: 0; display: grid; gap: .25rem; }
+.price-breakdown .row { display: flex; justify-content: space-between; gap: 1rem; font-size: .9rem; }
+.price-breakdown dt { color: var(--muted); }
+.price-breakdown dd { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.price-breakdown .grand-total { border-top: 1px solid var(--line); padding-top: .4rem; margin-top: .2rem; font-weight: 700; font-size: 1rem; }
+.price-breakdown .grand-total dt { color: var(--navy); }

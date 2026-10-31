@@ -1,12 +1,14 @@
 import { SupplierEditor } from './Suppliers'
 import { CategoryEditor, UnitEditor } from './QuickCreate'
+import { PriceBreakdown } from './PriceBreakdown'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Button, FormSection } from '../components/workspace'
 import { Modal } from '../components/Modal'
 import { Alert, Field } from '../components/ui'
 import { useAction } from '../components/useAction'
 import { decimalOrNull, isAmount } from '../lib/money'
-import { GST_RATES, saveProduct, useCategories, useProductMutation, useUnits, useSuppliers, type Product } from './queries'
+import { useDebounced } from '../lib/useDebounced'
+import { GST_RATES, saveProduct, useCategories, usePricePreview, useProductMutation, useUnits, useSuppliers, type PriceInput, type Product } from './queries'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
@@ -42,9 +44,19 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     reorder: product?.reorder_level ?? '',
     track: product?.track_stock ?? true,
     opening: '',
+    mode: product?.price_mode ?? 'fixed',
+    margin: product?.profit_margin_percent ?? '',
+    overhead: product?.overhead_cost ?? '',
   })
+  const formula = f.mode === 'formula'
+  // The breakdown comes from the server, so what the owner sees is what billing charges.
+  const priceInput: PriceInput | null = (formula ? isAmount(f.purchase) : isAmount(f.selling)) && [f.purchase, f.margin, f.overhead].every(v => !v.trim() || isAmount(v))
+    ? { price_mode: f.mode, selling_price: formula ? null : f.selling.trim(), purchase_price: decimalOrNull(f.purchase), overhead_cost: formula ? decimalOrNull(f.overhead) : null, profit_margin_percent: formula ? decimalOrNull(f.margin) : null, gst_percent: decimalOrNull(f.gst), category_uuid: f.category || null }
+    : null
+  const settled = useDebounced(priceInput ? JSON.stringify(priceInput) : '', 300)
+  const price = usePricePreview(settled ? JSON.parse(settled) as PriceInput : null)
   // Form keys → the API field each one is saved as, so a server complaint lands on the right input.
-  const API: Partial<Record<keyof typeof f, string>> = { name: 'name', code: 'product_code', barcode: 'barcode', hsn: 'hsn_code', selling: 'selling_price', mrp: 'mrp_price', purchase: 'purchase_price', reorder: 'reorder_level', opening: 'opening_quantity', gst: 'gst_percent', category: 'category_uuid', unit: 'unit_uuid', supplier: 'supplier_uuid' }
+  const API: Partial<Record<keyof typeof f, string>> = { name: 'name', code: 'product_code', barcode: 'barcode', hsn: 'hsn_code', selling: 'selling_price', mrp: 'mrp_price', purchase: 'purchase_price', reorder: 'reorder_level', opening: 'opening_quantity', gst: 'gst_percent', category: 'category_uuid', unit: 'unit_uuid', supplier: 'supplier_uuid', margin: 'profit_margin_percent', overhead: 'overhead_cost' }
   const set = (key: keyof typeof f) => (e: { target: { value: string } }) => {
     setF({ ...f, [key]: e.target.value })
     const api = API[key]
@@ -60,11 +72,13 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     if (sending.current) return
     const problems: Record<string, string> = {}
     if (!f.name.trim()) problems.name = 'Enter a product name.'
-    if (!f.selling.trim()) problems.selling_price = 'Enter the price you sell this product at.'
-    const amounts: [string, string, string][] = [['selling_price', 'Selling price', f.selling], ['purchase_price', 'Cost price', f.purchase], ['mrp_price', 'MRP', f.mrp], ['opening_quantity', 'Opening stock', f.opening], ['reorder_level', 'Reorder level', f.reorder]]
+    if (!formula && !f.selling.trim()) problems.selling_price = 'Enter the price you sell this product at.'
+    if (formula && !f.purchase.trim()) problems.purchase_price = 'Enter the cost price: the selling price is worked out from it.'
+    const amounts: [string, string, string][] = [['selling_price', 'Selling price', formula ? '' : f.selling], ['purchase_price', 'Cost price', f.purchase], ['mrp_price', 'MRP', f.mrp], ['opening_quantity', 'Opening stock', f.opening], ['reorder_level', 'Reorder level', f.reorder], ['profit_margin_percent', 'Margin', formula ? f.margin : ''], ['overhead_cost', 'Overhead', formula ? f.overhead : '']]
     for (const [api, label, value] of amounts) {
       if (value.trim() !== '' && !isAmount(value)) problems[api] = `${label} must be a number, like 25 or 25.5.`
     }
+    if (formula && isAmount(f.margin) && Number(f.margin) > 100) problems.profit_margin_percent = 'Margin can be at most 100%.'
     setInvalid(problems)
     setFieldErrors({})
     if (Object.keys(problems).length) {
@@ -81,7 +95,10 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
       unit_uuid: f.unit || null,
       hsn_code: decimalOrNull(f.hsn),
       gst_percent: decimalOrNull(f.gst),
-      selling_price: decimalOrNull(f.selling),
+      price_mode: f.mode,
+      ...(formula
+        ? { profit_margin_percent: decimalOrNull(f.margin), overhead_cost: decimalOrNull(f.overhead) }
+        : { selling_price: decimalOrNull(f.selling) }),
       mrp_price: decimalOrNull(f.mrp),
       reorder_level: decimalOrNull(f.reorder),
       track_stock: f.track,
@@ -132,32 +149,36 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
               <small className="hint">Suggested when you record a purchase.</small>
             </div>
           </FormSection>
-          <FormSection title="Pricing" description="Set your selling price and purchase cost.">
-            <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} required error={errors.selling_price} />
-            <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} error={errors.purchase_price} />
+          <FormSection title="Pricing" description="Choose how this product is priced. The breakdown shows exactly what billing will charge.">
+            <fieldset className="price-mode wide-row">
+              <legend>How is the price set?</legend>
+              <label className="check"><input type="radio" name="price-mode" checked={!formula} onChange={() => setF({ ...f, mode: 'fixed' })} />I set the selling price</label>
+              <label className="check"><input type="radio" name="price-mode" checked={formula} onChange={() => setF({ ...f, mode: 'formula' })} />Work it out from cost + margin</label>
+            </fieldset>
+            {!formula && <Field label="Selling price (₹)" inputMode="decimal" value={f.selling} onChange={set('selling')} required error={errors.selling_price} />}
+            <Field label="Cost price (₹)" inputMode="decimal" value={f.purchase} onChange={set('purchase')} required={formula} error={errors.purchase_price} hint={formula ? undefined : 'Used for profit and stock value.'} />
+            {formula && <Field label="Margin (%)" inputMode="decimal" value={f.margin} onChange={set('margin')} error={errors.profit_margin_percent} hint="Leave blank to use the category or shop margin." />}
+            {formula && <Field label="Overhead per unit (₹)" inputMode="decimal" value={f.overhead} onChange={set('overhead')} error={errors.overhead_cost} hint="Transport, packing and similar costs." />}
+            <div className="field">
+              <label htmlFor="pf-gst">GST rate</label>
+              <select id="pf-gst" value={f.gst} onChange={set('gst')}>
+                <option value="">Use the category or shop rate</option>
+                {GST_RATES.map(g => <option key={g} value={g}>{g}%</option>)}
+              </select>
+            </div>
             <Field label="MRP (₹)" inputMode="decimal" value={f.mrp} onChange={set('mrp')} error={errors.mrp_price} />
-            {isAmount(f.selling) && isAmount(f.mrp) && Number(f.selling) > Number(f.mrp) && <Alert kind="info">Selling price is above MRP. Check the price before saving.</Alert>}
+            <div className="wide-row"><PriceBreakdown preview={priceInput ? price.data : undefined} pending={price.isFetching} error={priceInput ? price.error : null} /></div>
+            {price.data && priceInput && isAmount(f.mrp) && Number(price.data.selling_price) > Number(f.mrp) && <Alert kind="info">The selling price is above MRP. Check the price before saving.</Alert>}
           </FormSection>
           <FormSection title="Stock" description="Track availability and choose when to reorder.">
             <label className="check wide-row"><input type="checkbox" checked={f.track} onChange={e => setF({ ...f, track: e.target.checked })} />Track stock for this product</label>
             {!editing && <Field label="Opening stock" inputMode="decimal" value={f.opening} onChange={set('opening')} hint="What is on the shelf today." error={errors.opening_quantity} />}<Field label="Reorder level" inputMode="decimal" value={f.reorder} onChange={set('reorder')} error={errors.reorder_level} />
           </FormSection>
-          <details className="optional-fields" open={editing || ['product_code', 'barcode', 'hsn_code', 'gst_percent'].some(k => errors[k]) ? true : undefined}>
-            <summary>Codes and tax details (optional)</summary><div className="form-grid">
+          <details className="optional-fields" open={editing || ['product_code', 'barcode', 'hsn_code'].some(k => errors[k]) ? true : undefined}>
+            <summary>Codes and HSN (optional)</summary><div className="form-grid">
               <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} error={errors.product_code} />
             <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} error={errors.barcode} />
             <Field label="HSN / SAC code" value={f.hsn} onChange={set('hsn')} maxLength={20} error={errors.hsn_code} />
-            <div className="field">
-          <label htmlFor="pf-gst">GST %</label>
-          <select id="pf-gst" value={f.gst} onChange={set('gst')}>
-            <option value="">Not set</option>
-            {GST_RATES.map((g) => (
-              <option key={g} value={g}>
-                {g}%
-              </option>
-            ))}
-          </select>
-        </div>
             </div>
           </details>
         </fieldset>

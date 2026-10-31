@@ -354,11 +354,38 @@ test('grouped product fields retain pricing, stock, identifiers and tax in the s
   await userEvent.type(within(dialog).getByLabelText('Cost price (₹)'), '18.25')
   await userEvent.type(within(dialog).getByLabelText('Opening stock'), '3.5')
   await userEvent.type(within(dialog).getByLabelText('Reorder level'), '2')
-  await userEvent.click(within(dialog).getByText('Codes and tax details (optional)'))
+  await userEvent.click(within(dialog).getByText('Codes and HSN (optional)'))
   await userEvent.type(within(dialog).getByLabelText('Product code'), 'TEA-01')
   await userEvent.type(within(dialog).getByLabelText('HSN / SAC code'), '0902')
-  await userEvent.selectOptions(within(dialog).getByLabelText('GST %'), '5')
+  await userEvent.selectOptions(within(dialog).getByLabelText('GST rate'), '5')
   await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/products'))?.body).toMatchObject({ name: 'Tea', selling_price: '25.50', purchase_price: '18.25', opening_quantity: '3.5', reorder_level: '2', product_code: 'TEA-01', hsn_code: '0902', gst_percent: '5', track_stock: true })
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/products'))?.body).toMatchObject({ name: 'Tea', selling_price: '25.50', purchase_price: '18.25', opening_quantity: '3.5', reorder_level: '2', product_code: 'TEA-01', hsn_code: '0902', gst_percent: '5', track_stock: true, price_mode: 'fixed' })
+})
+
+test('a cost + margin product shows the server breakdown, including where GST came from', async () => {
+  const shown = { price_mode: 'formula', selling_price: '129.80', pre_gst_selling_price: '129.80', output_gst_amount: '0.00', purchase_price: '100.00', purchase_gst_amount: '18.00', overhead_cost: '0.00', total_cost: '118.00', profit_margin_percent: '10', profit_amount: '11.80', gst_percent: '18', gst_source: 'shop', category_name: null, gst_registered: false }
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', '/v1/shops/s1/suppliers', []),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([])),
+    ok('POST', '/v1/shops/s1/products/price-preview', shown),
+    ok('POST', '/v1/shops/s1/products', { product: { ...RICE, ...COST }, movements: [] }),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] }),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'Tea')
+  await userEvent.click(within(dialog).getByLabelText('Work it out from cost + margin'))
+  expect(within(dialog).queryByLabelText('Selling price (₹)')).not.toBeInTheDocument()
+  await userEvent.type(within(dialog).getByLabelText('Cost price (₹)'), '100')
+  await userEvent.type(within(dialog).getByLabelText('Margin (%)'), '10')
+  expect(await within(dialog).findByText('+ GST paid on purchase (18%, your shop default)')).toBeInTheDocument()
+  expect(within(dialog).getByText('₹129.80')).toBeInTheDocument()
+  expect(calls.filter(c => c.path.endsWith('/price-preview')).at(-1)?.body).toMatchObject({ price_mode: 'formula', purchase_price: '100', profit_margin_percent: '10', selling_price: null })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  const body = calls.find(c => c.method === 'POST' && c.path.endsWith('/s1/products'))?.body as Record<string, unknown>
+  expect(body).toMatchObject({ price_mode: 'formula', purchase_price: '100', profit_margin_percent: '10' })
+  expect(body).not.toHaveProperty('selling_price')
 })

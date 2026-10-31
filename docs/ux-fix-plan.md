@@ -54,9 +54,15 @@ Also done with Phase 1: the billing tick is gone; the bill's items table shows
 price and amount from the server; payment methods read Cash, UPI, Card, Bank
 transfer, Online; categories can carry an optional GST rate.
 
-**Next up:** price mode toggle (set price vs cost + margin), showing every GST
-rate used (no hidden 18%), custom bill lines without a product, the standard
-invoice with a settings editor and live preview, then Phase 4 polish.
+✅ **Price mode toggle (2 Nov 2026):** "I set the selling price" or "Work it out
+from cost + margin", with a live breakdown from the server
+(`POST /products/price-preview`): cost, GST paid on purchase and where the rate
+came from (product, category or shop default), overhead, margin, GST charged,
+final price. The GST rate now sits in Pricing, not in the optional details.
+
+**Next up:** show the GST used in reports and the product panel (rest of item 11),
+custom bill lines without a product, the standard invoice with a settings editor
+and live preview, then Phase 4 polish.
 
 ## Phase 2: missing features customers expect (Android has them)
 

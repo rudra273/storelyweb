@@ -15,12 +15,16 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
-        head?: never;
+        /**
+         * Health
+         * @description Liveness: the process is up. Touches nothing else.
+         */
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -1067,6 +1071,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/products/price-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Price Preview
+         * @description The price a product would sell at, worked out exactly as billing will.
+         */
+        post: operations["price_preview_v1_shops__shop_id__products_price_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/products/{product_id}": {
         parameters: {
             query?: never;
@@ -1097,6 +1121,92 @@ export interface paths {
         put?: never;
         /** Adjust Stock */
         post: operations["adjust_stock_v1_shops__shop_id__products__product_id__stock_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Receipts */
+        get: operations["list_receipts_v1_shops__shop_id__purchase_receipts_get"];
+        put?: never;
+        /** Confirm Receipt */
+        post: operations["confirm_receipt_v1_shops__shop_id__purchase_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt Changes */
+        get: operations["receipt_changes_v1_shops__shop_id__purchase_receipts_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/import-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Purchase Import */
+        post: operations["preview_purchase_import_v1_shops__shop_id__purchase_receipts_import_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Native Receipt */
+        post: operations["publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt Detail */
+        get: operations["receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1640,6 +1750,20 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** Candidate */
+        Candidate: {
+            /** Name */
+            name: string;
+            /**
+             * Unit Compatible
+             * @default true
+             */
+            unit_compatible: boolean;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Uuid */
+            uuid: string;
+        };
         /** CartIn */
         CartIn: {
             /**
@@ -2024,6 +2148,17 @@ export interface components {
             /** Row */
             row: number;
         };
+        /** ImportPreview */
+        ImportPreview: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Possible Duplicate */
+            possible_duplicate: boolean;
+            /** Rows */
+            rows: components["schemas"]["ImportRow"][];
+            /** Warnings */
+            warnings: string[];
+        };
         /** ImportReport */
         ImportReport: {
             /** Added */
@@ -2045,6 +2180,31 @@ export interface components {
             skipped: number;
             /** Updated */
             updated: number;
+        };
+        /** ImportRow */
+        ImportRow: {
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: components["schemas"]["Candidate"][];
+            /** Error */
+            error?: string | null;
+            /**
+             * Identifier Conflict
+             * @default false
+             */
+            identifier_conflict: boolean;
+            item?: components["schemas"]["ReceiptItem-Output"] | null;
+            /** Name */
+            name: string;
+            /** Number */
+            number: number;
+            /**
+             * Requires Choice
+             * @default false
+             */
+            requires_choice: boolean;
         };
         /** InviteIn */
         InviteIn: {
@@ -2354,6 +2514,129 @@ export interface components {
              */
             updated_at: string;
         };
+        /** NativeReceiptIn */
+        NativeReceiptIn: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Invoice Number */
+            invoice_number?: string | null;
+            /** Items */
+            items: components["schemas"]["NativeReceiptLine"][];
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Origin
+             * @default android
+             * @constant
+             */
+            origin: "android";
+            /**
+             * Payment Status
+             * @default not_recorded
+             * @constant
+             */
+            payment_status: "not_recorded";
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Supplier Name */
+            supplier_name?: string | null;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
+        };
+        /** NativeReceiptLine */
+        NativeReceiptLine: {
+            /** Amount */
+            amount: number | string;
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Line Number */
+            line_number: number;
+            /**
+             * Movement Uuid
+             * Format: uuid
+             */
+            movement_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Cost */
+            unit_cost: number | string;
+            /** Unit Name */
+            unit_name?: string | null;
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
+        };
+        /** NewReceiptProduct */
+        "NewReceiptProduct-Input": {
+            /** Barcode */
+            barcode?: string | null;
+            /** Category Name */
+            category_name?: string | null;
+            /** Client Key */
+            client_key: string;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Mrp Price */
+            mrp_price?: number | string | null;
+            /** Name */
+            name: string;
+            /** Product Code */
+            product_code?: string | null;
+            /** Reorder Level */
+            reorder_level?: number | string | null;
+            /** Selling Price */
+            selling_price?: number | string | null;
+            /** Unit Name */
+            unit_name?: string | null;
+        };
+        /** NewReceiptProduct */
+        "NewReceiptProduct-Output": {
+            /** Barcode */
+            barcode?: string | null;
+            /** Category Name */
+            category_name?: string | null;
+            /** Client Key */
+            client_key: string;
+            /** Gst Percent */
+            gst_percent?: string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Mrp Price */
+            mrp_price?: string | null;
+            /** Name */
+            name: string;
+            /** Product Code */
+            product_code?: string | null;
+            /** Reorder Level */
+            reorder_level?: string | null;
+            /** Selling Price */
+            selling_price?: string | null;
+            /** Unit Name */
+            unit_name?: string | null;
+        };
         /** NoteRow */
         NoteRow: {
             /** Bill Number */
@@ -2642,6 +2925,63 @@ export interface components {
             /** Unit Price */
             unit_price: string;
         };
+        /** PricePreviewIn */
+        PricePreviewIn: {
+            /** Category Uuid */
+            category_uuid?: string | null;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Overhead Cost */
+            overhead_cost?: number | string | null;
+            /**
+             * Price Mode
+             * @enum {string}
+             */
+            price_mode: "fixed" | "formula";
+            /** Profit Margin Percent */
+            profit_margin_percent?: number | string | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Selling Price */
+            selling_price?: number | string | null;
+        };
+        /** PricePreviewOut */
+        PricePreviewOut: {
+            /** Category Name */
+            category_name: string | null;
+            /** Gst Percent */
+            gst_percent: string;
+            /** Gst Registered */
+            gst_registered: boolean;
+            /**
+             * Gst Source
+             * @enum {string}
+             */
+            gst_source: "product" | "category" | "shop";
+            /** Output Gst Amount */
+            output_gst_amount: string;
+            /** Overhead Cost */
+            overhead_cost: string;
+            /** Pre Gst Selling Price */
+            pre_gst_selling_price: string;
+            /**
+             * Price Mode
+             * @enum {string}
+             */
+            price_mode: "fixed" | "formula";
+            /** Profit Amount */
+            profit_amount: string;
+            /** Profit Margin Percent */
+            profit_margin_percent: string;
+            /** Purchase Gst Amount */
+            purchase_gst_amount: string;
+            /** Purchase Price */
+            purchase_price: string;
+            /** Selling Price */
+            selling_price: string;
+            /** Total Cost */
+            total_cost: string;
+        };
         /** ProductCreate */
         ProductCreate: {
             /** Barcode */
@@ -2660,6 +3000,8 @@ export interface components {
             opening_quantity?: number | string | null;
             /** Overhead Cost */
             overhead_cost?: number | string | null;
+            /** Price Mode */
+            price_mode?: ("fixed" | "formula") | null;
             /** Product Code */
             product_code?: string | null;
             /** Profit Margin Percent */
@@ -2708,6 +3050,11 @@ export interface components {
             next_expiry: string | null;
             /** Overhead Cost */
             overhead_cost?: string | null;
+            /**
+             * Price Mode
+             * @enum {string}
+             */
+            price_mode: "fixed" | "formula";
             /** Product Code */
             product_code: string | null;
             /** Profit Margin Percent */
@@ -2758,6 +3105,8 @@ export interface components {
             name?: string | null;
             /** Overhead Cost */
             overhead_cost?: number | string | null;
+            /** Price Mode */
+            price_mode?: ("fixed" | "formula") | null;
             /** Product Code */
             product_code?: string | null;
             /** Profit Margin Percent */
@@ -2883,6 +3232,131 @@ export interface components {
         Receipt: {
             /** Receipt Secret */
             receipt_secret: string;
+        };
+        /** ReceiptIn */
+        ReceiptIn: {
+            /** Allow Duplicate Import Keys */
+            allow_duplicate_import_keys?: string[];
+            /** Import Keys */
+            import_keys?: string[];
+            /** Invoice Number */
+            invoice_number?: string | null;
+            /** Items */
+            items: components["schemas"]["ReceiptItem-Input"][];
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Request Key */
+            request_key: string;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+        };
+        /** ReceiptItem */
+        "ReceiptItem-Input": {
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Import Key */
+            import_key?: string | null;
+            /** Import Row Number */
+            import_row_number?: number | null;
+            new_product?: components["schemas"]["NewReceiptProduct-Input"] | null;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Cost */
+            unit_cost: number | string;
+        };
+        /** ReceiptItem */
+        "ReceiptItem-Output": {
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Import Key */
+            import_key?: string | null;
+            /** Import Row Number */
+            import_row_number?: number | null;
+            new_product?: components["schemas"]["NewReceiptProduct-Output"] | null;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: string;
+            /** Unit Cost */
+            unit_cost: string;
+        };
+        /** ReceiptLineOut */
+        ReceiptLineOut: {
+            /** Amount */
+            amount: string;
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Line Number */
+            line_number: number;
+            /** Movement Uuid */
+            movement_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Cost */
+            unit_cost: string;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** ReceiptOut */
+        ReceiptOut: {
+            /**
+             * Change Sequence
+             * @default 0
+             */
+            change_sequence: number;
+            /** Created At */
+            created_at: string;
+            /** Device Created At */
+            device_created_at?: string | null;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Items */
+            items: components["schemas"]["ReceiptLineOut"][];
+            /** Notes */
+            notes: string | null;
+            /**
+             * Origin
+             * @default web
+             * @enum {string}
+             */
+            origin: "web" | "android";
+            /**
+             * Payment Status
+             * @constant
+             */
+            payment_status: "not_recorded";
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Supplier Name */
+            supplier_name: string | null;
+            /** Supplier Uuid */
+            supplier_uuid: string | null;
+            /** Uuid */
+            uuid: string;
         };
         /** RefreshIn */
         RefreshIn: {
@@ -3310,7 +3784,29 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -5505,6 +6001,41 @@ export interface operations {
             };
         };
     };
+    price_preview_v1_shops__shop_id__products_price_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricePreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     product_detail_v1_shops__shop_id__products__product_id__get: {
         parameters: {
             query?: never;
@@ -5628,6 +6159,209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuantityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_receipts_v1_shops__shop_id__purchase_receipts_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_receipt_v1_shops__shop_id__purchase_receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_changes_v1_shops__shop_id__purchase_receipts_changes_get: {
+        parameters: {
+            query?: {
+                after_sequence?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_purchase_import_v1_shops__shop_id__purchase_receipts_import_preview_post: {
+        parameters: {
+            query: {
+                filename: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
                 };
             };
             /** @description Validation Error */

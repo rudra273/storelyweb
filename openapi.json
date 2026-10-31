@@ -754,6 +754,41 @@
     "title": "CancelIn",
     "type": "object"
    },
+   "Candidate": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "unit_compatible": {
+      "default": true,
+      "title": "Unit Compatible",
+      "type": "boolean"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "unit_name"
+    ],
+    "title": "Candidate",
+    "type": "object"
+   },
    "CartIn": {
     "additionalProperties": false,
     "properties": {
@@ -1955,6 +1990,40 @@
     "title": "ImportErrorRow",
     "type": "object"
    },
+   "ImportPreview": {
+    "properties": {
+     "fingerprint": {
+      "title": "Fingerprint",
+      "type": "string"
+     },
+     "possible_duplicate": {
+      "title": "Possible Duplicate",
+      "type": "boolean"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/ImportRow"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "fingerprint",
+     "possible_duplicate",
+     "rows",
+     "warnings"
+    ],
+    "title": "ImportPreview",
+    "type": "object"
+   },
    "ImportReport": {
     "properties": {
      "added": {
@@ -2004,6 +2073,63 @@
      "errors"
     ],
     "title": "ImportReport",
+    "type": "object"
+   },
+   "ImportRow": {
+    "properties": {
+     "candidates": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Candidate"
+      },
+      "title": "Candidates",
+      "type": "array"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "identifier_conflict": {
+      "default": false,
+      "title": "Identifier Conflict",
+      "type": "boolean"
+     },
+     "item": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ReceiptItem-Output"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "number": {
+      "title": "Number",
+      "type": "integer"
+     },
+     "requires_choice": {
+      "default": false,
+      "title": "Requires Choice",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "number",
+     "name"
+    ],
+    "title": "ImportRow",
     "type": "object"
    },
    "InviteIn": {
@@ -2824,6 +2950,504 @@
      "shop_name"
     ],
     "title": "MyPremiumRequestOut",
+    "type": "object"
+   },
+   "NativeReceiptIn": {
+    "additionalProperties": false,
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "invoice_number": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/NativeReceiptLine"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "origin": {
+      "const": "android",
+      "default": "android",
+      "title": "Origin",
+      "type": "string"
+     },
+     "payment_status": {
+      "const": "not_recorded",
+      "default": "not_recorded",
+      "title": "Payment Status",
+      "type": "string"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "subtotal": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Subtotal"
+     },
+     "supplier_name": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Name"
+     },
+     "supplier_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Uuid"
+     },
+     "uuid": {
+      "format": "uuid",
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "purchase_date",
+     "created_at",
+     "subtotal",
+     "items"
+    ],
+    "title": "NativeReceiptIn",
+    "type": "object"
+   },
+   "NativeReceiptLine": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     },
+     "batch_no": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "line_number": {
+      "maximum": 200.0,
+      "minimum": 1.0,
+      "title": "Line Number",
+      "type": "integer"
+     },
+     "movement_uuid": {
+      "format": "uuid",
+      "title": "Movement Uuid",
+      "type": "string"
+     },
+     "product_name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Product Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Product Uuid",
+      "type": "string"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Unit Cost"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     },
+     "uuid": {
+      "format": "uuid",
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "quantity",
+     "unit_cost",
+     "uuid",
+     "movement_uuid",
+     "product_uuid",
+     "product_name",
+     "line_number",
+     "amount"
+    ],
+    "title": "NativeReceiptLine",
+    "type": "object"
+   },
+   "NewReceiptProduct-Input": {
+    "additionalProperties": false,
+    "properties": {
+     "barcode": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Barcode"
+     },
+     "category_name": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Name"
+     },
+     "client_key": {
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "Client Key",
+      "type": "string"
+     },
+     "gst_percent": {
+      "anyOf": [
+       {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Percent"
+     },
+     "hsn_code": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hsn Code"
+     },
+     "mrp_price": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mrp Price"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "product_code": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Code"
+     },
+     "reorder_level": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reorder Level"
+     },
+     "selling_price": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selling Price"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     }
+    },
+    "required": [
+     "client_key",
+     "name"
+    ],
+    "title": "NewReceiptProduct",
+    "type": "object"
+   },
+   "NewReceiptProduct-Output": {
+    "additionalProperties": false,
+    "properties": {
+     "barcode": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Barcode"
+     },
+     "category_name": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Name"
+     },
+     "client_key": {
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "Client Key",
+      "type": "string"
+     },
+     "gst_percent": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Percent"
+     },
+     "hsn_code": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hsn Code"
+     },
+     "mrp_price": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mrp Price"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "product_code": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Code"
+     },
+     "reorder_level": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reorder Level"
+     },
+     "selling_price": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selling Price"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     }
+    },
+    "required": [
+     "client_key",
+     "name"
+    ],
+    "title": "NewReceiptProduct",
     "type": "object"
    },
    "NoteRow": {
@@ -3653,6 +4277,210 @@
     "title": "PreviewLine",
     "type": "object"
    },
+   "PricePreviewIn": {
+    "additionalProperties": false,
+    "properties": {
+     "category_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Uuid"
+     },
+     "gst_percent": {
+      "anyOf": [
+       {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Percent"
+     },
+     "overhead_cost": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Overhead Cost"
+     },
+     "price_mode": {
+      "enum": [
+       "fixed",
+       "formula"
+      ],
+      "title": "Price Mode",
+      "type": "string"
+     },
+     "profit_margin_percent": {
+      "anyOf": [
+       {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Profit Margin Percent"
+     },
+     "purchase_price": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Purchase Price"
+     },
+     "selling_price": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selling Price"
+     }
+    },
+    "required": [
+     "price_mode"
+    ],
+    "title": "PricePreviewIn",
+    "type": "object"
+   },
+   "PricePreviewOut": {
+    "properties": {
+     "category_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Name"
+     },
+     "gst_percent": {
+      "title": "Gst Percent",
+      "type": "string"
+     },
+     "gst_registered": {
+      "title": "Gst Registered",
+      "type": "boolean"
+     },
+     "gst_source": {
+      "enum": [
+       "product",
+       "category",
+       "shop"
+      ],
+      "title": "Gst Source",
+      "type": "string"
+     },
+     "output_gst_amount": {
+      "title": "Output Gst Amount",
+      "type": "string"
+     },
+     "overhead_cost": {
+      "title": "Overhead Cost",
+      "type": "string"
+     },
+     "pre_gst_selling_price": {
+      "title": "Pre Gst Selling Price",
+      "type": "string"
+     },
+     "price_mode": {
+      "enum": [
+       "fixed",
+       "formula"
+      ],
+      "title": "Price Mode",
+      "type": "string"
+     },
+     "profit_amount": {
+      "title": "Profit Amount",
+      "type": "string"
+     },
+     "profit_margin_percent": {
+      "title": "Profit Margin Percent",
+      "type": "string"
+     },
+     "purchase_gst_amount": {
+      "title": "Purchase Gst Amount",
+      "type": "string"
+     },
+     "purchase_price": {
+      "title": "Purchase Price",
+      "type": "string"
+     },
+     "selling_price": {
+      "title": "Selling Price",
+      "type": "string"
+     },
+     "total_cost": {
+      "title": "Total Cost",
+      "type": "string"
+     }
+    },
+    "required": [
+     "price_mode",
+     "selling_price",
+     "pre_gst_selling_price",
+     "output_gst_amount",
+     "purchase_price",
+     "purchase_gst_amount",
+     "overhead_cost",
+     "total_cost",
+     "profit_margin_percent",
+     "profit_amount",
+     "gst_percent",
+     "gst_source",
+     "category_name",
+     "gst_registered"
+    ],
+    "title": "PricePreviewOut",
+    "type": "object"
+   },
    "ProductCreate": {
     "additionalProperties": false,
     "properties": {
@@ -3761,6 +4589,21 @@
        }
       ],
       "title": "Overhead Cost"
+     },
+     "price_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "fixed",
+         "formula"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Mode"
      },
      "product_code": {
       "anyOf": [
@@ -3999,6 +4842,14 @@
       ],
       "title": "Overhead Cost"
      },
+     "price_mode": {
+      "enum": [
+       "fixed",
+       "formula"
+      ],
+      "title": "Price Mode",
+      "type": "string"
+     },
      "product_code": {
       "anyOf": [
        {
@@ -4129,7 +4980,8 @@
      "reorder_level",
      "low_stock",
      "next_expiry",
-     "updated_at"
+     "updated_at",
+     "price_mode"
     ],
     "title": "ProductOut",
     "type": "object"
@@ -4266,6 +5118,21 @@
        }
       ],
       "title": "Overhead Cost"
+     },
+     "price_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "fixed",
+         "formula"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Mode"
      },
      "product_code": {
       "anyOf": [
@@ -4703,6 +5570,490 @@
      "receipt_secret"
     ],
     "title": "Receipt",
+    "type": "object"
+   },
+   "ReceiptIn": {
+    "additionalProperties": false,
+    "properties": {
+     "allow_duplicate_import_keys": {
+      "items": {
+       "pattern": "^[a-f0-9]{64}$",
+       "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Allow Duplicate Import Keys",
+      "type": "array"
+     },
+     "import_keys": {
+      "items": {
+       "pattern": "^[a-f0-9]{64}$",
+       "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Import Keys",
+      "type": "array"
+     },
+     "invoice_number": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptItem-Input"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "request_key": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Request Key",
+      "type": "string"
+     },
+     "supplier_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Uuid"
+     }
+    },
+    "required": [
+     "request_key",
+     "purchase_date",
+     "items"
+    ],
+    "title": "ReceiptIn",
+    "type": "object"
+   },
+   "ReceiptItem-Input": {
+    "additionalProperties": false,
+    "properties": {
+     "batch_no": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "import_key": {
+      "anyOf": [
+       {
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Import Key"
+     },
+     "import_row_number": {
+      "anyOf": [
+       {
+        "maximum": 2020.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Import Row Number"
+     },
+     "new_product": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NewReceiptProduct-Input"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Unit Cost"
+     }
+    },
+    "required": [
+     "quantity",
+     "unit_cost"
+    ],
+    "title": "ReceiptItem",
+    "type": "object"
+   },
+   "ReceiptItem-Output": {
+    "additionalProperties": false,
+    "properties": {
+     "batch_no": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "import_key": {
+      "anyOf": [
+       {
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Import Key"
+     },
+     "import_row_number": {
+      "anyOf": [
+       {
+        "maximum": 2020.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Import Row Number"
+     },
+     "new_product": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NewReceiptProduct-Output"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
+     },
+     "quantity": {
+      "title": "Quantity",
+      "type": "string"
+     },
+     "unit_cost": {
+      "title": "Unit Cost",
+      "type": "string"
+     }
+    },
+    "required": [
+     "quantity",
+     "unit_cost"
+    ],
+    "title": "ReceiptItem",
+    "type": "object"
+   },
+   "ReceiptLineOut": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "batch_no": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "line_number": {
+      "title": "Line Number",
+      "type": "integer"
+     },
+     "movement_uuid": {
+      "title": "Movement Uuid",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "title": "Product Uuid",
+      "type": "string"
+     },
+     "quantity": {
+      "title": "Quantity",
+      "type": "string"
+     },
+     "unit_cost": {
+      "title": "Unit Cost",
+      "type": "string"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "quantity",
+     "unit_cost",
+     "product_uuid",
+     "uuid",
+     "product_name",
+     "unit_name",
+     "amount",
+     "movement_uuid",
+     "line_number"
+    ],
+    "title": "ReceiptLineOut",
+    "type": "object"
+   },
+   "ReceiptOut": {
+    "properties": {
+     "change_sequence": {
+      "default": 0,
+      "title": "Change Sequence",
+      "type": "integer"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "device_created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Created At"
+     },
+     "invoice_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptLineOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "origin": {
+      "default": "web",
+      "enum": [
+       "web",
+       "android"
+      ],
+      "title": "Origin",
+      "type": "string"
+     },
+     "payment_status": {
+      "const": "not_recorded",
+      "title": "Payment Status",
+      "type": "string"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "supplier_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Name"
+     },
+     "supplier_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Uuid"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "supplier_uuid",
+     "supplier_name",
+     "purchase_date",
+     "invoice_number",
+     "notes",
+     "subtotal",
+     "payment_status",
+     "created_at",
+     "items"
+    ],
+    "title": "ReceiptOut",
     "type": "object"
    },
    "RefreshIn": {
@@ -5972,7 +7323,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -5981,7 +7332,31 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health",
+    "tags": [
+     "health"
+    ]
+   },
+   "head": {
+    "description": "Liveness: the process is up. Touches nothing else.",
+    "operationId": "health_health_head",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -9343,6 +10718,59 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/products/price-preview": {
+   "post": {
+    "description": "The price a product would sell at, worked out exactly as billing will.",
+    "operationId": "price_preview_v1_shops__shop_id__products_price_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PricePreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PricePreviewOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Price Preview",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/products/{product_id}": {
    "delete": {
     "operationId": "delete_product_v1_shops__shop_id__products__product_id__delete",
@@ -9563,6 +10991,358 @@
     "summary": "Adjust Stock",
     "tags": [
      "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts": {
+   "get": {
+    "operationId": "list_receipts_v1_shops__shop_id__purchase_receipts_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 25,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 100000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ReceiptOut"
+         },
+         "title": "Response List Receipts V1 Shops  Shop Id  Purchase Receipts Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Receipts",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   },
+   "post": {
+    "operationId": "confirm_receipt_v1_shops__shop_id__purchase_receipts_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReceiptIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Confirm Receipt",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/changes": {
+   "get": {
+    "operationId": "receipt_changes_v1_shops__shop_id__purchase_receipts_changes_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "after_sequence",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 9223372036854775807,
+       "minimum": 0,
+       "title": "After Sequence",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ReceiptOut"
+         },
+         "title": "Response Receipt Changes V1 Shops  Shop Id  Purchase Receipts Changes Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Receipt Changes",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/import-preview": {
+   "post": {
+    "operationId": "preview_purchase_import_v1_shops__shop_id__purchase_receipts_import_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "filename",
+      "required": true,
+      "schema": {
+       "maxLength": 200,
+       "minLength": 1,
+       "title": "Filename",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImportPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Preview Purchase Import",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/native": {
+   "post": {
+    "operationId": "publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeReceiptIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Publish Native Receipt",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}": {
+   "get": {
+    "operationId": "receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "receipt_id",
+      "required": true,
+      "schema": {
+       "title": "Receipt Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Receipt Detail",
+    "tags": [
+     "catalog",
+     "purchases"
     ]
    }
   },
