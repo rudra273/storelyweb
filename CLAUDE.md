@@ -13,6 +13,14 @@ Related projects:
   (light theme, gold `#F5A623` + navy accent) and its business rules (GST,
   round-off, invoice numbering).
 
+## Local development
+Test and debug against the local stack, not production.
+- Start DB + API (API reloads from source): `make dev` in `storelyapi`. It also
+  serves this repo through Vite at https://app.storely.localhost with live reload.
+- Or run only the web natively: `npm run dev` (http://localhost:5173); `/v1` is
+  proxied to the local API at https://api.storely.localhost.
+- `make dev-build` only after `package.json` or Python dependencies change.
+
 ## Rules
 - Verify before you build: investigate, report findings, wait for approval.
 - Access token in memory only; refresh token in an httpOnly cookie. Never put
