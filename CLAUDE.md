@@ -20,6 +20,8 @@ Test and debug against the local stack, not production.
 - Or run only the web natively: `npm run dev` (http://localhost:5173); `/v1` is
   proxied to the local API at https://api.storely.localhost.
 - `make dev-build` only after `package.json` or Python dependencies change.
+- Login: `make dev-seed` creates an owner with a Premium "Dev Shop"; the
+  email and password are in `storelyapi/.dev-login` (git-ignored).
 
 ## Rules
 - Verify before you build: investigate, report findings, wait for approval.
