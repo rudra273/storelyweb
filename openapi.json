@@ -9364,6 +9364,16 @@
        "title": "Product Id",
        "type": "string"
       }
+     },
+     {
+      "in": "query",
+      "name": "confirm",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Confirm",
+       "type": "boolean"
+      }
      }
     ],
     "responses": {

@@ -106,7 +106,7 @@ export const saveProduct = (shop: string, input: { id?: string; body: Record<str
     ? api.patch<ProductDetail>(`/v1/shops/${shop}/products/${input.id}`, input.body)
     : api.post<ProductDetail>(`/v1/shops/${shop}/products`, input.body)
 
-export const removeProduct = (shop: string, id: string) => api.delete<void>(`/v1/shops/${shop}/products/${id}`)
+export const removeProduct = (shop: string, id: string) => api.delete<void>(`/v1/shops/${shop}/products/${id}?confirm=true`)
 
 export const adjustStock = (shop: string, input: { id: string; delta: string; reason: string; note: string | null }) =>
   api.post<{ quantity: string }>(`/v1/shops/${shop}/products/${input.id}/stock-adjustments`, {

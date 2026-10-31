@@ -44,3 +44,7 @@
 .empty h3 { color: var(--navy); font-size: 1.2rem; }
 
 .field > div > input:not([type='checkbox']) { width: 100%; }
+
+.required-label::after { content: " *"; }
+
+.field-error { color: var(--danger, #b42318); }

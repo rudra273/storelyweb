@@ -5539,7 +5539,9 @@ export interface operations {
     };
     delete_product_v1_shops__shop_id__products__product_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                confirm?: boolean;
+            };
             header?: never;
             path: {
                 shop_id: string;

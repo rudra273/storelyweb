@@ -20,7 +20,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
   const movements = detail.data?.movements ?? []
 
   async function confirmDelete() {
-    if (!p || !window.confirm(`Delete “${p.name}”? It disappears from the shop and from phones after they sync.`)) return
+    if (!p || !window.confirm(`Delete “${p.name}”? It disappears from the shop and from phones after they sync. Any remaining stock will be removed from inventory; past sales will remain in history.`)) return
     const ok = await run(async () => {
       await remove.mutateAsync(p.uuid)
       return true
