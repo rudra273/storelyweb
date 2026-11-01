@@ -9,6 +9,8 @@ const detail = { bill, items: [{ uuid: 'i1', product_uuid: 'p1', product_name: '
 const product = { uuid: 'p1', name: 'Rice', selling_price: '105.00', quantity: '10', barcode: '8901' }
 const preview = { subtotal: '210.00', discount_amount: '21.00', taxable_amount: '180.00', cgst_amount: '4.50', sgst_amount: '4.50', igst_amount: '0.00', round_off_amount: '0.00', total: '189.00' }
 const products = ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [product], next_cursor: null, total: 1 })
+const returnLine = { item_uuid: 'i1', product_name: 'Rice', unit: 'kg', sold: '2', already_returned: '0', remaining: '2', returning: '0.5', credit: '94.50', goes_back_to_stock: true }
+const returnReview = { lines: [returnLine], subtotal: '90.00', taxable_amount: '90.00', cgst_amount: '2.25', sgst_amount: '2.25', igst_amount: '0.00', round_off_amount: '0.00', tax_amount: '4.50', credit_total: '94.50', settlement: 'refund', invoice_paid: '0.00', invoice_due: '189.00', invoice_due_after: '189.00', refund_to_customer: '94.50', reduces_invoice_due: '0.00', can_return: true }
 afterEach(() => vi.unstubAllGlobals())
 
 test('staff can browse bills and filters are sent to the API', async () => {
@@ -44,13 +46,19 @@ test('a payment sends the entered decimal and reference to the correct bill', as
 })
 
 test('owners can issue a return for selected quantities', async () => {
-  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', detail), ok('POST', '/v1/shops/s1/bills/b1/credit-note', detail)])
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', detail), ok('POST', '/v1/shops/s1/bills/b1/credit-note/preview', returnReview), ok('POST', '/v1/shops/s1/bills/b1/credit-note', detail)])
   renderApp('/billing/b1')
   await userEvent.click(await screen.findByRole('button', { name: 'Return items' }))
   const dialog = screen.getByRole('dialog')
   expect(within(dialog).getByRole('button', { name: 'Return items' })).toBeDisabled()
   await userEvent.type(within(dialog).getByLabelText('Return Rice'), '0.5')
+  const summary = await within(dialog).findByRole('region', { name: 'Return summary' })
+  expect(await within(summary).findByText('Credit note total')).toBeInTheDocument()
+  expect(within(summary).getByText('Refund to customer')).toBeInTheDocument()
+  expect(within(dialog).getByText(/can return 2/)).toBeInTheDocument()
+  await waitFor(() => expect(calls.some(c => c.path.endsWith('/credit-note/preview') && (c.body as { quantities: Record<string, string> }).quantities.i1 === '0.5')).toBe(true))
   await userEvent.selectOptions(within(dialog).getByLabelText('Settlement'), 'adjust')
+  await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Return items' })).toBeEnabled())
   await userEvent.click(within(dialog).getByRole('button', { name: 'Return items' }))
   await waitFor(() => expect(calls.find(c => c.path.endsWith('/credit-note'))?.body).toMatchObject({ quantities: { i1: '0.5' }, settlement: 'adjust' }))
 })
@@ -106,6 +114,46 @@ test('a failed save keeps an identical body for retry and locks the cart', async
   expect(writes[0]!.headers.get('Idempotency-Key')).toBe(writes[1]!.headers.get('Idempotency-Key'))
 })
 
+test('an unfinished bill survives leaving the page and can be discarded', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), products, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  const first = renderApp('/billing/new')
+  await userEvent.type(await screen.findByLabelText('Customer name'), 'Ravi')
+  await userEvent.click(await screen.findByRole('button', { name: /Rice · 8901/ }))
+  await userEvent.click(screen.getByLabelText('Not paid yet'))
+  first.unmount()
+
+  fakeApi([...SIGNED_IN, SHOP('staff'), products, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  renderApp('/billing/new')
+  expect(await screen.findByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(screen.getByLabelText('Customer name')).toHaveValue('Ravi')
+  expect(screen.getByText(/unfinished bill from/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Discard draft' }))
+  expect(screen.queryByLabelText('Quantity for Rice')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Customer name')).toHaveValue('')
+  expect(Object.keys(localStorage).filter(k => k.startsWith('storely.draft.'))).toEqual([])
+})
+
+test('a bill whose save was not confirmed comes back locked with the same retry key', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), products, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', { error: { code: 'network', message: 'Connection interrupted' } }, 503)])
+  const first = renderApp('/billing/new')
+  await userEvent.click(await screen.findByRole('button', { name: /Rice · 8901/ }))
+  await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Create bill' })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: 'Create bill' }))
+  await screen.findByRole('button', { name: 'Retry saving bill' })
+  first.unmount()
+
+  renderApp('/billing/new')
+  expect(await screen.findByText(/was not confirmed before this page closed/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Discard draft' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Retry saving bill' }))
+  const writes = calls.filter(c => c.path === '/v1/shops/s1/bills')
+  expect(writes).toHaveLength(2)
+  expect(writes[0]!.body).toEqual(writes[1]!.body)
+  expect(writes[0]!.headers.get('Idempotency-Key')).toBe(writes[1]!.headers.get('Idempotency-Key'))
+})
+
 test('empty and failed bill lists are explained', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', /^\/v1\/shops\/s1\/bills\?/, { items: [], total: 0, next_cursor: null })])
   const view = renderApp('/billing')
@@ -131,11 +179,14 @@ for (const action of ['payment', 'return'] as const) {
   test(`an uncertain ${action} retries the frozen request with the same key`, async () => {
     const endpoint = action === 'payment' ? 'payments' : 'credit-note'
     const label = action === 'payment' ? 'Record payment' : 'Return items'
-    const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', detail), ok('POST', `/v1/shops/s1/bills/b1/${endpoint}`, { error: { message: 'Connection interrupted' } }, 503)])
+    const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', detail), ok('POST', '/v1/shops/s1/bills/b1/credit-note/preview', returnReview), ok('POST', `/v1/shops/s1/bills/b1/${endpoint}`, { error: { message: 'Connection interrupted' } }, 503)])
     renderApp('/billing/b1')
     await userEvent.click(await screen.findByRole('button', { name: label }))
     const dialog = screen.getByRole('dialog')
-    if (action === 'return') await userEvent.type(within(dialog).getByLabelText('Return Rice'), '0.5')
+    if (action === 'return') {
+      await userEvent.type(within(dialog).getByLabelText('Return Rice'), '0.5')
+      await waitFor(() => expect(within(dialog).getByRole('button', { name: label })).toBeEnabled())
+    }
     await userEvent.click(within(dialog).getByRole('button', { name: label }))
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Details are locked')
     expect(within(dialog).getByLabelText(action === 'payment' ? 'Amount (₹)' : 'Return Rice')).toBeDisabled()

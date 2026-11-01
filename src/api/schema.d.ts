@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -835,6 +835,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Credit Note Preview
+         * @description What returning these quantities would credit, priced by the code that saves the return.
+         */
+        post: operations["credit_note_preview_v1_shops__shop_id__bills__bill_id__credit_note_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/{bill_id}/payments": {
         parameters: {
             query?: never;
@@ -933,7 +953,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Customer */
+        /**
+         * Get Customer
+         * @description The customer with a page of 200 bills; `due` always covers every bill.
+         */
         get: operations["get_customer_v1_shops__shop_id__customers__customer_id__get"];
         put?: never;
         post?: never;
@@ -1293,6 +1316,26 @@ export interface paths {
         put?: never;
         /** Publish Native Receipt */
         post: operations["publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Receipt
+         * @description The total, amount paid and balance this purchase would be saved with.
+         */
+        post: operations["preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2045,9 +2088,19 @@ export interface components {
         CustomerDetail: {
             /** Bills */
             bills: components["schemas"]["CustomerBill"][];
+            /**
+             * Bills Has More
+             * @default false
+             */
+            bills_has_more: boolean;
             customer: components["schemas"]["CustomerRow"];
             /** Payments */
             payments: components["schemas"]["CustomerPayment"][];
+            /**
+             * Payments Has More
+             * @default false
+             */
+            payments_has_more: boolean;
         };
         /**
          * CustomerFields
@@ -2425,6 +2478,16 @@ export interface components {
             cash_total: string;
             /** Categories */
             categories: string[];
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /**
+             * Has More
+             * @default false
+             */
+            has_more: boolean;
             /** Items */
             items: components["schemas"]["ExpenseOut"][];
             /** Total */
@@ -3884,6 +3947,71 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /** ReceiptPreview */
+        ReceiptPreview: {
+            /** Balance Due */
+            balance_due: string;
+            /** Charges Amount */
+            charges_amount: string;
+            /** Discount Amount */
+            discount_amount: string;
+            /** Paid Now */
+            paid_now: string;
+            /** Payment Recorded */
+            payment_recorded: boolean;
+            /** Subtotal */
+            subtotal: string;
+            /** Tax Amount */
+            tax_amount: string;
+            /** Total */
+            total: string;
+        };
+        /**
+         * ReceiptPreviewIn
+         * @description What a purchase would total before it is saved. Only the figures that change money.
+         */
+        ReceiptPreviewIn: {
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: number | string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /** Items */
+            items: components["schemas"]["ReceiptStock"][];
+            /**
+             * Paid In Full
+             * @default false
+             */
+            paid_in_full: boolean;
+            /** Paid Now */
+            paid_now?: number | string | null;
+            /**
+             * Record Payment Terms
+             * @default false
+             */
+            record_payment_terms: boolean;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
+        };
+        /** ReceiptStock */
+        ReceiptStock: {
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Cost */
+            unit_cost: number | string;
+        };
         /** RefreshIn */
         RefreshIn: {
             /** Refresh Token */
@@ -3961,6 +4089,75 @@ export interface components {
             email: string;
             /** New Password */
             new_password: string;
+        };
+        /** ReturnPreview */
+        ReturnPreview: {
+            /** Can Return */
+            can_return: boolean;
+            /** Cgst Amount */
+            cgst_amount: string;
+            /** Credit Total */
+            credit_total: string;
+            /** Igst Amount */
+            igst_amount: string;
+            /** Invoice Due */
+            invoice_due: string;
+            /** Invoice Due After */
+            invoice_due_after: string;
+            /** Invoice Paid */
+            invoice_paid: string;
+            /** Lines */
+            lines: components["schemas"]["ReturnPreviewLine"][];
+            /** Reduces Invoice Due */
+            reduces_invoice_due: string;
+            /** Refund To Customer */
+            refund_to_customer: string;
+            /** Round Off Amount */
+            round_off_amount: string;
+            /** Settlement */
+            settlement: string;
+            /** Sgst Amount */
+            sgst_amount: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Tax Amount */
+            tax_amount: string;
+            /** Taxable Amount */
+            taxable_amount: string;
+        };
+        /** ReturnPreviewIn */
+        ReturnPreviewIn: {
+            /** Quantities */
+            quantities?: {
+                [key: string]: number | string;
+            };
+            /**
+             * Settlement
+             * @default refund
+             * @enum {string}
+             */
+            settlement: "refund" | "adjust";
+        };
+        /** ReturnPreviewLine */
+        ReturnPreviewLine: {
+            /** Already Returned */
+            already_returned: string;
+            /** Credit */
+            credit: string;
+            /** Goes Back To Stock */
+            goes_back_to_stock: boolean;
+            /** Item Uuid */
+            item_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Remaining */
+            remaining: string;
+            /** Returning */
+            returning: string;
+            /** Sold */
+            sold: string;
+            /** Unit */
+            unit: string | null;
         };
         /** ReviewIn */
         ReviewIn: {
@@ -4409,7 +4606,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -4431,7 +4628,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -6025,6 +6222,42 @@ export interface operations {
             };
         };
     };
+    credit_note_preview_v1_shops__shop_id__bills__bill_id__credit_note_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_payment_v1_shops__shop_id__bills__bill_id__payments_post: {
         parameters: {
             query?: never;
@@ -6301,7 +6534,9 @@ export interface operations {
     };
     get_customer_v1_shops__shop_id__customers__customer_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                bills_offset?: number;
+            };
             header?: never;
             path: {
                 shop_id: string;
@@ -7303,6 +7538,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptPreview"];
                 };
             };
             /** @description Validation Error */

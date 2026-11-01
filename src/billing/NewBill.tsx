@@ -1,11 +1,13 @@
 import { PageHeader } from '../components/ui/workspace'
 import { useToast } from '../components/ui/toastContext'
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
 import { ApiError, api } from '../api/client'
 import { Alert, Empty, Field, Loading } from '../components/ui/ui'
 import { describeError } from '../components/useAction'
+import { useAuth } from '../auth/context'
+import { clearDraft, loadDraft, saveDraft } from '../lib/drafts'
 import { formatMoney, isAmount } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
 import { STATE_OPTIONS } from '../lib/states'
@@ -27,26 +29,60 @@ export function NewBill() {
   return <BillForm key={current?.shop_id} />
 }
 
+const BLANK_CUSTOMER = { customer_name: '', customer_phone: '', customer_gstin: '', customer_gst_legal_name: '', customer_gst_trade_name: '', customer_address: '', place_of_supply_state_code: '' }
+
+/** What survives a reload. `attempt` is a bill whose save may or may not have reached the
+ * server: its exact body and retry key are kept so a retry replays the same operation. */
+interface BillDraft {
+  items: { product: Product; quantity: string }[]
+  custom: CustomLine[]
+  customer: typeof BLANK_CUSTOMER
+  billType: 'b2c' | 'b2b'
+  discount: string
+  paid: 'full' | 'part' | 'none' | null
+  amount: string
+  method: BillInput['payment']['method']
+  reference: string
+  attempt: { body: BillInput; key: string } | null
+}
+
 function BillForm() {
   const { current, role } = useShop()
   const shop = current!.shop_id
+  const userId = useAuth().user?.id ?? ''
+  const [restored, setRestored] = useState(() => loadDraft<BillDraft>('bill', userId, shop))
+  const saved = restored?.data
   const canCustom = can(role, 'billing.custom')
-  const [custom, setCustom] = useState<CustomLine[]>([])
+  const [custom, setCustom] = useState<CustomLine[]>(saved?.custom ?? [])
   const [addingCustom, setAddingCustom] = useState(false)
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [items, setItems] = useState<{ product: Product; quantity: string }[]>([])
-  const [customer, setCustomer] = useState({ customer_name: '', customer_phone: '', customer_gstin: '', customer_gst_legal_name: '', customer_gst_trade_name: '', customer_address: '', place_of_supply_state_code: '' })
-  const [billType, setBillType] = useState<'b2c' | 'b2b'>('b2c')
-  const [discount, setDiscount] = useState('0')
+  const [items, setItems] = useState<BillDraft['items']>(saved?.items ?? [])
+  const [customer, setCustomer] = useState(saved?.customer ?? BLANK_CUSTOMER)
+  const [billType, setBillType] = useState<'b2c' | 'b2b'>(saved?.billType ?? 'b2c')
+  const [discount, setDiscount] = useState(saved?.discount ?? '0')
   // No default: the cashier says how the customer paid, so an unpaid bill is never an accident.
-  const [paid, setPaid] = useState<'full' | 'part' | 'none' | null>(null)
-  const [amount, setAmount] = useState('')
+  const [paid, setPaid] = useState<'full' | 'part' | 'none' | null>(saved?.paid ?? null)
+  const [amount, setAmount] = useState(saved?.amount ?? '')
   const [paidError, setPaidError] = useState('')
-  const [method, setMethod] = useState<BillInput['payment']['method']>('cash')
-  const [reference, setReference] = useState('')
-  const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(null)
+  const [method, setMethod] = useState<BillInput['payment']['method']>(saved?.method ?? 'cash')
+  const [reference, setReference] = useState(saved?.reference ?? '')
+  const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(saved?.attempt ?? null)
   const sending = useRef(false)
+  const created = useRef(false)
+  const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid, amount, method, reference, attempt } satisfies BillDraft)
+  useEffect(() => {
+    if (created.current || !userId) return
+    const draft = JSON.parse(draftText) as BillDraft
+    if (!draft.items.length && !draft.custom.length && !draft.customer.customer_name.trim() && !draft.customer.customer_phone.trim() && !draft.attempt) clearDraft('bill', userId, shop)
+    else saveDraft('bill', userId, shop, draft)
+  }, [draftText, userId, shop])
+  function discard() {
+    setItems([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
+    setPaid(null); setAmount(''); setMethod('cash'); setReference(''); setPaidError('')
+    clearDraft('bill', userId, shop)
+    setRestored(null)
+  }
   const toast = useToast()
   const mutation = useBillingMutation(createBill)
   const products = useProducts({ q: useDebounced(search, 250), category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
@@ -94,6 +130,8 @@ function BillForm() {
     setAttempt(next)
     try {
       const result = await mutation.mutateAsync(next)
+      created.current = true
+      clearDraft('bill', userId, shop)
       void navigate(`/billing/${result.bill.uuid}`, { replace: true })
       toast(`Bill ${result.bill.bill_number} created`)
     } catch (error) {
@@ -105,6 +143,10 @@ function BillForm() {
   }
   return <div className="checkout-page">
     <PageHeader eyebrow="BILLING / NEW BILL" title="New bill" description="Add your items, review the total and record payment." actions={<Link className="button secondary" to="/billing">← Back to bills</Link>} />
+    {restored && <Alert kind="info">
+      {attempt ? 'A bill you were saving was not confirmed before this page closed. Retry saving to safely finish this same bill; it will not be created twice.' : `Your unfinished bill from ${new Date(restored.savedAt).toLocaleString()} was restored.`}
+      {!attempt && <> <button type="button" className="link" onClick={discard}>Discard draft</button></>}
+    </Alert>}
     <form className="checkout-grid" onSubmit={submit}>
       <fieldset className="checkout-main" disabled={locked}>
         <section className="card wide"><div className="checkout-section-title"><span>01</span><h2>Customer</h2></div><p className="muted">Add a name or leave blank for a walk-in customer.</p><div className="form-grid">

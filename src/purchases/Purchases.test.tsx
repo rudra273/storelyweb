@@ -16,6 +16,7 @@ function setup({ role = 'owner', fail = false } = {}) {
     ok('GET', `${BASE}/categories`, []), ok('GET', `${BASE}/units`, []),
     ok('GET', `${BASE}/suppliers`, []),
     ok('POST', `${BASE}/suppliers`, { uuid: 'supply1', name: 'Wholesale', phone: null, email: null, gstin: null, address: null, notes: null }, 201),
+    ok('POST', `${BASE}/purchase-receipts/preview`, { subtotal: '36.00', tax_amount: '0.00', charges_amount: '0.00', discount_amount: '0.00', total: '36.00', paid_now: '0.00', balance_due: '36.00', payment_recorded: false }),
     ok('POST', `${BASE}/purchase-receipts`, fail ? { error: { code: 'internal_error', message: 'Response interrupted.' } } : RECEIPT, fail ? 500 : 201),
     ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\?/, [RECEIPT]),
   ])
@@ -23,6 +24,11 @@ function setup({ role = 'owner', fail = false } = {}) {
 async function openPurchase() {
   await userEvent.click(await screen.findByRole('button', { name: 'Add purchase' }))
   return screen.getByRole('dialog', { name: 'Add purchase' })
+}
+// Saving waits for the server's total, so tests wait for the button as a person would.
+async function clickSave() {
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Save purchase' })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
 }
 async function addRice() {
   await userEvent.click(await screen.findByRole('button', { name: 'Add Rice' }))
@@ -34,7 +40,7 @@ test('purchase posts decimal lines and clears its draft only after success', asy
   await openPurchase(); await addRice()
   fireEvent.change(screen.getByLabelText('Quantity · item 1'), { target: { value: '2' } })
   fireEvent.change(screen.getByLabelText('Receipt date'), { target: { value: '2026-10-01' } })
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   expect(await screen.findByRole('dialog', { name: 'Purchase saved' })).toBeInTheDocument()
   const body = calls.find(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))?.body
   expect(body).toMatchObject({ purchase_date: '2026-10-01', supplier_uuid: null, items: [{ product_uuid: 'p1', quantity: '2', unit_cost: '18' }] })
@@ -55,7 +61,7 @@ test('close and reopen restores dates, lots and distinct rows of the same produc
 test('uncertain save freezes payload and retries with the same key after reopen', async () => {
   const calls = setup({ fail: true }); renderApp('/products')
   await openPurchase(); await addRice()
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   expect(await screen.findByText('Response interrupted.')).toBeInTheDocument()
   expect(screen.getByLabelText('Quantity · item 1')).toBeDisabled()
   await userEvent.click(screen.getByRole('button', { name: 'Close and keep draft' }))
@@ -79,7 +85,7 @@ test('inline supplier creation preserves purchase items and selects the new supp
 test('invalid quantities do not send purchase requests', async () => {
   const calls = setup(); renderApp('/products'); await openPurchase(); await addRice()
   fireEvent.change(screen.getByLabelText('Quantity · item 1'), { target: { value: '0' } })
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   expect(await screen.findByText(/enter a positive quantity/)).toBeInTheDocument()
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)
 })
@@ -121,14 +127,14 @@ test('storage failure blocks posting until the draft can be saved', async () => 
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)
   storage.mockRestore()
   await userEvent.click(screen.getByRole('button', { name: 'Retry saving draft' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   expect(await screen.findByRole('dialog', { name: 'Purchase saved' })).toBeInTheDocument()
 })
 
 test('offline confirmation keeps the editable draft without sending a request', async () => {
   const calls = setup(); renderApp('/products'); await openPurchase(); await addRice()
   vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   expect(await screen.findByText(/You are offline/)).toBeInTheDocument()
   expect(screen.getByLabelText('Quantity · item 1')).not.toBeDisabled()
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)
@@ -144,7 +150,7 @@ test('rapid duplicate form submissions send only one purchase request', async ()
 
 test('access loss after an uncertain save cannot unlock or discard that request', async () => {
   setup({ fail: true }); renderApp('/products'); await openPurchase(); await addRice()
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   await screen.findByText('Response interrupted.')
   const previousFetch = globalThis.fetch
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
@@ -168,7 +174,7 @@ test('new products stay staged, recover after closing, and are created only by t
   await userEvent.click(screen.getByRole('button', { name: 'Close and keep draft' }))
   await openPurchase()
   expect(screen.getByRole('button', { name: 'Edit new product 1' })).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   await screen.findByRole('dialog', { name: 'Purchase saved' })
   expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))?.body).toMatchObject({ items: [{ product_uuid: null, new_product: { name: 'New Tea', selling_price: '20' }, unit_cost: '12.50' }] })
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/products'))).toBe(false)
@@ -216,7 +222,7 @@ test('import requires name resolution and explicit exclusion of bad rows before 
   await userEvent.click(screen.getByRole('button', { name: 'Stage 1 purchase items' }))
   expect(screen.getByLabelText('Quantity · item 1')).toHaveValue('2')
   expect(calls.some(c => c.method === 'POST' && (c.path.endsWith('/products') || c.path.endsWith('/purchase-receipts')))).toBe(false)
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   await screen.findByRole('dialog', { name: 'Purchase saved' })
   expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))?.body).toMatchObject({ import_keys: ['a'.repeat(64)], items: [{ product_uuid: 'p1', import_row_number: 2, unit_cost: '15' }] })
 })
@@ -251,7 +257,16 @@ test('purchase saves paid-in-full choice using server total and keeps financial 
   await openPurchase()
   expect(screen.getByLabelText('GST amount (₹)')).toHaveValue('18')
   expect(screen.getByLabelText('Payment', { exact: true })).toHaveValue('paid')
-  await userEvent.click(screen.getByRole('button', { name: 'Save purchase' }))
+  await clickSave()
   await screen.findByRole('dialog', { name: 'Purchase saved' })
   expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))?.body).toMatchObject({ supplier_uuid: 'supply1', paid_in_full: true, tax_amount: '18', payment_method: 'upi' })
+})
+
+test('the footer shows the server total with charges and warns when payment is not recorded', async () => {
+  const calls = setup(); renderApp('/products')
+  await openPurchase(); await addRice()
+  expect(await screen.findByText(/Payment is not recorded, so this purchase will not appear in supplier dues/)).toBeInTheDocument()
+  expect(screen.getByText('₹36.00', { selector: 'strong' })).toBeInTheDocument()
+  expect(calls.find(c => c.path.endsWith('/purchase-receipts/preview'))?.body).toEqual({ items: [{ quantity: '1', unit_cost: '18' }] })
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)
 })

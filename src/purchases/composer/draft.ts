@@ -128,3 +128,16 @@ export function toInput(draft: PurchaseDraft): ReceiptInput {
     items: draft.items.map(line => ({ product_uuid: line.new_product ? null : line.product_uuid, ...(line.new_product ? { new_product: line.new_product } : {}), ...(line.import_key ? { import_key: line.import_key, import_row_number: line.import_row_number } : {}), quantity: line.quantity.trim(), unit_cost: line.unit_cost.trim(), batch_no: line.batch_no.trim() || null, expiry_date: line.expiry_date || null })),
   }
 }
+
+/** The figures that decide the total, for the server to price before saving. */
+export function toPreview(draft: PurchaseDraft) {
+  return {
+    items: draft.items.map(line => ({ quantity: line.quantity.trim(), unit_cost: line.unit_cost.trim() })),
+    ...(draft.tax_amount ? { tax_amount: draft.tax_amount } : {}),
+    ...(draft.charges_amount ? { charges_amount: draft.charges_amount } : {}),
+    ...(draft.discount_amount ? { discount_amount: draft.discount_amount } : {}),
+    ...(draft.payment_choice === 'paid' ? { paid_in_full: true } : {}),
+    ...(draft.payment_choice === 'partial' ? { paid_now: draft.paid_now } : {}),
+    ...(draft.record_payment_terms || draft.payment_choice === 'unpaid' ? { record_payment_terms: true } : {}),
+  }
+}

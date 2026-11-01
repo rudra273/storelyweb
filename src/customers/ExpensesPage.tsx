@@ -29,6 +29,11 @@ function monthRange(month: string): { start: string; end: string } {
 
 /** Money spent running the shop. Counted in Profit and loss; cash ones lower the day's cash. */
 export function ExpensesPage() {
+  // Keyed by shop so an open form or chosen filter never carries into another shop.
+  return <ExpensesWorkspace key={useShop().current?.shop_id} />
+}
+
+function ExpensesWorkspace() {
   const shop = useShop().current?.shop_id ?? ''
   const base = `/v1/shops/${shop}`
   const [month, setMonth] = useState(todayIso().slice(0, 7))
@@ -70,7 +75,7 @@ export function ExpensesPage() {
       {query.data.items.length ? <div className="table-wrap"><table className="table expense-table"><thead><tr><th>Date</th><th>Category</th><th>Notes</th><th>Paid by</th><th className="num">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
         {query.data.items.map(e => <tr key={e.uuid}><td>{day(e.expense_date)}</td><td>{e.category}</td><td>{e.notes || <span className="muted">—</span>}</td><td>{paymentMethod(e.payment_method)}</td><td className="num">{formatMoney(e.amount)}</td>
           <td className="row-actions"><button className="link" onClick={() => setEditing(e)}>Edit</button><button className="link danger-link" disabled={remove.busy} onClick={() => void del(e)}>Delete</button></td></tr>)}
-      </tbody></table></div> : <Empty title={category ? `No ${category} expenses in this period` : 'No expenses in this period'}>Add rent, salaries, bills and other costs to see your real profit.</Empty>}
+      </tbody></table>{query.data.has_more && <p className="muted">Showing the latest {query.data.items.length} of {query.data.count} expenses. The totals above include all {query.data.count}. Narrow the month or category to see the rest.</p>}</div> : <Empty title={category ? `No ${category} expenses in this period` : 'No expenses in this period'}>Add rent, salaries, bills and other costs to see your real profit.</Empty>}
     </>}
     {editing && <ExpenseForm current={editing === 'new' ? undefined : editing} categories={categories} close={() => setEditing(null)} saved={() => { setEditing(null); refresh() }} />}
   </div>

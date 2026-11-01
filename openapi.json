@@ -1355,6 +1355,11 @@
       "title": "Bills",
       "type": "array"
      },
+     "bills_has_more": {
+      "default": false,
+      "title": "Bills Has More",
+      "type": "boolean"
+     },
      "customer": {
       "$ref": "#/components/schemas/CustomerRow"
      },
@@ -1364,6 +1369,11 @@
       },
       "title": "Payments",
       "type": "array"
+     },
+     "payments_has_more": {
+      "default": false,
+      "title": "Payments Has More",
+      "type": "boolean"
      }
     },
     "required": [
@@ -2632,6 +2642,16 @@
       },
       "title": "Categories",
       "type": "array"
+     },
+     "count": {
+      "default": 0,
+      "title": "Count",
+      "type": "integer"
+     },
+     "has_more": {
+      "default": false,
+      "title": "Has More",
+      "type": "boolean"
      },
      "items": {
       "items": {
@@ -7526,6 +7546,197 @@
     "title": "ReceiptPaymentOut",
     "type": "object"
    },
+   "ReceiptPreview": {
+    "properties": {
+     "balance_due": {
+      "title": "Balance Due",
+      "type": "string"
+     },
+     "charges_amount": {
+      "title": "Charges Amount",
+      "type": "string"
+     },
+     "discount_amount": {
+      "title": "Discount Amount",
+      "type": "string"
+     },
+     "paid_now": {
+      "title": "Paid Now",
+      "type": "string"
+     },
+     "payment_recorded": {
+      "title": "Payment Recorded",
+      "type": "boolean"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "tax_amount": {
+      "title": "Tax Amount",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "subtotal",
+     "tax_amount",
+     "charges_amount",
+     "discount_amount",
+     "total",
+     "paid_now",
+     "balance_due",
+     "payment_recorded"
+    ],
+    "title": "ReceiptPreview",
+    "type": "object"
+   },
+   "ReceiptPreviewIn": {
+    "additionalProperties": false,
+    "description": "What a purchase would total before it is saved. Only the figures that change money.",
+    "properties": {
+     "charges_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Charges Amount"
+     },
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Amount"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptStock"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "paid_in_full": {
+      "default": false,
+      "title": "Paid In Full",
+      "type": "boolean"
+     },
+     "paid_now": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Paid Now"
+     },
+     "record_payment_terms": {
+      "default": false,
+      "title": "Record Payment Terms",
+      "type": "boolean"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Tax Amount"
+     }
+    },
+    "required": [
+     "items"
+    ],
+    "title": "ReceiptPreviewIn",
+    "type": "object"
+   },
+   "ReceiptStock": {
+    "additionalProperties": false,
+    "properties": {
+     "batch_no": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Unit Cost"
+     }
+    },
+    "required": [
+     "quantity",
+     "unit_cost"
+    ],
+    "title": "ReceiptStock",
+    "type": "object"
+   },
    "RefreshIn": {
     "properties": {
      "refresh_token": {
@@ -7715,6 +7926,190 @@
      "new_password"
     ],
     "title": "ResetIn",
+    "type": "object"
+   },
+   "ReturnPreview": {
+    "properties": {
+     "can_return": {
+      "title": "Can Return",
+      "type": "boolean"
+     },
+     "cgst_amount": {
+      "title": "Cgst Amount",
+      "type": "string"
+     },
+     "credit_total": {
+      "title": "Credit Total",
+      "type": "string"
+     },
+     "igst_amount": {
+      "title": "Igst Amount",
+      "type": "string"
+     },
+     "invoice_due": {
+      "title": "Invoice Due",
+      "type": "string"
+     },
+     "invoice_due_after": {
+      "title": "Invoice Due After",
+      "type": "string"
+     },
+     "invoice_paid": {
+      "title": "Invoice Paid",
+      "type": "string"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/ReturnPreviewLine"
+      },
+      "title": "Lines",
+      "type": "array"
+     },
+     "reduces_invoice_due": {
+      "title": "Reduces Invoice Due",
+      "type": "string"
+     },
+     "refund_to_customer": {
+      "title": "Refund To Customer",
+      "type": "string"
+     },
+     "round_off_amount": {
+      "title": "Round Off Amount",
+      "type": "string"
+     },
+     "settlement": {
+      "title": "Settlement",
+      "type": "string"
+     },
+     "sgst_amount": {
+      "title": "Sgst Amount",
+      "type": "string"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "tax_amount": {
+      "title": "Tax Amount",
+      "type": "string"
+     },
+     "taxable_amount": {
+      "title": "Taxable Amount",
+      "type": "string"
+     }
+    },
+    "required": [
+     "lines",
+     "subtotal",
+     "taxable_amount",
+     "cgst_amount",
+     "sgst_amount",
+     "igst_amount",
+     "round_off_amount",
+     "credit_total",
+     "settlement",
+     "invoice_paid",
+     "invoice_due",
+     "invoice_due_after",
+     "tax_amount",
+     "refund_to_customer",
+     "reduces_invoice_due",
+     "can_return"
+    ],
+    "title": "ReturnPreview",
+    "type": "object"
+   },
+   "ReturnPreviewIn": {
+    "additionalProperties": false,
+    "properties": {
+     "quantities": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "maximum": 1000000.0,
+         "minimum": 0.0,
+         "type": "number"
+        },
+        {
+         "type": "string"
+        }
+       ]
+      },
+      "maxProperties": 200,
+      "title": "Quantities",
+      "type": "object"
+     },
+     "settlement": {
+      "default": "refund",
+      "enum": [
+       "refund",
+       "adjust"
+      ],
+      "title": "Settlement",
+      "type": "string"
+     }
+    },
+    "title": "ReturnPreviewIn",
+    "type": "object"
+   },
+   "ReturnPreviewLine": {
+    "properties": {
+     "already_returned": {
+      "title": "Already Returned",
+      "type": "string"
+     },
+     "credit": {
+      "title": "Credit",
+      "type": "string"
+     },
+     "goes_back_to_stock": {
+      "title": "Goes Back To Stock",
+      "type": "boolean"
+     },
+     "item_uuid": {
+      "title": "Item Uuid",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "remaining": {
+      "title": "Remaining",
+      "type": "string"
+     },
+     "returning": {
+      "title": "Returning",
+      "type": "string"
+     },
+     "sold": {
+      "title": "Sold",
+      "type": "string"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "required": [
+     "item_uuid",
+     "product_name",
+     "unit",
+     "sold",
+     "already_returned",
+     "remaining",
+     "returning",
+     "credit",
+     "goes_back_to_stock"
+    ],
+    "title": "ReturnPreviewLine",
     "type": "object"
    },
    "ReviewIn": {
@@ -9095,7 +9490,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -9104,7 +9499,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -9119,7 +9514,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -9128,7 +9523,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -11438,6 +11833,68 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/preview": {
+   "post": {
+    "description": "What returning these quantities would credit, priced by the code that saves the return.",
+    "operationId": "credit_note_preview_v1_shops__shop_id__bills__bill_id__credit_note_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReturnPreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReturnPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Credit Note Preview",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/bills/{bill_id}/payments": {
    "post": {
     "operationId": "add_payment_v1_shops__shop_id__bills__bill_id__payments_post",
@@ -11917,6 +12374,7 @@
   },
   "/v1/shops/{shop_id}/customers/{customer_id}": {
    "get": {
+    "description": "The customer with a page of 200 bills; `due` always covers every bill.",
     "operationId": "get_customer_v1_shops__shop_id__customers__customer_id__get",
     "parameters": [
      {
@@ -11935,6 +12393,18 @@
       "schema": {
        "title": "Customer Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "bills_offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Bills Offset",
+       "type": "integer"
       }
      }
     ],
@@ -13676,6 +14146,60 @@
      }
     },
     "summary": "Publish Native Receipt",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/preview": {
+   "post": {
+    "description": "The total, amount paid and balance this purchase would be saved with.",
+    "operationId": "preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReceiptPreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Preview Receipt",
     "tags": [
      "catalog",
      "purchases"

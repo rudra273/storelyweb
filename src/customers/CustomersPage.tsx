@@ -30,7 +30,9 @@ function useCustomersBase() {
 /** Customers come from bills with a phone number, or are added here. Most owed first. */
 export function CustomersPage() {
   const { id } = useParams()
-  return id ? <CustomerDetailPage id={id} /> : <CustomerList />
+  const shop = useShop().current?.shop_id
+  // Keyed by shop so an open form or half-typed search never carries into another shop.
+  return id ? <CustomerDetailPage key={shop} id={id} /> : <CustomerList key={shop} />
 }
 
 function CustomerList() {
@@ -80,17 +82,26 @@ function CustomerDetailPage({ id }: { id: string }) {
   const query = useQuery({ queryKey: ['customers', shop, 'detail', id], queryFn: () => api.get<Detail>(`${base}/customers/${encodeURIComponent(id)}`), enabled: !!shop })
   const [editing, setEditing] = useState(false)
   const [paying, setPaying] = useState(false)
+  const [older, setOlder] = useState<{ bills: Detail['bills']; hasMore: boolean } | null>(null)
+  const olderPage = useAction()
   const client = useQueryClient()
   const update = (d: Detail) => {
+    setOlder(null)
     client.setQueryData(['customers', shop, 'detail', id], d)
     void client.invalidateQueries({ queryKey: ['customers', shop, 'accounts'] })
   }
+  const loadOlder = (shown: number) => olderPage.run(async () => {
+    const page = await api.get<Detail>(`${base}/customers/${encodeURIComponent(id)}?bills_offset=${shown}`)
+    setOlder(prev => ({ bills: [...(prev?.bills ?? []), ...page.bills], hasMore: page.bills_has_more ?? false }))
+  })
   return <div className="customers-page">
     <Link to="/customers">Back to customers</Link>
     {query.isPending && <Loading />}
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}
     {query.data && (() => {
-      const { customer: c, bills, payments } = query.data
+      const { customer: c, payments } = query.data
+      const bills = [...query.data.bills, ...(older?.bills ?? [])]
+      const moreBills = older ? older.hasMore : (query.data.bills_has_more ?? false)
       const owes = Number(c.due) > 0
       return <>
         <PageHeader eyebrow="CUSTOMER" title={c.name} description={[phoneLabel(c.phone), c.gstin].filter(Boolean).join(' · ')} actions={<>
@@ -109,9 +120,11 @@ function CustomerDetailPage({ id }: { id: string }) {
                 <td><span className={`payment-badge ${b.cancelled ? 'cancelled' : b.payment_status ?? ''}`}>{b.cancelled ? 'Cancelled' : paymentStatus(b.payment_status ?? 'unpaid')}</span></td>
                 <td>{formatMoney(b.total_amount)}</td><td>{b.cancelled ? '—' : formatMoney(b.balance_due)}</td></tr>)}
             </tbody></table></div> : <p className="muted">No bills yet.</p>}
+            {olderPage.error && <Alert>{olderPage.error}</Alert>}
+            {moreBills && <button disabled={olderPage.busy} onClick={() => void loadOlder(bills.length)}>{olderPage.busy ? 'Loading…' : 'Load older bills'}</button>}
           </section>
           <div className="customer-side">
-            <section className="card"><h2>Payments</h2>
+            <section className="card"><h2>{query.data.payments_has_more ? 'Recent payments' : 'Payments'}</h2>
               {payments.length ? <ul className="plain">{payments.map(p => <li className="row" key={p.uuid}><span>{day(p.received_at)} · {paymentMethod(p.payment_method)}<br /><small className="muted">{[p.bill_number, p.payment_reference].filter(Boolean).join(' · ')}</small></span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p className="muted">No payments yet.</p>}
             </section>
             <section className="card"><h2>Details</h2><dl className="customer-facts">

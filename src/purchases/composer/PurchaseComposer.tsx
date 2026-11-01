@@ -1,7 +1,9 @@
 import { NewProductDraft } from './NewProductDraft'
 import { PurchaseImport } from './PurchaseImport'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ApiError } from '../../api/client'
+import { useQuery } from '@tanstack/react-query'
+import { ApiError, api } from '../../api/client'
+import type { components } from '../../api/schema'
 import { useAuth } from '../../auth/context'
 import { useShop } from '../../shops/context'
 import { Modal } from '../../components/ui/Modal'
@@ -12,7 +14,7 @@ import { useDebounced } from '../../lib/useDebounced'
 import { formatQty } from '../../lib/money'
 import { useProducts, useSuppliers, type Product } from '../../products/queries'
 import { SupplierEditor } from '../../products/suppliers/Suppliers'
-import { amountInCents, centsText, draftError, draftKey, newDraft, readDraft, subtotal, todayInShop, toInput, type DraftLine, type PurchaseDraft } from './draft'
+import { amountInCents, centsText, draftError, draftKey, newDraft, readDraft, subtotal, todayInShop, toInput, toPreview, type DraftLine, type PurchaseDraft } from './draft'
 import { useConfirmReceipt } from '../queries'
 import { receiptMoney } from './money'
 import { PurchaseSummary } from '../PurchaseDetail'
@@ -135,6 +137,16 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
     } catch { setStorageError('The local draft could not be removed. Enable browser storage and try again.') }
   }
   const total = subtotal(draft)
+  // The server works out the final total (tax, charges, discount) with the same code that saves it.
+  const previewBody = !draft.submitted && !receipt && draftError(draft) === null ? JSON.stringify(toPreview(draft)) : null
+  const settledPreview = useDebounced(previewBody, 250)
+  const shopId = current?.shop_id ?? ''
+  const review = useQuery({
+    queryKey: ['purchase-preview', shopId, settledPreview],
+    queryFn: () => api.post<components['schemas']['ReceiptPreview']>(`/v1/shops/${shopId}/purchase-receipts/preview`, JSON.parse(settledPreview!)),
+    enabled: !!settledPreview && !!shopId, retry: false,
+  })
+  const reviewCurrent = !!review.data && !review.isFetching && settledPreview === previewBody && !review.error
   const close = () => {
     if (sending.current) return
     if (!receipt && storageError && !window.confirm('The draft could not be saved on this browser. Close anyway? Unsaved changes may be lost.')) return
@@ -188,7 +200,12 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
             {draft.record_payment_terms && <Field label="Due date (optional)" type="date" min={draft.purchase_date} value={draft.due_date ?? ''} onChange={e => change({ ...draftRef.current, due_date: e.target.value })} />}
           </details>
         </fieldset>
-        <div className="purchase-footer">{error && <Alert>{error}</Alert>}<div className="purchase-footer-row"><p>Stock cost subtotal: <strong>{total === null ? 'Complete quantities and costs' : receiptMoney(total)}</strong><br /><small className="muted">The saved receipt shows the final total including entered tax, charges and discount.</small></p><div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div></div>
+        <div className="purchase-footer">{error && <Alert>{error}</Alert>}<div className="purchase-footer-row"><div aria-live="polite">{draft.submitted ? <small className="muted">The total was fixed when you pressed Save purchase.</small>
+          : !draft.items.length ? <small className="muted">Add a product to see the total.</small>
+          : review.error ? <Alert>{describeError(review.error)}</Alert>
+          : !reviewCurrent ? <small className="muted">{previewBody === null ? (total === null ? 'Complete quantities and costs to see the total.' : 'Fix the highlighted details to see the total.') : 'Calculating the total…'}</small>
+          : <><p>Items {receiptMoney(review.data!.subtotal)}{Number(review.data!.tax_amount) > 0 && <> · GST {receiptMoney(review.data!.tax_amount)}</>}{Number(review.data!.charges_amount) > 0 && <> · Charges {receiptMoney(review.data!.charges_amount)}</>}{Number(review.data!.discount_amount) > 0 && <> · Discount −{receiptMoney(review.data!.discount_amount)}</>}<br />Total <strong>{receiptMoney(review.data!.total)}</strong>{review.data!.payment_recorded ? <> · Paid now {receiptMoney(review.data!.paid_now)} · Balance due <strong>{receiptMoney(review.data!.balance_due)}</strong></> : null}</p>
+            {!review.data!.payment_recorded && <small className="muted">Payment is not recorded, so this purchase will not appear in supplier dues. Choose a payment option under Charges, tax and payment terms.</small>}</>}</div><div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length || (!draft.submitted && previewBody !== null && !reviewCurrent && navigator.onLine !== false)}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div></div>
       </form>
       {productEditor && <NewProductDraft line={productEditor === 'new' ? undefined : productEditor} onClose={() => setProductEditor(null)} onStage={line => {
         const active = draftRef.current
