@@ -1,4 +1,5 @@
 import { PageHeader } from '../components/workspace'
+import { useToast } from '../components/toastContext'
 import { useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
@@ -44,6 +45,7 @@ function BillForm() {
   const [reference, setReference] = useState('')
   const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(null)
   const sending = useRef(false)
+  const toast = useToast()
   const mutation = useBillingMutation(createBill)
   const products = useProducts({ q: useDebounced(search, 250), category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
   const customerSearch = useDebounced(customer.customer_name, 300)
@@ -53,6 +55,8 @@ function BillForm() {
   // The server prices catalogue lines first, then the other lines in the order added.
   const preview = useQuery({ queryKey: ['bill-preview', shop, cart], queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, cart), enabled: lineCount > 0 && [...items, ...custom].every(i => Number(i.quantity) > 0) && !attempt, retry: false })
   const locked = !!attempt || mutation.isPending
+  // A cart the server refused (not enough stock, a whole-unit item): retrying cannot help.
+  const cartProblem = preview.error instanceof ApiError && preview.error.status === 422
   const customPreview = preview.data?.lines?.filter(l => l.product_uuid === null) ?? []
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -71,6 +75,7 @@ function BillForm() {
     try {
       const result = await mutation.mutateAsync(next)
       void navigate(`/billing/${result.bill.uuid}`, { replace: true })
+      toast(`Bill ${result.bill.bill_number} created`)
     } catch (error) {
       // A rejected validation has rolled back. An unknown outcome keeps the key
       // and exact payload so a retry cannot charge or reduce stock twice.
@@ -102,12 +107,13 @@ function BillForm() {
           {products.data && <><ul className="product-picker plain">{products.data.items.map(p => <li key={p.uuid}><button type="button" className="link" disabled={items.some(i => i.product.uuid === p.uuid) || lineCount >= 200} onClick={() => setItems([...items, { product: p, quantity: '1' }])}>{[p.name, p.barcode || p.product_code, formatMoney(p.selling_price)].filter(Boolean).join(' · ')}</button></li>)}</ul>{!products.data.items.length && <Empty title="No matching products" />}</>}
           {!lineCount && <div className="cart-empty"><strong>Your bill starts here</strong><p>Choose a product above to add it to this bill{canCustom ? ', or add an item that is not in the list' : ''}.</p></div>}
           <div className="table-wrap cart-table"><table className="table"><thead><tr><th>Product</th><th>Quantity</th><th className="num">Price</th><th className="num">Amount</th><th>Action</th></tr></thead><tbody>{items.map((i, index) => { const line = preview.data?.lines?.find(l => l.product_uuid === i.product.uuid); return <tr key={i.product.uuid}><td>{i.product.name}</td><td><input aria-label={`Quantity for ${i.product.name}`} type="number" min="0.001" max="1000000" step="0.001" required value={i.quantity} onChange={e => setItems(items.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} /></td><td className="num">{line ? formatMoney(line.unit_price) : '—'}</td><td className="num">{line ? formatMoney(line.amount) : '—'}</td><td><button type="button" className="link" aria-label={`Remove ${i.product.name}`} onClick={() => setItems(items.filter((_, n) => n !== index))}>Remove</button></td></tr> })}{custom.map((c, index) => { const line = customPreview[index]; return <tr key={c.key}><td>{c.name} <span className="badge">Not in list · GST {c.gst_percent}%</span></td><td><input aria-label={`Quantity for ${c.name}`} type="number" min="0.001" max="1000000" step="0.001" required value={c.quantity} onChange={e => setCustom(custom.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} /></td><td className="num">{line ? formatMoney(line.unit_price) : '—'}</td><td className="num">{line ? formatMoney(line.amount) : '—'}</td><td><button type="button" className="link" aria-label={`Remove ${c.name}`} onClick={() => setCustom(custom.filter((_, n) => n !== index))}>Remove</button></td></tr> })}</tbody></table></div>
+          {cartProblem && <Alert>{describeError(preview.error)} Change the quantity or remove the item.</Alert>}
           <Field label="Discount (%)" type="number" min="0" max="100" step="0.01" required value={discount} onChange={e => setDiscount(e.target.value)} />
         </section>
       </fieldset>
       <aside className="checkout-summary" aria-label="Bill summary">
       {!lineCount && <section className="card wide"><h2>Bill summary</h2><p className="muted">Your totals and payment options will appear here when you add an item.</p></section>}
-      {lineCount > 0 && <section className="card wide"><div className="checkout-section-title"><span>03</span><h2>Bill summary</h2></div><p className="muted">Review pricing and payment before saving.</p>{preview.isFetching && <Loading label="Pricing this cart…" />}{preview.error && <Alert>{describeError(preview.error)} <button type="button" className="link" onClick={() => void preview.refetch()}>Retry pricing</button></Alert>}
+      {lineCount > 0 && <section className="card wide"><div className="checkout-section-title"><span>03</span><h2>Bill summary</h2></div><p className="muted">Review pricing and payment before saving.</p>{preview.isFetching && <Loading label="Pricing this cart…" />}{preview.error && <Alert>{describeError(preview.error)} {!cartProblem && <button type="button" className="link" onClick={() => void preview.refetch()}>Retry pricing</button>}</Alert>}
         {preview.data && !preview.isFetching && !preview.error && <><dl className="bill-totals">{[['Subtotal', preview.data.subtotal], ['Discount', preview.data.discount_amount], ['Taxable', preview.data.taxable_amount], ['CGST', preview.data.cgst_amount], ['SGST', preview.data.sgst_amount], ['IGST', preview.data.igst_amount], ['Round-off', preview.data.round_off_amount], ['Total', preview.data.total]].map(([k, v]) => <div className={k === 'Total' ? 'row grand-total' : 'row'} key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></>}
         {items.some(i => { const line = preview.data?.lines?.find(line => line.product_uuid === i.product.uuid); return line && i.product.mrp_price != null && Number(line.unit_price) > Number(i.product.mrp_price) }) && <Alert kind="info">A product’s selling price is above its MRP. Check the price before creating the bill.</Alert>}
         <fieldset className="payment-choice" disabled={locked} aria-invalid={paidError ? true : undefined} aria-describedby={paidError ? 'paid-error' : undefined}>

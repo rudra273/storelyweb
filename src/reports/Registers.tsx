@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router'
+import { day } from '../components/labels'
 import { Alert, Empty } from '../components/ui'
 import { formatMoney, formatQty } from '../lib/money'
 import { DownloadBar, PeriodPicker } from './ReportBits'
@@ -66,7 +67,7 @@ export function PurchasesPage() {
                   <tbody>
                     {p.rows.map((r, i) => (
                       <tr key={`${r.date}-${r.product_name}-${i}`}>
-                        <td>{r.date}</td><td>{r.product_name}{r.imported && <span className="badge">import</span>}</td><td>{r.supplier ?? '—'}</td>
+                        <td>{day(r.date)}</td><td>{r.product_name}{r.imported && <span className="badge">import</span>}</td><td>{r.supplier ?? '—'}</td>
                         <td>{formatQty(r.quantity)} {r.unit ?? ''}</td><td>{formatMoney(r.unit_cost)}</td><td>{formatMoney(r.amount)}</td>
                         <td>{r.batch_no ?? '—'}{r.expiry ? <><br /><small className="muted">expires {r.expiry}</small></> : null}</td>
                       </tr>

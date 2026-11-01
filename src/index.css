@@ -540,3 +540,6 @@ input[type=checkbox] { accent-color: var(--navy); width: 16px; height: 16px; fle
 .invoice.thermal .invoice-table .table { min-width: 0; }
 .invoice.thermal .invoice-table th:first-child { min-width: 0; }
 .invoice.thermal .invoice-table td:first-child { white-space: normal; }
+
+/* Dialogs open near the top and grow downwards, so buttons do not jump as content changes. */
+dialog.modal { margin-top: 6vh; margin-bottom: auto; max-height: 88vh; }

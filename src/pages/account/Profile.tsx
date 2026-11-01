@@ -76,7 +76,7 @@ export function Profile() {
         {!codeSent ? (
           <form onSubmit={requestChange} noValidate>
             <Field label="New email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
-            <Field label="Your password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Field label="Current password" hint="To confirm it is you." type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             <button className="primary" disabled={email.busy || !newEmail || !password}>Send code to the new address</button>
           </form>
         ) : (

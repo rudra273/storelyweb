@@ -1,4 +1,6 @@
 import { PurchaseComposer } from '../purchases/PurchaseComposer'
+import { useToast } from '../components/toastContext'
+import { day, stockReason } from '../components/labels'
 import { useState } from 'react'
 import { Button } from '../components/workspace'
 import { Alert, Loading } from '../components/ui'
@@ -17,6 +19,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
   const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase'>(null)
   const remove = useProductMutation(removeProduct)
   const { error, run, busy } = useAction()
+  const toast = useToast()
   const p = detail.data?.product
   const movements = detail.data?.movements ?? []
   const pricing = detail.data?.pricing ?? undefined
@@ -28,7 +31,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
       await remove.mutateAsync(p.uuid)
       return true
     })
-    if (ok) onClose()
+    if (ok) { onClose(); toast('Product deleted') }
   }
 
   return (
@@ -79,7 +82,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
             {p.next_expiry && (
               <>
                 <dt>Next expiry</dt>
-                <dd>{p.next_expiry}</dd>
+                <dd>{day(p.next_expiry)}</dd>
               </>
             )}
             <dt>Last changed</dt>
@@ -105,12 +108,13 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
               <li key={m.uuid} className="row">
                 <span>
                   {KIND[m.type] ?? m.type}
-                  {m.reason ? ` · ${m.reason.replaceAll('_', ' ')}` : ''}
+                  {m.reason ? ` · ${stockReason(m.reason)}` : ''}
                   <br />
+                  {/* A web purchase receipt has a date only; the server stamps it noon shop time. */}
                   <small className="muted">
-                    {when(m.created_at)}
+                    {/^\d{4}-\d{2}-\d{2}(T00:00(:00(\.0+)?)?Z?)?$/.test(m.created_at) || (m.type === 'purchase' && m.created_at.endsWith('T12:00:00+05:30')) ? day(m.created_at) : when(m.created_at)}
                     {m.notes ? ` · ${m.notes}` : ''}
-                    {m.expiry_date ? ` · expires ${m.expiry_date}` : ''}
+                    {m.expiry_date ? ` · expires ${day(m.expiry_date)}` : ''}
                   </small>
                 </span>
                 <strong className={Number(m.quantity_delta) < 0 ? 'neg' : 'pos'}>
@@ -121,7 +125,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
             ))}
           </ul>
           {mode === 'purchase' && <PurchaseComposer initialProduct={p} onClose={() => setMode(null)} />}
-          {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => setMode(null)} />}
+          {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => { setMode(null); toast('Changes saved') }} />}
           {mode === 'adjust' && <AdjustStock key={p.uuid} product={p} onClose={() => setMode(null)} />}
         </>
       )}

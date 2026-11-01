@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react'
+import { useToast } from '../components/toastContext'
 import { Button } from '../components/workspace'
 import { Modal } from '../components/Modal'
 import { Alert, Field } from '../components/ui'
@@ -10,10 +11,12 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
   const sending = useRef(false)
   const close = () => { if (!sending.current) onClose() }
   const save = useProductMutation(adjustStock)
+  const toast = useToast()
   const { busy, error, run, setError } = useAction()
-  const [direction, setDirection] = useState<'add' | 'remove'>('remove')
+  // Nothing can go out of an empty shelf, so start on "Stock came in" there.
+  const [direction, setDirection] = useState<'add' | 'remove'>(Number(product.quantity ?? 0) > 0 ? 'remove' : 'add')
   const [amount, setAmount] = useState('')
-  const [reason, setReason] = useState<string>('damage')
+  const [reason, setReason] = useState<string>(direction === 'remove' ? 'damage' : 'return')
   const [note, setNote] = useState('')
   const reasons = REASONS.filter((r) => (direction === 'remove' ? r.removes || r.value === 'count' || r.value === 'other' : !r.removes))
 
@@ -27,7 +30,7 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
     sending.current = true
     try {
       const done = await run(() => save.mutateAsync({ id: product.uuid, delta: direction === 'remove' ? `-${amount.trim()}` : amount.trim(), reason, note: note.trim() || null }))
-      if (done) onClose()
+      if (done) { onClose(); toast('Stock updated') }
     } finally { sending.current = false }
   }
 

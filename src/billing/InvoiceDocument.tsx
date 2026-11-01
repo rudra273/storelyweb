@@ -1,4 +1,5 @@
 import { QRCodeSVG } from 'qrcode.react'
+import { paymentMethod } from '../components/labels'
 import { formatMoney, formatQty } from '../lib/money'
 import { stateLabel } from '../lib/states'
 import { amountInWords } from '../lib/words'
@@ -7,7 +8,6 @@ import type { BillDetail, InvoiceSettings } from './queries'
 
 export type Paper = 'A4' | 'A5' | '80mm' | '58mm'
 
-const METHOD: Record<string, string> = { cash: 'Cash', upi: 'UPI', card: 'Card', bank: 'Bank transfer', online: 'Online' }
 
 function day(value: string): string {
   const date = new Date(value.length === 10 ? `${value}T00:00:00` : value)
@@ -99,7 +99,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
       </div>
 
       {hsn.length > 0 && <table className="table hsn-summary"><caption>Tax summary by HSN</caption><thead><tr><th>HSN/SAC</th><th className="num">Taxable value</th><th className="num">GST rate</th><th className="num">Tax</th></tr></thead><tbody>{hsn.map(h => <tr key={`${h.hsn}-${h.rate}`}><td>{h.hsn || '—'}</td><td className="num">{formatMoney(h.taxable.toFixed(2))}</td><td className="num">{h.rate}%</td><td className="num">{formatMoney(h.tax.toFixed(2))}</td></tr>)}</tbody></table>}
-      {show('show_payment_details') && detail.payments.length > 0 && <p className="invoice-payments">Received: {detail.payments.map(p => `${formatMoney(p.amount)} by ${METHOD[p.payment_method] ?? p.payment_method}${p.payment_reference ? ` (${p.payment_reference})` : ''}`).join(', ')}</p>}
+      {show('show_payment_details') && detail.payments.length > 0 && <p className="invoice-payments">Received: {detail.payments.map(p => `${formatMoney(p.amount)} by ${paymentMethod(p.payment_method)}${p.payment_reference ? ` (${p.payment_reference})` : ''}`).join(', ')}</p>}
       <section className="invoice-extras">
         {upi && <div className="invoice-upi"><QRCodeSVG value={upi} size={thermal ? 96 : 112} level="M" marginSize={2} role="img" aria-label={`UPI QR code to pay ${formatMoney(b.balance_due)}`} /><small>Scan to pay {formatMoney(b.balance_due)}<br />{s.upi_id}</small></div>}
         {s.bank_details && !thermal && <div><h4>Bank details</h4><p>{s.bank_details}</p></div>}

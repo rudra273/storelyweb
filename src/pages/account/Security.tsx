@@ -197,7 +197,7 @@ function SessionsCard() {
         {sessions.data?.map((s) => (
           <li key={s.id} className="row">
             <span>
-              <strong>{s.device_label || s.client}</strong> {s.current && <span className="badge">this device</span>}
+              <strong>{s.device_label || (s.client === 'web' ? 'Web browser' : s.client === 'mobile' ? 'Phone app' : s.client)}</strong> {s.current && <span className="badge">this device</span>}
               <br />
               <small className="muted">Last active {when(s.last_used_at)}{s.ip ? ` · ${s.ip}` : ''}</small>
             </span>

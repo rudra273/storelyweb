@@ -1,4 +1,5 @@
 import { PurchaseComposer } from '../purchases/PurchaseComposer'
+import { useToast } from '../components/toastContext'
 import { PurchaseHistory } from '../purchases/PurchaseHistory'
 import { SuppliersManager } from './Suppliers'
 import { useEffect, useMemo, useState } from 'react'
@@ -50,6 +51,15 @@ function ProductsWorkspace() {
   const [search, setSearch] = useState(query.q)
   const settled = useDebounced(search, 300)
   const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'suppliers' | 'purchase' | 'purchases'>(null)
+  const toast = useToast()
+  // A link from Home ("Add your first product") opens the form straight away.
+  useEffect(() => {
+    if (params.get('new') !== '1') return
+    setDialog('new')
+    const next = new URLSearchParams(params)
+    next.delete('new')
+    setParams(next, { replace: true })
+  }, [params, setParams])
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [exportError, setExportError] = useState<string | null>(null)
 
@@ -71,6 +81,8 @@ function ProductsWorkspace() {
   const products = useProducts(query)
   const categories = useCategories()
   const data = products.data
+  const filtered = !!(query.q || query.category || query.low || query.expiring)
+  const emptyCatalogue = !!data && data.items.length === 0 && !filtered
   const total = data?.total ?? 0
   const open = (id: string | null) => navigate({ pathname: id ? `/products/${id}` : '/products', search: params.toString() })
 
@@ -98,8 +110,8 @@ function ProductsWorkspace() {
     <div className="split catalogue">
       <div className="split-main">
         <PageHeader eyebrow="INVENTORY" title="Products" description="Your catalogue, stock and pricing in one place." actions={<>
-          {canEdit && <Button variant="primary" onClick={() => setDialog('purchase')}>Add purchase</Button>}
-          {canEdit && <Button onClick={() => setDialog('new')}>Add product</Button>}
+          {canEdit && <Button variant={emptyCatalogue ? undefined : 'primary'} onClick={() => setDialog('purchase')}>Add purchase</Button>}
+          {canEdit && <Button variant={emptyCatalogue ? 'primary' : undefined} onClick={() => setDialog('new')}>Add product</Button>}
           {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
           <Button disabled={picked.size === 0} onClick={() => setDialog('labels')}>Print labels{picked.size ? ` (${picked.size})` : ''}</Button>
           {(canEdit || canExport) && <ActionMenu>
@@ -140,9 +152,12 @@ function ProductsWorkspace() {
         {products.isPending && <Loading />}
         {products.error && <Alert>{describeError(products.error)}</Alert>}
         {data && data.items.length === 0 && (
-          <Empty title={query.q || query.category || query.low || query.expiring ? 'No products match' : 'No products yet'}>
-            {canEdit ? 'Add a product, or import a file.' : 'Ask the owner to add products.'}
-          </Empty>
+          <>
+            <Empty title={filtered ? 'No products match' : 'No products yet'}>
+              {filtered ? 'Try another search or clear the filters.' : canEdit ? 'Add your first product, or import a list from Excel or CSV.' : 'Ask the owner to add products.'}
+            </Empty>
+            {!filtered && canEdit && <div className="actions empty-actions"><Button variant="primary" onClick={() => setDialog('new')}>Add product</Button><Button onClick={() => setDialog('import')}>Import a file</Button></div>}
+          </>
         )}
         {data && data.items.length > 0 && (
           <>
@@ -210,7 +225,7 @@ function ProductsWorkspace() {
       {selectedId && <ProductDetailPanel id={selectedId} canEdit={canEdit} onClose={() => open(null)} />}
       {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
       {dialog === 'purchases' && <PurchaseHistory onClose={() => setDialog(null)} />}
-      {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); open(id) }} />}
+      {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'suppliers' && <SuppliersManager onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}

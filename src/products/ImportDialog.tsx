@@ -5,7 +5,18 @@ import { useAction } from '../components/useAction'
 import { ApiError } from '../api/client'
 import { importFile, useProductMutation, type ImportReport } from './queries'
 
-const GUIDE = 'Needs the columns product_name, quantity and purchase_price. Optional: product_code, barcode, category, selling_price, unit, hsn_code, gst_percent, reorder_level, mrp_price. Other common spellings (name, qty, cost, sku, …) are understood.'
+const SAMPLE = 'product_name,quantity,purchase_price,selling_price,mrp_price,unit,category,gst_percent,hsn_code,barcode,product_code,reorder_level\r\nParle-G Biscuit 100 g,48,8,10,10,pcs,Biscuits,18,1905,8901719101038,PG100,12\r\nBasmati Rice 1 kg,20,92,110,120,pkt,Grains,5,1006,,RICE1,5\r\n'
+
+function downloadSample() {
+  const url = URL.createObjectURL(new Blob([SAMPLE], { type: 'text/csv' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'storely-products-sample.csv'
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
 
 /** Pick a file, see exactly what would happen, then confirm. Nothing changes before the second step. */
 export function ImportDialog({ onClose }: { onClose: () => void }) {
@@ -55,7 +66,8 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
     <Modal title="Import products" onClose={onClose} canClose={!busy} wide>
       {!done && (
         <>
-          <p className="muted">{GUIDE}</p>
+          <p>Each row is one product. Every row needs a <strong>name</strong>, the <strong>quantity</strong> you have and its <strong>cost price</strong>. You can also give selling price, MRP, unit, category, GST %, HSN code, barcode, product code and reorder level.</p>
+          <p className="muted">Column names like name, qty, cost or sku are understood too. Start from the sample to see the layout. <button type="button" className="link" onClick={downloadSample}>Download sample file (CSV)</button></p>
           <div className="field">
             <label htmlFor="import-file">CSV or Excel (.xlsx) file, up to 5 MB</label>
             <input id="import-file" type="file" disabled={busy} accept=".csv,.xlsx,text/csv" onChange={(e) => e.target.files?.[0] && void preview(e.target.files[0])} />

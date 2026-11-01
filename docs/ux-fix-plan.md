@@ -86,8 +86,16 @@ item 26 (subscription icon) done.
 Not yet: shop logo and signature images (the phone stores them; the web does not
 upload them yet), and customer pages (item 9), expenses (item 8).
 
-**Next up:** Phase 4 polish (raw dates and codes on screen, empty states, success
-messages, alignment).
+✅ **Phase 4 polish (2 Nov 2026):** shared labels for dates,
+payment status/method, roles, stock reasons and bill history; report period range;
+"Saved" toasts for product, stock, bill, payment, return and cancel; Get started
+card on Home and empty-catalogue actions; subscription badge fixed and request link
+hidden when active; stock problems shown by the items; Adjust stock starts on
+"Stock came in" at zero; compact purchase footer; dialogs open near the top;
+import sample CSV and plain-language help; activity, account and session labels.
+
+**Still open:** customers (9), expenses (8), supplier payments (10), shop logo and
+signature upload, and a browser re-check of the Home "Get started" card.
 
 ## Phase 2: missing features customers expect (Android has them)
 

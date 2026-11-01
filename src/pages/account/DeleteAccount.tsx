@@ -48,7 +48,7 @@ export function DeleteAccount() {
       {status === 'authenticated' && (
         <form onSubmit={submit} noValidate>
           {error && <Alert>{error}</Alert>}
-          <Field label="Your password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <Field label="Current password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           <Field label="Two-step code (only if you use one)" maxLength={20} value={code} onChange={(e) => setCode(e.target.value)} />
           <label className="check">
             <input type="checkbox" checked={ownedShops} onChange={(e) => setOwnedShops(e.target.checked)} />
