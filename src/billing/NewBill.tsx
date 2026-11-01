@@ -8,6 +8,8 @@ import { Alert, Empty, Field, Loading } from '../components/ui'
 import { describeError } from '../components/useAction'
 import { formatMoney, isAmount } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
+import { STATE_OPTIONS } from '../lib/states'
+import { gstinProblem, phoneProblem } from '../lib/validate'
 import { useProducts, type Product } from '../products/queries'
 import { useShop } from '../shops/context'
 import { can } from '../permissions'
@@ -49,8 +51,20 @@ function BillForm() {
   const mutation = useBillingMutation(createBill)
   const products = useProducts({ q: useDebounced(search, 250), category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
   const customerSearch = useDebounced(customer.customer_name, 300)
+  // Customer details are checked here as they are typed: a half-typed GSTIN must not reach
+  // the price check (it would refuse the whole cart) or the saved bill.
+  const [checkCustomer, setCheckCustomer] = useState(false)
+  const gstin = customer.customer_gstin.trim()
+  const customerErrors = {
+    phone: phoneProblem(customer.customer_phone),
+    gstin: billType === 'b2b' && !gstin ? "A business (B2B) bill needs the customer's GSTIN." : gstinProblem(gstin),
+  }
+  const shownErrors = {
+    phone: checkCustomer || customer.customer_phone.replace(/\D/g, '').length >= 10 ? customerErrors.phone : null,
+    gstin: checkCustomer || gstin.length >= 15 ? customerErrors.gstin : null,
+  }
   const customers = useBillingQuery<Customer[]>('customers', `customers?q=${encodeURIComponent(customerSearch)}`, customerSearch.trim().length >= 2)
-  const cart: CartInput = { ...customer, customer_gstin: customer.customer_gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: [...items.map(i => ({ product_uuid: i.product.uuid, quantity: i.quantity })), ...custom.map(c => ({ name: c.name, quantity: c.quantity, unit_price: c.unit_price, gst_percent: c.gst_percent, cost: c.cost || null, hsn_code: c.hsn_code || null, unit: c.unit || null }))] }
+  const cart: CartInput = { ...customer, customer_phone: customerErrors.phone ? null : customer.customer_phone, customer_gstin: gstinProblem(gstin) ? null : gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: [...items.map(i => ({ product_uuid: i.product.uuid, quantity: i.quantity })), ...custom.map(c => ({ name: c.name, quantity: c.quantity, unit_price: c.unit_price, gst_percent: c.gst_percent, cost: c.cost || null, hsn_code: c.hsn_code || null, unit: c.unit || null }))] }
   const lineCount = items.length + custom.length
   // The server prices catalogue lines first, then the other lines in the order added.
   const preview = useQuery({ queryKey: ['bill-preview', shop, cart], queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, cart), enabled: lineCount > 0 && [...items, ...custom].every(i => Number(i.quantity) > 0) && !attempt, retry: false })
@@ -62,6 +76,12 @@ function BillForm() {
     e.preventDefault()
     if (sending.current || (!attempt && (!preview.data || preview.isFetching || preview.error))) return
     let paidNow = '0'
+    if (!attempt && (customerErrors.phone || customerErrors.gstin)) {
+      setCheckCustomer(true)
+      // The GSTIN sits in a section that opens on this render; focus once it is shown.
+      setTimeout(() => document.querySelector<HTMLInputElement>(`input[name="${customerErrors.phone ? 'customer_phone' : 'customer_gstin'}"]`)?.focus())
+      return
+    }
     if (!attempt) {
       const total = preview.data!.total
       if (!paid) return setPaidError('Choose how the customer paid: in full, part or not yet.')
@@ -89,17 +109,17 @@ function BillForm() {
       <fieldset className="checkout-main" disabled={locked}>
         <section className="card wide"><div className="checkout-section-title"><span>01</span><h2>Customer</h2></div><p className="muted">Add a name or leave blank for a walk-in customer.</p><div className="form-grid">
           <Field label="Customer name" maxLength={120} value={customer.customer_name} onChange={e => setCustomer({ ...customer, customer_name: e.target.value })} />
-          <Field label="Phone" maxLength={20} value={customer.customer_phone} onChange={e => setCustomer({ ...customer, customer_phone: e.target.value })} />
+          <Field label="Phone" type="tel" inputMode="tel" maxLength={20} placeholder="98765 43210" hint="Optional. With a phone number the bill is added to the customer's account." name="customer_phone" error={shownErrors.phone ?? undefined} value={customer.customer_phone} onChange={e => setCustomer({ ...customer, customer_phone: e.target.value })} />
         </div>
         {customers.isFetching && <Loading label="Finding customers…" />}
         {customers.error && <Alert>{describeError(customers.error)}</Alert>}
         {!!customers.data?.length && <ul className="plain">{customers.data.map(c => <li key={c.uuid}><button type="button" className="link" onClick={() => setCustomer({ customer_name: c.name, customer_phone: c.phone ?? '', customer_gstin: c.gstin ?? '', customer_gst_legal_name: c.gst_legal_name ?? '', customer_gst_trade_name: c.gst_trade_name ?? '', customer_address: c.address ?? '', place_of_supply_state_code: c.place_of_supply_state_code ?? '' })}>{c.name} · {c.phone || 'No phone'}</button></li>)}</ul>}
         <label>Bill type<select value={billType} onChange={e => setBillType(e.target.value as 'b2c' | 'b2b')}><option value="b2c">Consumer (B2C)</option><option value="b2b">Business (B2B)</option></select></label>
-        <details className="tax-details" open={billType === 'b2b' ? true : undefined}><summary>Tax details and address</summary><div className="form-grid">
-          <Field label="GSTIN" maxLength={15} required={billType === 'b2b'} value={customer.customer_gstin} onChange={e => setCustomer({ ...customer, customer_gstin: e.target.value.toUpperCase() })} />
+        <details className="tax-details" open={billType === 'b2b' || shownErrors.gstin ? true : undefined}><summary>Tax details and address</summary><div className="form-grid">
+          <Field label="GSTIN" maxLength={15} required={billType === 'b2b'} placeholder="27ABCDE1234F1Z5" name="customer_gstin" error={shownErrors.gstin ?? undefined} value={customer.customer_gstin} onChange={e => setCustomer({ ...customer, customer_gstin: e.target.value.toUpperCase() })} />
           <Field label="GST legal name" maxLength={150} value={customer.customer_gst_legal_name} onChange={e => setCustomer({ ...customer, customer_gst_legal_name: e.target.value })} />
           <Field label="GST trade name" maxLength={150} value={customer.customer_gst_trade_name} onChange={e => setCustomer({ ...customer, customer_gst_trade_name: e.target.value })} />
-          <Field label="Place of supply state code" maxLength={2} pattern="[0-9]{2}" placeholder="27" value={customer.place_of_supply_state_code} onChange={e => setCustomer({ ...customer, place_of_supply_state_code: e.target.value })} />
+          <label>Place of supply<select value={customer.place_of_supply_state_code} onChange={e => setCustomer({ ...customer, place_of_supply_state_code: e.target.value })}><option value="">{gstin && !gstinProblem(gstin) ? 'From the GSTIN' : 'Same as the shop'}</option>{STATE_OPTIONS.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
           <Field label="Address" maxLength={300} value={customer.customer_address} onChange={e => setCustomer({ ...customer, customer_address: e.target.value })} />
         </div></details></section>
         <section className="card wide"><div className="checkout-section-title"><span>02</span><h2>Items <small>{lineCount ? `(${lineCount})` : ''}</small></h2>{canCustom && <button type="button" className="link checkout-custom" disabled={locked || lineCount >= 200} onClick={() => setAddingCustom(true)}>+ Item not in the list</button>}</div><Field label="Find product or barcode" type="search" value={search} onChange={e => setSearch(e.target.value)} />

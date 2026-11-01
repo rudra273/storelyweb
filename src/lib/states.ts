@@ -14,3 +14,6 @@ export function stateLabel(code: string | null | undefined): string | null {
   if (!code) return null
   return STATES[code] ? `${code} - ${STATES[code]}` : code
 }
+
+/** Every state as [code, "27 - Maharashtra"], in code order, for pickers. */
+export const STATE_OPTIONS: [string, string][] = Object.keys(STATES).sort().map(code => [code, `${code} - ${STATES[code]}`])

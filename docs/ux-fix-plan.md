@@ -94,7 +94,25 @@ hidden when active; stock problems shown by the items; Adjust stock starts on
 "Stock came in" at zero; compact purchase footer; dialogs open near the top;
 import sample CSV and plain-language help; activity, account and session labels.
 
-**Still open:** customers (9), expenses (8), supplier payments (10), shop logo and
+✅ **Customers and expenses (1 Nov 2026):** Customers page (everyone in the shop): the
+list with what each customer owes, most owed first, search by name, phone or GSTIN,
+"only customers who owe"; a customer page with bills, payments and details; add and
+edit (name and a unique phone required, as on the phone); "Record payment" puts one
+payment against the unpaid bills oldest first (the phone's rule), safe to retry.
+Expenses page (owner/admin): month and category filter, totals, cash total, add, edit,
+delete; amount above zero, date not in the future. Both write the synced rows the phone
+uses (no migration); a newer phone edit is reported, not overwritten. Profit and loss
+already counts expenses. Items 8 and 9 done.
+
+✅ **Validations (1 Nov 2026):** shared checks for phone, GSTIN, email, UPI id and
+amounts (`src/lib/validate.ts`), shown next to the field with focus on the first
+mistake. New bill no longer sends a half-typed GSTIN to the price check (it used to
+say "change the quantity"), checks the phone, and picks place of supply from a list.
+Shop settings check phone, email, GSTIN and UPI id (the API now also refuses a bad
+shop phone or email). Browser checks everywhere are worded like our own messages
+("Amount is required."). Bill payment methods show their names.
+
+**Still open:** supplier payments and purchase tax (10, [decide]), shop logo and
 signature upload, and a browser re-check of the Home "Get started" card.
 
 ## Phase 2: missing features customers expect (Android has them)

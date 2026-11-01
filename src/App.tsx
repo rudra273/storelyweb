@@ -8,6 +8,8 @@ import { NewBill } from './billing/NewBill'
 import { BillDetailPage } from './billing/BillDetailPage'
 import { InvoiceSettingsPage } from './billing/InvoiceSettingsPage'
 import { ProductsPage } from './products/ProductsPage'
+import { CustomersPage } from './customers/CustomersPage'
+import { ExpensesPage } from './customers/ExpensesPage'
 import { Overview } from './reports/Overview'
 import { ExpiringPage, PurchasesPage, StockValuePage, TaxPage } from './reports/Registers'
 import { ReportsLayout } from './reports/ReportsLayout'
@@ -105,6 +107,13 @@ export default function App() {
                 <Route path="billing" element={<BillsPage />} />
                 <Route path="billing/new" element={<NewBill />} />
                 <Route path="billing/:id" element={<BillDetailPage />} />
+              </Route>
+              <Route element={<RequireCapability needs="customers.view" />}>
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="customers/:id" element={<CustomersPage />} />
+              </Route>
+              <Route element={<RequireCapability needs="expenses.manage" />}>
+                <Route path="expenses" element={<ExpensesPage />} />
               </Route>
               <Route element={<RequireCapability needs="team.manage" />}>
                 <Route path="team" element={<Team />} />

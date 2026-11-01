@@ -4,6 +4,8 @@ import { api } from '../api/client'
 import type { components } from '../api/schema'
 import { Alert, Field, Loading } from '../components/ui'
 import { useAction } from '../components/useAction'
+import { useFirstError } from '../components/useFirstError'
+import { emailProblem, gstinProblem, shopPhoneProblem, upiProblem } from '../lib/validate'
 import { Button, PageHeader } from '../components/workspace'
 import { useShop } from '../shops/context'
 import { InvoiceDocument, type Paper } from './InvoiceDocument'
@@ -81,18 +83,27 @@ export function InvoiceSettingsPage() {
 function Editor({ saved }: { saved: InvoiceSettings }) {
   const shop = useShop().current?.shop_id ?? ''
   const client = useQueryClient()
-  const { busy, error, run, setError } = useAction()
+  const { busy, error, run, setError, fieldErrors } = useAction()
+  const [problems, setProblems] = useState<Record<string, string>>({})
+  const { ref: formRef, focusFirstError } = useFirstError()
   const [done, setDone] = useState(false)
   const [paper, setPaper] = useState<Paper>(saved.paper_size === 'a5' ? 'A5' : 'A4')
   const [draft, setDraft] = useState<InvoiceSettings>(saved)
-  const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false) }
+  const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
+  const err = (key: string) => problems[key] || fieldErrors[key] || undefined
   const text = (key: 'shop_name' | 'shop_address' | 'shop_phone' | 'shop_email' | 'shop_gstin' | 'invoice_title' | 'footer_text' | 'upi_id' | 'terms_text' | 'bank_details') =>
     (e: { target: { value: string } }) => set(key, (key === 'shop_gstin' ? e.target.value.toUpperCase() : e.target.value) as never)
   const preview: InvoiceSettings = { ...draft, gst_registered: draft.gst_scheme === 'regular', invoice_title: draft.invoice_title || 'TAX INVOICE' }
 
   async function save(event: FormEvent) {
     event.preventDefault()
-    if (!draft.shop_name.trim()) { setError('Enter the shop name.'); return }
+    const found: Record<string, string> = {}
+    if (!draft.shop_name.trim()) found.shop_name = 'Enter the shop name.'
+    const checks: [string, string | null][] = [['shop_phone', shopPhoneProblem(draft.shop_phone ?? '')], ['shop_email', emailProblem(draft.shop_email ?? '')], ['shop_gstin', gstinProblem(draft.shop_gstin ?? '')], ['upi_id', upiProblem(draft.upi_id ?? '')]]
+    for (const [key, problem] of checks) if (problem) found[key] = problem
+    setProblems(found)
+    if (Object.keys(found).length) { setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
+    setError(null)
     // Send only what changed, so a field edited on a phone meanwhile is left alone.
     const change: Record<string, unknown> = {}
     for (const key of ['shop_name', 'shop_address', 'shop_phone', 'shop_email', 'shop_gstin', 'gst_scheme', 'invoice_title', 'footer_text', 'paper_size', 'upi_id', 'terms_text', 'bank_details', 'round_off_total'] as const) {
@@ -114,16 +125,16 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   return <div className="settings-page">
     <PageHeader eyebrow="SHOP SETTINGS" title="Shop and invoice" description="Your shop's details and how invoices look. Saved settings also reach your phones when they sync." />
     <div className="settings-grid">
-      <form className="settings-form" onSubmit={save} noValidate aria-busy={busy}>
+      <form ref={formRef} className="settings-form" onSubmit={save} noValidate aria-busy={busy}>
         <fieldset disabled={busy}>
           <section className="card wide">
             <h2>Shop details</h2>
-            <Field label="Shop name" required maxLength={120} value={draft.shop_name} onChange={text('shop_name')} />
+            <Field label="Shop name" required maxLength={120} value={draft.shop_name} onChange={text('shop_name')} error={err('shop_name')} />
             <label className="field-block">Address<textarea rows={2} maxLength={500} value={draft.shop_address ?? ''} onChange={text('shop_address')} /></label>
             <div className="form-grid">
-              <Field label="Phone" maxLength={30} value={draft.shop_phone ?? ''} onChange={text('shop_phone')} />
-              <Field label="Email" type="email" maxLength={254} value={draft.shop_email ?? ''} onChange={text('shop_email')} />
-              <Field label="GSTIN" maxLength={15} value={draft.shop_gstin ?? ''} onChange={text('shop_gstin')} hint="15 characters, starting with your state code." />
+              <Field label="Phone" type="tel" inputMode="tel" maxLength={30} error={err('shop_phone')} value={draft.shop_phone ?? ''} onChange={text('shop_phone')} />
+              <Field label="Email" type="email" maxLength={254} error={err('shop_email')} value={draft.shop_email ?? ''} onChange={text('shop_email')} />
+              <Field label="GSTIN" maxLength={15} placeholder="27ABCDE1234F1Z5" error={err('shop_gstin')} value={draft.shop_gstin ?? ''} onChange={text('shop_gstin')} hint="15 characters, starting with your state code." />
             </div>
             <fieldset className="scheme-choice">
               <legend>GST registration</legend>
@@ -137,7 +148,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
             <div className="form-grid">
               <Field label="Title" maxLength={40} placeholder="Automatic" value={draft.invoice_title === 'TAX INVOICE' ? '' : draft.invoice_title} onChange={text('invoice_title')} hint="Leave blank for the standard title: Tax Invoice, Bill of Supply or Bill." />
               <label>Default paper<select value={draft.paper_size} onChange={e => { set('paper_size', e.target.value); setPaper(e.target.value === 'a5' ? 'A5' : 'A4') }}><option value="a4">A4</option><option value="a5">A5</option></select></label>
-              <Field label="UPI id" maxLength={100} placeholder="shopname@okbank" value={draft.upi_id ?? ''} onChange={text('upi_id')} hint="Unpaid bills show a QR to pay the balance." />
+              <Field label="UPI id" maxLength={100} placeholder="shopname@okaxis" error={err('upi_id')} value={draft.upi_id ?? ''} onChange={text('upi_id')} hint="Unpaid bills show a QR to pay the balance." />
             </div>
             <label className="check"><input type="checkbox" checked={draft.round_off_total} onChange={e => set('round_off_total', e.target.checked)} />Round totals to the nearest rupee (new bills)</label>
             <label className="field-block">Bank details<textarea rows={3} maxLength={500} placeholder={'Account name\nAccount number · IFSC\nBank and branch'} value={draft.bank_details ?? ''} onChange={text('bank_details')} /></label>

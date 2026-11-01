@@ -22,3 +22,18 @@ test('disabled passwords cannot be revealed and ordinary fields have no toggle',
   expect(screen.getByRole('button', { name: 'Show your password' })).toBeDisabled()
   expect(screen.getAllByRole('button')).toHaveLength(1)
 })
+
+test('browser checks are worded like the rest of the app', async () => {
+  const { validityText } = await import('./validity')
+  const input = (attrs: Record<string, string>, value: string) => {
+    const el = document.createElement('input')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.value = value
+    return el
+  }
+  expect(validityText(input({ required: '' }, ''), 'Amount (₹)')).toBe('Amount is required.')
+  expect(validityText(input({ type: 'number', min: '0.01' }, '0'), 'Amount (₹)')).toBe('Amount must be 0.01 or more.')
+  expect(validityText(input({ type: 'number', min: '0' }, '-1'), 'Quantity')).toBe('Quantity cannot be negative.')
+  expect(validityText(input({ type: 'number', step: '0.01' }, '1.234'), 'Price')).toBe('Price can have at most 2 digits after the decimal point.')
+  expect(validityText(input({ type: 'email' }, 'nope'), 'Email')).toBe('Enter an email like name@example.com.')
+})

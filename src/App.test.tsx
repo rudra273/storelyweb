@@ -80,16 +80,16 @@ test('owner and admin menus include reports, team, shop activity and settings', 
     fakeApi([...SIGNED_IN, SHOP(role)])
     const view = renderApp('/')
     await screen.findByRole('heading', { name: 'Hello, Asha' })
-    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Team', 'Shop activity', 'Shop settings', 'Cloud subscription'])
+    expect(menu()).toEqual(['Home', 'Products', 'Reports', 'Billing', 'Customers', 'Expenses', 'Team', 'Shop activity', 'Shop settings', 'Cloud subscription'])
     view.unmount()
   }
 })
 
-test('a staff menu has only products and billing', async () => {
+test('a staff menu has only products, billing and customers', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff')])
   renderApp('/')
   await screen.findByRole('heading', { name: 'Hello, Asha' })
-  expect(menu()).toEqual(['Home', 'Products', 'Billing', 'Cloud subscription'])
+  expect(menu()).toEqual(['Home', 'Products', 'Billing', 'Customers', 'Cloud subscription'])
 })
 
 test('staff who type an admin address get "No access" and the page never loads its data', async () => {

@@ -1200,6 +1200,24 @@
     "title": "CategoryRevenue",
     "type": "object"
    },
+   "CategoryTotal": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     }
+    },
+    "required": [
+     "category",
+     "amount"
+    ],
+    "title": "CategoryTotal",
+    "type": "object"
+   },
    "CreditNoteIn": {
     "additionalProperties": false,
     "properties": {
@@ -1259,6 +1277,324 @@
      "quantities"
     ],
     "title": "CreditNoteIn",
+    "type": "object"
+   },
+   "CustomerBill": {
+    "properties": {
+     "balance_due": {
+      "title": "Balance Due",
+      "type": "string"
+     },
+     "bill_number": {
+      "title": "Bill Number",
+      "type": "string"
+     },
+     "cancelled": {
+      "title": "Cancelled",
+      "type": "boolean"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "document_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Type"
+     },
+     "paid_amount": {
+      "title": "Paid Amount",
+      "type": "string"
+     },
+     "payment_status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Status"
+     },
+     "total_amount": {
+      "title": "Total Amount",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "bill_number",
+     "document_type",
+     "created_at",
+     "total_amount",
+     "paid_amount",
+     "balance_due",
+     "payment_status",
+     "cancelled"
+    ],
+    "title": "CustomerBill",
+    "type": "object"
+   },
+   "CustomerDetail": {
+    "properties": {
+     "bills": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerBill"
+      },
+      "title": "Bills",
+      "type": "array"
+     },
+     "customer": {
+      "$ref": "#/components/schemas/CustomerRow"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerPayment"
+      },
+      "title": "Payments",
+      "type": "array"
+     }
+    },
+    "required": [
+     "customer",
+     "bills",
+     "payments"
+    ],
+    "title": "CustomerDetail",
+    "type": "object"
+   },
+   "CustomerFields": {
+    "additionalProperties": false,
+    "description": "What a person types about a customer. Phone is 10 to 12 digits, as on the phone.",
+    "properties": {
+     "address": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "gst_legal_name": {
+      "anyOf": [
+       {
+        "maxLength": 150,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Legal Name"
+     },
+     "gst_trade_name": {
+      "anyOf": [
+       {
+        "maxLength": 150,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Trade Name"
+     },
+     "gstin": {
+      "anyOf": [
+       {
+        "maxLength": 15,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gstin"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "phone": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phone"
+     },
+     "place_of_supply_state_code": {
+      "anyOf": [
+       {
+        "maxLength": 2,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Place Of Supply State Code"
+     }
+    },
+    "title": "CustomerFields",
+    "type": "object"
+   },
+   "CustomerIn": {
+    "additionalProperties": false,
+    "properties": {
+     "address": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "gst_legal_name": {
+      "anyOf": [
+       {
+        "maxLength": 150,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Legal Name"
+     },
+     "gst_trade_name": {
+      "anyOf": [
+       {
+        "maxLength": 150,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Trade Name"
+     },
+     "gstin": {
+      "anyOf": [
+       {
+        "maxLength": 15,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gstin"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "phone": {
+      "maxLength": 20,
+      "minLength": 1,
+      "title": "Phone",
+      "type": "string"
+     },
+     "place_of_supply_state_code": {
+      "anyOf": [
+       {
+        "maxLength": 2,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Place Of Supply State Code"
+     }
+    },
+    "required": [
+     "name",
+     "phone"
+    ],
+    "title": "CustomerIn",
     "type": "object"
    },
    "CustomerOut": {
@@ -1359,6 +1695,250 @@
      "bill_count"
     ],
     "title": "CustomerOut",
+    "type": "object"
+   },
+   "CustomerPage": {
+    "properties": {
+     "has_more": {
+      "title": "Has More",
+      "type": "boolean"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerRow"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "owing_customers": {
+      "title": "Owing Customers",
+      "type": "integer"
+     },
+     "total_due": {
+      "title": "Total Due",
+      "type": "string"
+     }
+    },
+    "required": [
+     "items",
+     "has_more",
+     "owing_customers",
+     "total_due"
+    ],
+    "title": "CustomerPage",
+    "type": "object"
+   },
+   "CustomerPayment": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "bill_number": {
+      "title": "Bill Number",
+      "type": "string"
+     },
+     "bill_uuid": {
+      "title": "Bill Uuid",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_method": {
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "payment_reference": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Reference"
+     },
+     "received_at": {
+      "title": "Received At",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "bill_uuid",
+     "bill_number",
+     "amount",
+     "payment_method",
+     "payment_reference",
+     "notes",
+     "received_at"
+    ],
+    "title": "CustomerPayment",
+    "type": "object"
+   },
+   "CustomerRow": {
+    "properties": {
+     "address": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Address"
+     },
+     "bill_count": {
+      "title": "Bill Count",
+      "type": "integer"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "due": {
+      "title": "Due",
+      "type": "string"
+     },
+     "due_bills": {
+      "title": "Due Bills",
+      "type": "integer"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "gst_legal_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Legal Name"
+     },
+     "gst_trade_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gst Trade Name"
+     },
+     "gstin": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gstin"
+     },
+     "last_purchase_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Purchase At"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "phone": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Phone"
+     },
+     "place_of_supply_state_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Place Of Supply State Code"
+     },
+     "total_purchase_amount": {
+      "title": "Total Purchase Amount",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "phone",
+     "email",
+     "address",
+     "notes",
+     "gstin",
+     "gst_legal_name",
+     "gst_trade_name",
+     "place_of_supply_state_code",
+     "total_purchase_amount",
+     "bill_count",
+     "last_purchase_at",
+     "created_at",
+     "due",
+     "due_bills"
+    ],
+    "title": "CustomerRow",
     "type": "object"
    },
    "DailyPoint": {
@@ -1836,6 +2416,243 @@
      "amount"
     ],
     "title": "ExpenseCategory",
+    "type": "object"
+   },
+   "ExpenseFields": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Amount"
+     },
+     "category": {
+      "anyOf": [
+       {
+        "maxLength": 60,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "expense_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expense Date"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_method": {
+      "anyOf": [
+       {
+        "enum": [
+         "cash",
+         "upi",
+         "card",
+         "bank"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Method"
+     }
+    },
+    "title": "ExpenseFields",
+    "type": "object"
+   },
+   "ExpenseIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     },
+     "category": {
+      "anyOf": [
+       {
+        "maxLength": 60,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "expense_date": {
+      "format": "date",
+      "title": "Expense Date",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_method": {
+      "default": "cash",
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank"
+      ],
+      "title": "Payment Method",
+      "type": "string"
+     }
+    },
+    "required": [
+     "expense_date",
+     "amount"
+    ],
+    "title": "ExpenseIn",
+    "type": "object"
+   },
+   "ExpenseOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "expense_date": {
+      "title": "Expense Date",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_method": {
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "updated_at": {
+      "title": "Updated At",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "expense_date",
+     "amount",
+     "category",
+     "payment_method",
+     "notes",
+     "created_at",
+     "updated_at"
+    ],
+    "title": "ExpenseOut",
+    "type": "object"
+   },
+   "ExpensePage": {
+    "properties": {
+     "by_category": {
+      "items": {
+       "$ref": "#/components/schemas/CategoryTotal"
+      },
+      "title": "By Category",
+      "type": "array"
+     },
+     "cash_total": {
+      "title": "Cash Total",
+      "type": "string"
+     },
+     "categories": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Categories",
+      "type": "array"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ExpenseOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "items",
+     "total",
+     "cash_total",
+     "by_category",
+     "categories"
+    ],
+    "title": "ExpensePage",
     "type": "object"
    },
    "Expiring": {
@@ -6769,6 +7586,53 @@
     "title": "SessionOut",
     "type": "object"
    },
+   "SettleIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     },
+     "method": {
+      "default": "cash",
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank",
+       "online"
+      ],
+      "title": "Method",
+      "type": "string"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     }
+    },
+    "required": [
+     "amount"
+    ],
+    "title": "SettleIn",
+    "type": "object"
+   },
    "ShopCreatedOut": {
     "properties": {
      "shop_id": {
@@ -10380,6 +11244,339 @@
     "tags": [
      "billing"
     ]
+   },
+   "post": {
+    "operationId": "create_customer_v1_shops__shop_id__customers_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CustomerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Customer",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/customers/accounts": {
+   "get": {
+    "description": "Every customer with what they owe, those owing most first.",
+    "operationId": "list_customers_v1_shops__shop_id__customers_accounts_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 60,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "owing",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Owing",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 50,
+       "maximum": 200,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 100000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerPage"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Customers",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/customers/{customer_id}": {
+   "get": {
+    "operationId": "get_customer_v1_shops__shop_id__customers__customer_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Customer",
+    "tags": [
+     "customers"
+    ]
+   },
+   "patch": {
+    "description": "Change only the fields sent. Name and phone cannot be cleared.",
+    "operationId": "edit_customer_v1_shops__shop_id__customers__customer_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CustomerFields"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Edit Customer",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/customers/{customer_id}/payments": {
+   "post": {
+    "description": "Money received from a customer, put against their unpaid bills oldest first.",
+    "operationId": "settle_v1_shops__shop_id__customers__customer_id__payments_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SettleIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Settle",
+    "tags": [
+     "customers"
+    ]
    }
   },
   "/v1/shops/{shop_id}/entitlement": {
@@ -10421,6 +11618,238 @@
     "summary": "Entitlement",
     "tags": [
      "subscriptions"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/expenses": {
+   "get": {
+    "operationId": "list_expenses_v1_shops__shop_id__expenses_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "start",
+      "required": true,
+      "schema": {
+       "format": "date",
+       "title": "Start",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "end",
+      "required": true,
+      "schema": {
+       "format": "date",
+       "title": "End",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 60,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Category"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExpensePage"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Expenses",
+    "tags": [
+     "customers"
+    ]
+   },
+   "post": {
+    "operationId": "create_expense_v1_shops__shop_id__expenses_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExpenseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Expense",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/expenses/{expense_id}": {
+   "delete": {
+    "operationId": "delete_expense_v1_shops__shop_id__expenses__expense_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "expense_id",
+      "required": true,
+      "schema": {
+       "title": "Expense Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Expense",
+    "tags": [
+     "customers"
+    ]
+   },
+   "patch": {
+    "operationId": "edit_expense_v1_shops__shop_id__expenses__expense_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "expense_id",
+      "required": true,
+      "schema": {
+       "title": "Expense Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseFields"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ExpenseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Edit Expense",
+    "tags": [
+     "customers"
     ]
    }
   },
