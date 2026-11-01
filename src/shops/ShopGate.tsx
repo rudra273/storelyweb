@@ -4,6 +4,7 @@ import { Alert, Loading } from '../components/ui/ui'
 import { Onboarding } from '../pages/shop/Onboarding'
 import { useShop } from './context'
 import { AccessProvider } from '../subscriptions/AccessProvider'
+import { AppearanceControl } from '../theme/AppearanceControl'
 
 /** Signed in, but a shop must be chosen (or created) before the main screens. */
 export function ShopGate() {
@@ -29,6 +30,7 @@ export function ShopGate() {
           <span className="brand">Storely<span className="onboarding-brand-dot" aria-hidden="true" /></span>
           <nav aria-label="Account" className="onboarding-account">
             <Link to="/account/security">Account security</Link>
+            <AppearanceControl />
             <button className="ui-button" onClick={() => void logout()}>Sign out</button>
           </nav>
         </header>

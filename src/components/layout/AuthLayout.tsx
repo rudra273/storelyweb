@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AppearanceControl } from '../../theme/AppearanceControl'
 
 export function AuthLayout({ title, children, compact = false }: { title: string; children: ReactNode; compact?: boolean }) {
   return (
@@ -8,6 +9,7 @@ export function AuthLayout({ title, children, compact = false }: { title: string
         <p className="auth-form-brand">Store<span className="brand-accent">ly</span></p>
         <h1>{title}</h1>
         {children}
+        <AppearanceControl />
       </div></div>
     </main>
   )

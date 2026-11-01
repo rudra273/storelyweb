@@ -5,11 +5,12 @@ import { useAuth } from '../auth/context'
 import { Alert, Loading } from '../components/ui/ui'
 import { Button } from '../components/ui/workspace'
 import { describeError } from '../components/useAction'
+import { AppearanceControl } from '../theme/AppearanceControl'
 import './platform.css'
 
 export function PlatformLayout() {
   const { user, logout } = useAuth()
-  return <div className="platform-shell"><header className="platform-bar"><Link className="brand" to="/platform">Storely <span className="platform-badge">DEVELOPER</span></Link><span>{user?.email}</span><Button onClick={() => void logout()}>Sign out</Button></header>
+  return <div className="platform-shell"><header className="platform-bar"><Link className="brand" to="/platform">Storely <span className="platform-badge">DEVELOPER</span></Link><span>{user?.email}</span><AppearanceControl /><Button onClick={() => void logout()}>Sign out</Button></header>
     <nav className="platform-nav" aria-label="Developer console"><NavLink to="/platform" end>Overview</NavLink><NavLink to="/platform/requests">Premium requests</NavLink><NavLink to="/platform/shops">Shops</NavLink><NavLink to="/platform/history">Audit history</NavLink><NavLink to="/request-premium">Request Premium</NavLink><NavLink to="/platform/account/security">Account security</NavLink></nav><main className="platform-main"><Outlet /></main></div>
 }
 

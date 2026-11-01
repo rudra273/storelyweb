@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../auth/context'
 import { useConfirmLeave } from '../../lib/dirty'
+import { AppearanceControl } from '../../theme/AppearanceControl'
 import { NAV, can } from '../../permissions'
 import { useShop } from '../../shops/context'
 import { useShopAccess } from '../../subscriptions/context'
@@ -54,6 +55,7 @@ export function AppLayout() {
             <NavLink to="/subscription" onClick={() => setOpen(false)}><NavIcon path="/subscription" />Cloud subscription</NavLink>
           </nav>
           <nav aria-label="Account" className="account-nav">
+            <AppearanceControl tone="inverse" />
             <NavLink to="/account" onClick={() => setOpen(false)}>
               <span className="account-avatar" aria-hidden="true">{(user?.full_name || user?.email || 'S').slice(0, 1).toUpperCase()}</span><span className="account-name">{user?.full_name || user?.email}<small>Account settings</small></span>
             </NavLink>

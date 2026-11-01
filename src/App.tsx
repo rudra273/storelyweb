@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from 'react-router'
 import { DirtyProvider } from './lib/DirtyProvider'
+import { ThemeProvider } from './theme/ThemeProvider'
 import { ToastProvider } from './components/ui/Toast'
 import { AuthProvider } from './auth/AuthProvider'
 import { AppLayout } from './components/layout/AppLayout'
@@ -51,7 +52,7 @@ function NotFound() {
 /** Needs a router and a QueryClientProvider around it (see main.tsx and the tests). */
 export default function App() {
   return (
-    <AuthProvider><ToastProvider><DirtyProvider>
+    <ThemeProvider><AuthProvider><ToastProvider><DirtyProvider>
       <Routes>
         <Route element={<PublicOnly />}>
           <Route path="/login" element={<Login />} />
@@ -131,6 +132,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </DirtyProvider></ToastProvider></AuthProvider>
+    </DirtyProvider></ToastProvider></AuthProvider></ThemeProvider>
   )
 }
