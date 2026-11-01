@@ -153,7 +153,7 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
     if (!receipt && !conflict && !storageError && !persist(draftRef.current)) return
     onClose()
   }
-  return <Modal title={receipt ? 'Purchase saved' : 'Add purchase'} onClose={close} canClose={!busy} wide>
+  return <Modal title={receipt ? 'Purchase saved' : 'Record purchase'} onClose={close} canClose={!busy} wide>
     {receipt ? <><Alert kind="success">Stock added. This purchase is saved.</Alert><PurchaseSummary receipt={receipt} />{storageError && <Alert>{storageError}</Alert>}<Button variant="primary" onClick={close}>Done</Button></> : <>
       <p className="muted">Record stock you have received. Drafts stay on this browser for this account and shop.</p>
       {conflict && <Alert>This draft changed in another tab. Close and reopen it to load the latest version.</Alert>}

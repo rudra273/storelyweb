@@ -1,7 +1,5 @@
 import { PurchaseComposer } from '../purchases/composer/PurchaseComposer'
 import { useToast } from '../components/ui/toastContext'
-import { PurchaseHistory } from '../purchases/PurchaseHistory'
-import { SuppliersManager } from './suppliers/Suppliers'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { formatMoney, formatQty } from '../lib/money'
@@ -50,7 +48,7 @@ function ProductsWorkspace() {
 
   const [search, setSearch] = useState(query.q)
   const settled = useDebounced(search, 300)
-  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'suppliers' | 'purchase' | 'purchases'>(null)
+  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'purchase'>(null)
   const toast = useToast()
   // A link from Home ("Add your first product") opens the form straight away.
   useEffect(() => {
@@ -110,7 +108,7 @@ function ProductsWorkspace() {
     <div className="split catalogue">
       <div className="split-main">
         <PageHeader eyebrow="INVENTORY" title="Products" description="Your catalogue, stock and pricing in one place." actions={<>
-          {canEdit && <Button variant={emptyCatalogue ? undefined : 'primary'} onClick={() => setDialog('purchase')}>Add purchase</Button>}
+          {canEdit && <Button variant={emptyCatalogue ? undefined : 'primary'} onClick={() => setDialog('purchase')}>Record purchase</Button>}
           {canEdit && <Button variant={emptyCatalogue ? 'primary' : undefined} onClick={() => setDialog('new')}>Add product</Button>}
           {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
           <Button disabled={picked.size === 0} onClick={() => setDialog('labels')}>Print labels{picked.size ? ` (${picked.size})` : ''}</Button>
@@ -119,8 +117,6 @@ function ProductsWorkspace() {
               <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'csv').catch(e => setExportError(describeError(e)))}>Export CSV</Button>
               <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'xlsx').catch(e => setExportError(describeError(e)))}>Export Excel</Button>
             </>}
-            {canEdit && <Button onClick={() => setDialog('purchases')}>Purchase history</Button>}
-            {canEdit && <Button onClick={() => setDialog('suppliers')}>Suppliers</Button>}
             {canEdit && <Button onClick={() => setDialog('lists')}>Categories &amp; units</Button>}
           </ActionMenu>}
         </>} />
@@ -224,10 +220,8 @@ function ProductsWorkspace() {
 
       {selectedId && <ProductDetailPanel id={selectedId} canEdit={canEdit} onClose={() => open(null)} />}
       {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
-      {dialog === 'purchases' && <PurchaseHistory onClose={() => setDialog(null)} />}
       {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
-      {dialog === 'suppliers' && <SuppliersManager onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}
       {dialog === 'labels' && <Labels ids={[...picked]} onClose={() => setDialog(null)} />}
     </div>

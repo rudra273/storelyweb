@@ -40,16 +40,14 @@ test('create supplier inline retains product draft and selects saved supplier', 
 
 test('supplier directory searches and saves profile edits', async () => {
   const calls = setup()
-  renderApp('/products')
-  await userEvent.click(await screen.findByText('More actions'))
-  await userEvent.click(screen.getByRole('button', { name: 'Suppliers' }))
+  renderApp('/suppliers')
   await userEvent.click(await screen.findByRole('button', { name: 'Edit Asha Wholesale' }))
   await userEvent.clear(screen.getByLabelText('Phone'))
   await userEvent.type(screen.getByLabelText('Phone'), '99999')
   await userEvent.click(screen.getByRole('button', { name: 'Save supplier' }))
   await waitFor(() => expect(calls.find(c => c.method === 'PATCH')?.body).toMatchObject({ phone: '99999' }))
   await userEvent.type(screen.getByLabelText('Search suppliers'), 'missing')
-  expect(screen.getByText('No suppliers match.')).toBeInTheDocument()
+  expect(screen.getByText('No suppliers match')).toBeInTheDocument()
 })
 
 test('supplier save failure retains entered name and product draft', async () => {
@@ -70,20 +68,18 @@ test('staff cannot manage suppliers and do not request supplier data', async () 
   const calls = setup('staff')
   renderApp('/products')
   await screen.findByText('Ask the owner to add products.')
-  expect(screen.queryByRole('button', { name: 'Suppliers' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Suppliers' })).not.toBeInTheDocument()
   expect(calls.some(c => c.path.endsWith('/suppliers'))).toBe(false)
 })
 
 async function openStatement() {
-  await userEvent.click(await screen.findByText('More actions'))
-  await userEvent.click(screen.getByRole('button', { name: 'Suppliers' }))
-  await userEvent.click(await screen.findByRole('button', { name: 'Statement and payments' }))
+  await userEvent.click(await screen.findByRole('button', { name: /^Statement for / }))
   await screen.findByText('Balance due:')
 }
 
 test('supplier payment posts a decimal amount with a stable request key', async () => {
   const calls = setup()
-  renderApp('/products')
+  renderApp('/suppliers')
   await openStatement()
   await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
   await userEvent.click(screen.getByRole('button', { name: 'Record payment' }))
@@ -94,7 +90,7 @@ test('supplier payment posts a decimal amount with a stable request key', async 
 
 test('uncertain supplier payment retries the saved payload', async () => {
   const calls = setup('owner', false, true)
-  renderApp('/products')
+  renderApp('/suppliers')
   await openStatement()
   await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
   await userEvent.click(screen.getByRole('button', { name: 'Record payment' }))
@@ -104,4 +100,18 @@ test('uncertain supplier payment retries the saved payload', async () => {
   await waitFor(() => expect(calls.filter(c => c.method === 'POST' && c.path.endsWith('/payments'))).toHaveLength(2))
   const payments = calls.filter(c => c.method === 'POST' && c.path.endsWith('/payments'))
   expect(payments[0]?.body).toEqual(payments[1]?.body)
+})
+
+test('supplier filters live in the address, so a shared or revisited link keeps them', async () => {
+  setup()
+  renderApp('/suppliers?q=missing')
+  expect(await screen.findByText('No suppliers match')).toBeInTheDocument()
+  expect(screen.getByLabelText('Search suppliers')).toHaveValue('missing')
+})
+
+test('staff are kept out of suppliers and purchase invoices', async () => {
+  const calls = setup('staff')
+  renderApp('/suppliers')
+  expect(await screen.findByRole('heading', { name: 'No access' })).toBeInTheDocument()
+  expect(calls.some(c => c.path.endsWith('/suppliers') || c.path.includes('/purchase-receipts'))).toBe(false)
 })

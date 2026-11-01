@@ -80,7 +80,7 @@ test('owner and admin menus include reports, team, shop activity and settings', 
     fakeApi([...SIGNED_IN, SHOP(role)])
     const view = renderApp('/')
     await screen.findByRole('heading', { name: 'Hello, Asha' })
-    expect(menu()).toEqual(['Dashboard', 'Invoices', 'Customers', 'Products', 'Expenses', 'Reports', 'Team activity', 'Shop settings', 'Team & permissions', 'Subscription'])
+    expect(menu()).toEqual(['Dashboard', 'Invoices', 'Customers', 'Products', 'Purchase invoices', 'Suppliers', 'Expenses', 'Reports', 'Team activity', 'Shop settings', 'Team & permissions', 'Subscription'])
     view.unmount()
   }
 })

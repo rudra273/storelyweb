@@ -29,7 +29,7 @@ test('staff never see reports, expenses, team, activity or settings in the menu'
 })
 
 test('owners see every group, and a shop without access only the dashboard and subscription', () => {
-  expect(visibleGroups('owner', true).map(g => g.label)).toEqual(['Overview', 'Sales', 'Inventory', 'Business', 'Administration'])
+  expect(visibleGroups('owner', true).map(g => g.label)).toEqual(['Overview', 'Sales', 'Inventory', 'Purchases', 'Business', 'Administration'])
   expect(visibleGroups('owner', false).flatMap(g => g.items.map(i => i.label))).toEqual(['Dashboard', 'Subscription'])
   expect(visibleGroups(null, true).flatMap(g => g.items.map(i => i.label))).toEqual(['Dashboard', 'Subscription'])
 })

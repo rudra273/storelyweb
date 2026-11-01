@@ -37,6 +37,8 @@ import { PlatformHistory } from './platform/History'
 import { RequirePaid, SubscriptionStatus } from './subscriptions/Status'
 import { PremiumRequestPage } from './subscriptions/PremiumRequestPage'
 import { AccountLayout } from './components/layout/AccountLayout'
+import { PurchaseInvoicesPage } from './purchases/PurchaseInvoicesPage'
+import { SuppliersPage } from './products/suppliers/SuppliersPage'
 
 function NotFound() {
   return (
@@ -92,6 +94,10 @@ export default function App() {
               <Route element={<RequireCapability needs="products.view" />}>
                 <Route path="products" element={<ProductsPage />} />
                 <Route path="products/:id" element={<ProductsPage />} />
+              </Route>
+              <Route element={<RequireCapability needs="products.edit" />}>
+                <Route path="purchases" element={<PurchaseInvoicesPage />} />
+                <Route path="suppliers" element={<SuppliersPage />} />
               </Route>
               <Route element={<RequireCapability needs="reports.view" />}>
                 <Route path="reports" element={<ReportsLayout />}>

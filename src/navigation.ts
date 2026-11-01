@@ -37,6 +37,10 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'inventory', label: 'Inventory', items: [
     { to: '/products', label: 'Products', needs: 'products.view', icon: 'products', blurb: 'Find products, check stock and keep your catalogue up to date.' },
   ] },
+  { id: 'purchases', label: 'Purchases', items: [
+    { to: '/purchases', label: 'Purchase invoices', needs: 'products.edit', icon: 'purchases', blurb: 'Record stock you receive and see what each purchase cost.' },
+    { to: '/suppliers', label: 'Suppliers', needs: 'products.edit', icon: 'suppliers', blurb: 'Who you buy from and what you still owe them.' },
+  ] },
   { id: 'business', label: 'Business', items: [
     { to: '/expenses', label: 'Expenses', needs: 'expenses.manage', icon: 'expenses', blurb: 'Record rent, salaries and other running costs.' },
     { to: '/reports', label: 'Reports', needs: 'reports.view', icon: 'reports', blurb: 'Understand sales, profit and outstanding payments.' },

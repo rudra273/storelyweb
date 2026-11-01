@@ -22,8 +22,8 @@ function setup({ role = 'owner', fail = false } = {}) {
   ])
 }
 async function openPurchase() {
-  await userEvent.click(await screen.findByRole('button', { name: 'Add purchase' }))
-  return screen.getByRole('dialog', { name: 'Add purchase' })
+  await userEvent.click(await screen.findByRole('button', { name: 'Record purchase' }))
+  return screen.getByRole('dialog', { name: 'Record purchase' })
 }
 // Saving waits for the server's total, so tests wait for the button as a person would.
 async function clickSave() {
@@ -100,12 +100,20 @@ test('another tab changing the draft blocks overwriting and posting', async () =
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)
 })
 
-test('purchase history opens saved document snapshots', async () => {
-  setup(); renderApp('/products')
-  await userEvent.click(await screen.findByText('More actions'))
-  await userEvent.click(screen.getByRole('button', { name: 'Purchase history' }))
+test('purchase invoices has its own address and opens saved document snapshots', async () => {
+  setup(); renderApp('/purchases')
+  expect(await screen.findByRole('heading', { name: 'Purchase invoices' })).toBeInTheDocument()
+  expect(document.title).toBe('Purchase invoices · Storely')
+  expect(screen.getByRole('link', { name: 'Purchase invoices' })).toHaveAttribute('href', '/purchases')
   await userEvent.click(await screen.findByRole('button', { name: 'View purchase 2026-10-01' }))
   expect(within(screen.getByRole('dialog', { name: 'Purchase receipt' })).getByText('Rice')).toBeInTheDocument()
+})
+
+test('recording a purchase from the Purchases page refreshes the list', async () => {
+  const calls = setup(); renderApp('/purchases')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record purchase' }))
+  expect(screen.getByRole('dialog', { name: 'Record purchase' })).toBeInTheDocument()
+  expect(calls.some(c => /purchase-receipts\?/.test(c.path))).toBe(true)
 })
 
 test('restock preselects the product and staff have no purchase entry', async () => {
@@ -115,7 +123,7 @@ test('restock preselects the product and staff have no purchase entry', async ()
   view.unmount(); localStorage.clear()
   const calls = setup({ role: 'staff' }); renderApp('/products')
   await screen.findByRole('button', { name: 'Rice' })
-  expect(screen.queryByRole('button', { name: 'Add purchase' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Record purchase' })).not.toBeInTheDocument()
   expect(calls.some(c => c.path.includes('/purchase-receipts'))).toBe(false)
 })
 
@@ -269,4 +277,17 @@ test('the footer shows the server total with charges and warns when payment is n
   expect(screen.getByText('₹36.00', { selector: 'strong' })).toBeInTheDocument()
   expect(calls.find(c => c.path.endsWith('/purchase-receipts/preview'))?.body).toEqual({ items: [{ quantity: '1', unit_cost: '18' }] })
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)
+})
+
+test('purchase invoices pages through the address and asks the server for that page', async () => {
+  const calls = setup(); renderApp('/purchases?page=2')
+  await screen.findByRole('heading', { name: 'Purchase invoices' })
+  await waitFor(() => expect(calls.some(c => c.path.includes('/purchase-receipts?limit=25&offset=50'))).toBe(true))
+})
+
+test('an empty purchase list offers to record the first purchase', async () => {
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]), ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\?/, [])])
+  renderApp('/purchases')
+  expect(await screen.findByText('No purchases recorded yet')).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: 'Record purchase' })).toHaveLength(2)
 })
