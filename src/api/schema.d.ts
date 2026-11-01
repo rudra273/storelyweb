@@ -2724,6 +2724,11 @@ export interface components {
             top_by_revenue: components["schemas"]["TopProduct"][];
             /** Top By Units */
             top_by_units: components["schemas"]["TopUnits"][];
+            /**
+             * Uncosted Item Count
+             * @default 0
+             */
+            uncosted_item_count: number;
             /** Unpaid Count */
             unpaid_count: number;
             /** Unpaid Total */
@@ -3376,6 +3381,8 @@ export interface components {
         PricePreviewOut: {
             /** Category Name */
             category_name: string | null;
+            /** Cost Known */
+            cost_known: boolean;
             /** Gst Percent */
             gst_percent: string;
             /** Gst Registered */
@@ -3397,7 +3404,7 @@ export interface components {
              */
             price_mode: "fixed" | "formula";
             /** Profit Amount */
-            profit_amount: string;
+            profit_amount: string | null;
             /** Profit Margin Percent */
             profit_margin_percent: string;
             /** Purchase Gst Amount */
@@ -3578,6 +3585,11 @@ export interface components {
             net_profit: string;
             /** Sales */
             sales: string;
+            /**
+             * Sales Without Cost
+             * @default 0
+             */
+            sales_without_cost: string;
         };
         /** PullIn */
         PullIn: {

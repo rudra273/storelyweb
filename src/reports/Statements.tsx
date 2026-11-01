@@ -89,6 +89,7 @@ export function ProfitLossPage() {
                 <tbody>
                   <tr><td>Sales (without GST)</td><td>{formatMoney(p.sales)}</td></tr>
                   <tr><td>Cost of goods sold</td><td>{formatMoney(p.cost_of_goods)}</td></tr>
+                  {Number(p.sales_without_cost) > 0 && <tr><td>Sales of products with no cost price (left out of profit)</td><td>{formatMoney(p.sales_without_cost)}</td></tr>}
                   <tr className="total"><td>Gross profit</td><td>{formatMoney(p.gross_profit)}</td></tr>
                   {p.expenses_by_category.map((e) => <tr key={e.category}><td className="indent">{e.category}</td><td>{formatMoney(e.amount)}</td></tr>)}
                   <tr><td>Total expenses</td><td>{formatMoney(p.expenses)}</td></tr>

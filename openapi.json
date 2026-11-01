@@ -3598,6 +3598,11 @@
       "title": "Top By Units",
       "type": "array"
      },
+     "uncosted_item_count": {
+      "default": 0,
+      "title": "Uncosted Item Count",
+      "type": "integer"
+     },
      "unpaid_count": {
       "title": "Unpaid Count",
       "type": "integer"
@@ -5626,6 +5631,10 @@
       ],
       "title": "Category Name"
      },
+     "cost_known": {
+      "title": "Cost Known",
+      "type": "boolean"
+     },
      "gst_percent": {
       "title": "Gst Percent",
       "type": "string"
@@ -5664,8 +5673,15 @@
       "type": "string"
      },
      "profit_amount": {
-      "title": "Profit Amount",
-      "type": "string"
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Profit Amount"
      },
      "profit_margin_percent": {
       "title": "Profit Margin Percent",
@@ -5697,6 +5713,7 @@
      "purchase_gst_amount",
      "overhead_cost",
      "total_cost",
+     "cost_known",
      "profit_margin_percent",
      "profit_amount",
      "gst_percent",
@@ -6539,6 +6556,11 @@
      },
      "sales": {
       "title": "Sales",
+      "type": "string"
+     },
+     "sales_without_cost": {
+      "default": "0",
+      "title": "Sales Without Cost",
       "type": "string"
      }
     },

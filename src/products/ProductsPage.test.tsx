@@ -365,7 +365,7 @@ test('grouped product fields retain pricing, stock, identifiers and tax in the s
 })
 
 test('a cost + margin product shows the server breakdown, including where GST came from', async () => {
-  const shown = { price_mode: 'formula', selling_price: '129.80', pre_gst_selling_price: '129.80', output_gst_amount: '0.00', purchase_price: '100.00', purchase_gst_amount: '18.00', overhead_cost: '0.00', total_cost: '118.00', profit_margin_percent: '10', profit_amount: '11.80', gst_percent: '18', gst_source: 'shop', category_name: null, gst_registered: false }
+  const shown = { price_mode: 'formula', selling_price: '129.80', pre_gst_selling_price: '129.80', output_gst_amount: '0.00', purchase_price: '100.00', purchase_gst_amount: '18.00', overhead_cost: '0.00', total_cost: '118.00', cost_known: true, profit_margin_percent: '10', profit_amount: '11.80', gst_percent: '18', gst_source: 'shop', category_name: null, gst_registered: false }
   const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
     ok('GET', '/v1/shops/s1/suppliers', []),
     ok('GET', /^\/v1\/shops\/s1\/products\?/, page([])),
@@ -392,7 +392,7 @@ test('a cost + margin product shows the server breakdown, including where GST ca
 })
 
 test('the product panel shows how it is priced and where its GST rate comes from', async () => {
-  const pricing = { price_mode: 'fixed', selling_price: '25.50', pre_gst_selling_price: '25.50', output_gst_amount: '0.00', purchase_price: '18.00', purchase_gst_amount: '0.90', overhead_cost: '1.00', total_cost: '19.90', profit_margin_percent: '0', profit_amount: '5.60', gst_percent: '5', gst_source: 'category', category_name: 'Grains', gst_registered: false }
+  const pricing = { price_mode: 'fixed', selling_price: '25.50', pre_gst_selling_price: '25.50', output_gst_amount: '0.00', purchase_price: '18.00', purchase_gst_amount: '0.90', overhead_cost: '1.00', total_cost: '19.90', cost_known: true, profit_margin_percent: '0', profit_amount: '5.60', gst_percent: '5', gst_source: 'category', category_name: 'Grains', gst_registered: false }
   fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
     ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, price_mode: 'fixed' }])),
     ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST, price_mode: 'fixed' }, movements: [], pricing }),
@@ -404,3 +404,15 @@ test('the product panel shows how it is priced and where its GST rate comes from
   expect(within(panel).getByText('Profit per unit')).toBeInTheDocument()
 })
 
+
+test('a product with no cost price shows no profit', async () => {
+  const pricing = { price_mode: 'fixed', selling_price: '40.00', pre_gst_selling_price: '40.00', output_gst_amount: '0.00', purchase_price: '0.00', purchase_gst_amount: '0.00', overhead_cost: '0.00', total_cost: '0.00', cost_known: false, profit_margin_percent: '0', profit_amount: null, gst_percent: '0', gst_source: 'shop', category_name: null, gst_registered: false }
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, price_mode: 'fixed' }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST, price_mode: 'fixed' }, movements: [], pricing }),
+  ])
+  renderApp('/products/p1')
+  const panel = await screen.findByRole('complementary', { name: 'Product details' })
+  expect(await within(panel).findByText('Add a cost price to see profit.')).toBeInTheDocument()
+  expect(within(panel).queryByText('Profit per unit')).not.toBeInTheDocument()
+})

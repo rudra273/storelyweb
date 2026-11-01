@@ -22,7 +22,7 @@ export function Overview() {
               <div className="kpis">
                 <Tile label="Sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'}, net of returns`} />
                 <Tile label="Money received" value={formatMoney(k.collected)} />
-                <Tile label="Gross profit" value={formatMoney(k.gross_profit)} note={`${k.gross_margin_percent}% margin`} tone={Number(k.gross_profit) < 0 ? 'bad' : 'good'} />
+                <Tile label="Gross profit" value={formatMoney(k.gross_profit)} note={`${k.gross_margin_percent}% margin${k.uncosted_item_count ? ` · ${k.uncosted_item_count} sold item${k.uncosted_item_count === 1 ? '' : 's'} with no cost price left out` : ''}`} tone={Number(k.gross_profit) < 0 ? 'bad' : 'good'} />
                 <Tile label="Expenses" value={formatMoney(k.expenses)} />
                 <Tile label="Average sale" value={formatMoney(k.average_order_value)} note={`${k.discount_rate_percent}% given as discount`} />
                 <Tile label="GST collected" value={formatMoney(k.gst_collected)} />
