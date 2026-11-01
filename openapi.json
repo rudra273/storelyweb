@@ -3107,6 +3107,17 @@
       ],
       "title": "Bank Details"
      },
+     "digital_signature": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Digital Signature"
+     },
      "footer_text": {
       "title": "Footer Text",
       "type": "string"
@@ -3168,6 +3179,17 @@
        }
       ],
       "title": "Shop Gstin"
+     },
+     "shop_logo": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Logo"
      },
      "shop_name": {
       "title": "Shop Name",
@@ -3249,6 +3271,18 @@
        }
       ],
       "title": "Bank Details"
+     },
+     "digital_signature": {
+      "anyOf": [
+       {
+        "maxLength": 600000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Digital Signature"
      },
      "footer_text": {
       "anyOf": [
@@ -3352,6 +3386,18 @@
       ],
       "title": "Shop Gstin"
      },
+     "shop_logo": {
+      "anyOf": [
+       {
+        "maxLength": 600000,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Shop Logo"
+     },
      "shop_name": {
       "anyOf": [
        {
@@ -3421,7 +3467,9 @@
           "show_footer_text",
           "show_upi_qr",
           "show_amount_in_words",
-          "show_hsn_summary"
+          "show_hsn_summary",
+          "show_shop_logo",
+          "show_digital_signature"
          ]
         },
         "type": "object"

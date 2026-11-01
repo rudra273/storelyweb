@@ -112,8 +112,33 @@ Shop settings check phone, email, GSTIN and UPI id (the API now also refuses a b
 shop phone or email). Browser checks everywhere are worded like our own messages
 ("Amount is required."). Bill payment methods show their names.
 
-**Still open:** supplier payments and purchase tax (10, [decide]), shop logo and
-signature upload, and a browser re-check of the Home "Get started" card.
+✅ **Logo and signature (1 Nov 2026):** Shop settings pick a logo and a signature
+(PNG, JPG, WebP or GIF; large pictures are shrunk to fit 400 KB, the phone's limit),
+preview them on the invoice, remove them, and switch them on or off. Stored as plain
+base64 in the same `bill_settings` columns the phone fills and prints, so both sides
+show the same pictures. The API checks the picture type and size.
+
+✅ **Get started card:** checked in the browser on a new empty shop (and by tests):
+the three steps show, "Add your first product" opens the form, default units are there.
+
+**Still open: supplier payments and purchase tax (10).** Neither the phone nor the API
+records these yet: purchase documents are immutable and `payment_status` is fixed to
+`not_recorded` by a database check; the phone's plan lists them as PAY-01 and PUR-02.
+Proposed scope, for approval before building:
+
+1. [api] Migration: `supplier_payments` (supplier, date, amount, method, reference,
+   notes) and `supplier_payment_allocations` (payment → purchase, amount), plus
+   per-purchase `tax_amount`, `charges_amount`, `discount_amount`, `total` and
+   `due_date`, and `payment_status` widened to not_recorded / unpaid / partial / paid.
+   Purchases already saved stay "Not recorded" (never shown as owed).
+2. [api] Endpoints: record a payment against one supplier's purchases (oldest first,
+   like customer payments), supplier list with what you owe, supplier statement.
+3. [web] Purchase form: GST and other charges per purchase, "Paid now" choice like
+   bills; Suppliers page with dues and Record payment; purchase detail shows payments.
+4. [android] The phone needs a matching update to see and record these (whole-document
+   sync, as purchase receipts use today). Until then, payments made on the web do not
+   show on phones.
+5. Run the migration on production with the release, as before.
 
 ## Phase 2: missing features customers expect (Android has them)
 

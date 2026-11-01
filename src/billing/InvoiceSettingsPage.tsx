@@ -1,11 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { api } from '../api/client'
 import type { components } from '../api/schema'
 import { Alert, Field, Loading } from '../components/ui'
 import { useAction } from '../components/useAction'
 import { useFirstError } from '../components/useFirstError'
 import { emailProblem, gstinProblem, shopPhoneProblem, upiProblem } from '../lib/validate'
+import { imageSrc, prepareImage } from '../lib/images'
 import { Button, PageHeader } from '../components/workspace'
 import { useShop } from '../shops/context'
 import { InvoiceDocument, type Paper } from './InvoiceDocument'
@@ -15,12 +16,12 @@ type Change = components['schemas']['InvoiceSettingsIn']
 type ShowKey = keyof NonNullable<Change['show']>
 
 const GROUPS: { title: string; keys: [ShowKey, string][] }[] = [
-  { title: 'Shop', keys: [['show_shop_name', 'Shop name'], ['show_shop_address', 'Address'], ['show_shop_phone', 'Phone'], ['show_shop_email', 'Email'], ['show_shop_gstin', 'GSTIN']] },
+  { title: 'Shop', keys: [['show_shop_name', 'Shop name'], ['show_shop_address', 'Address'], ['show_shop_phone', 'Phone'], ['show_shop_email', 'Email'], ['show_shop_gstin', 'GSTIN'], ['show_shop_logo', 'Logo']] },
   { title: 'Customer', keys: [['show_customer_name', 'Name'], ['show_customer_legal_name', 'GST legal name'], ['show_customer_address', 'Address'], ['show_customer_phone', 'Phone'], ['show_customer_gstin', 'GSTIN'], ['show_customer_place_of_supply', 'State']] },
   { title: 'Invoice details', keys: [['show_invoice_title', 'Title'], ['show_invoice_number', 'Invoice number'], ['show_invoice_date', 'Date'], ['show_invoice_place_of_supply', 'Place of supply'], ['show_invoice_supply_type', 'Intra / inter-state']] },
   { title: 'Item columns', keys: [['show_item_serial_column', 'Serial number'], ['show_item_name_column', 'Item name'], ['show_hsn_column', 'HSN / SAC'], ['show_quantity_column', 'Quantity'], ['show_rate_column', 'Rate'], ['show_gst_percent_column', 'GST %'], ['show_gst_amount_column', 'GST amount'], ['show_amount_column', 'Amount']] },
   { title: 'Totals', keys: [['show_subtotal', 'Subtotal'], ['show_discount', 'Discount'], ['show_taxable_amount', 'Taxable value'], ['show_cgst_sgst_igst', 'CGST / SGST / IGST'], ['show_grand_total', 'Grand total and round-off']] },
-  { title: 'Extras', keys: [['show_amount_in_words', 'Amount in words'], ['show_hsn_summary', 'Tax summary by HSN'], ['show_payment_details', 'Payments and balance due'], ['show_upi_qr', 'UPI QR for the balance due'], ['show_footer_text', 'Footer text']] },
+  { title: 'Extras', keys: [['show_amount_in_words', 'Amount in words'], ['show_hsn_summary', 'Tax summary by HSN'], ['show_payment_details', 'Payments and balance due'], ['show_upi_qr', 'UPI QR for the balance due'], ['show_footer_text', 'Footer text'], ['show_digital_signature', 'Signature']] },
 ]
 
 // Paper widths at 96 dpi: the preview lays the page out at its real width, then shrinks it.
@@ -73,6 +74,31 @@ function sample(gst: boolean): BillDetail {
   } as unknown as BillDetail
 }
 
+function ImagePicker({ label, hint, box, value, shown, disabled, onChange, onShow }: { label: string; hint?: string; box: [number, number]; value: string | null; shown: boolean; disabled: boolean; onChange: (v: string | null) => void; onShow: (on: boolean) => void }) {
+  const [problem, setProblem] = useState<string | null>(null)
+  const [working, setWorking] = useState(false)
+  const src = imageSrc(value)
+  async function pick(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setProblem(null)
+    setWorking(true)
+    try { onChange(await prepareImage(file, box[0], box[1])) } catch (err) { setProblem(err instanceof Error ? err.message : 'This picture could not be used.') } finally { setWorking(false) }
+  }
+  return <div className="image-picker">
+    <strong>{label}</strong>
+    <div className="image-picker-box">{src ? <img src={src} alt={`${label} preview`} /> : <span className="muted">No {label.toLowerCase()} yet</span>}</div>
+    <div className="image-picker-actions">
+      <label className={`button secondary${disabled || working ? ' disabled' : ''}`}>{working ? 'Preparing…' : src ? 'Change picture' : 'Choose picture'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" disabled={disabled || working} onChange={e => void pick(e)} /></label>
+      {src && <button type="button" className="link danger-link" disabled={disabled} onClick={() => onChange(null)}>Remove</button>}
+    </div>
+    {src && <label className="check"><input type="checkbox" checked={shown} disabled={disabled} onChange={e => onShow(e.target.checked)} />Show on invoices</label>}
+    {hint && <small className="hint">{hint}</small>}
+    {problem && <small className="field-error" role="alert">{problem}</small>}
+  </div>
+}
+
 export function InvoiceSettingsPage() {
   const query = useBillingQuery<InvoiceSettings>('invoice-settings', 'invoice-settings')
   if (query.isPending) return <Loading label="Loading shop settings…" />
@@ -106,7 +132,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     setError(null)
     // Send only what changed, so a field edited on a phone meanwhile is left alone.
     const change: Record<string, unknown> = {}
-    for (const key of ['shop_name', 'shop_address', 'shop_phone', 'shop_email', 'shop_gstin', 'gst_scheme', 'invoice_title', 'footer_text', 'paper_size', 'upi_id', 'terms_text', 'bank_details', 'round_off_total'] as const) {
+    for (const key of ['shop_name', 'shop_address', 'shop_phone', 'shop_email', 'shop_gstin', 'gst_scheme', 'invoice_title', 'footer_text', 'paper_size', 'upi_id', 'terms_text', 'bank_details', 'round_off_total', 'shop_logo', 'digital_signature'] as const) {
       if ((draft[key] ?? '') !== (saved[key] ?? '')) change[key] = typeof draft[key] === 'string' ? (draft[key] as string).trim() || null : draft[key]
     }
     const show = Object.fromEntries(Object.entries(draft.show).filter(([k, v]) => saved.show[k] !== v))
@@ -141,6 +167,20 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               {SCHEMES.map(sc => <label key={sc.value} className="check"><input type="radio" name="scheme" checked={draft.gst_scheme === sc.value} onChange={() => set('gst_scheme', sc.value)} /><span><strong>{sc.label}</strong><br /><small className="muted">{sc.note}</small></span></label>)}
               {draft.gst_scheme !== saved.gst_scheme && <Alert kind="info">This changes how new bills are taxed and priced. Bills already made keep their tax.</Alert>}
             </fieldset>
+          </section>
+
+          <section className="card wide">
+            <h2>Logo and signature</h2>
+            <p className="muted">PNG or JPG. Large pictures are made smaller (up to 400 KB, as on the phone).</p>
+            <div className="image-pickers">
+              <ImagePicker label="Shop logo" box={[600, 300]} value={draft.shop_logo ?? null} shown={draft.show.show_shop_logo !== false} disabled={busy}
+                onChange={v => setDraft({ ...draft, shop_logo: v, show: v ? { ...draft.show, show_shop_logo: true } : draft.show })}
+                onShow={on => set('show', { ...draft.show, show_shop_logo: on })} />
+              <ImagePicker label="Signature" box={[600, 200]} value={draft.digital_signature ?? null} shown={draft.show.show_digital_signature === true} disabled={busy}
+                hint="Printed above Authorised signatory on A4 and A5."
+                onChange={v => setDraft({ ...draft, digital_signature: v, show: { ...draft.show, show_digital_signature: !!v } })}
+                onShow={on => set('show', { ...draft.show, show_digital_signature: on })} />
+            </div>
           </section>
 
           <section className="card wide">

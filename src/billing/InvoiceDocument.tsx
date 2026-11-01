@@ -1,3 +1,4 @@
+import { imageSrc } from '../lib/images'
 import { QRCodeSVG } from 'qrcode.react'
 import { paymentMethod } from '../components/labels'
 import { formatMoney, formatQty } from '../lib/money'
@@ -23,6 +24,8 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
   const inter = Number(b.igst_amount) !== 0
   const hasGst = Number(b.cgst_amount) !== 0 || Number(b.sgst_amount) !== 0 || inter
   const due = Number(b.balance_due) > 0
+  const logo = show('show_shop_logo') ? imageSrc(s.shop_logo) : null
+  const signature = s.show.show_digital_signature ? imageSrc(s.digital_signature) : null
   const upi = show('show_upi_qr') && s.upi_id && due && b.document_type !== 'credit_note'
     ? `upi://pay?pa=${encodeURIComponent(s.upi_id)}&pn=${encodeURIComponent(s.shop_name)}&am=${b.balance_due}&cu=INR&tn=${encodeURIComponent(b.bill_number)}`
     : null
@@ -49,7 +52,8 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
 
   return (
     <article className={`invoice ${thermal ? `thermal paper-${paper}` : ''}`} aria-label="Invoice">
-      <header className="invoice-head">
+      <header className={`invoice-head${logo ? ' with-logo' : ''}`}>
+        {logo && <img className="invoice-logo" src={logo} alt={`${s.shop_name} logo`} />}
         {show('show_shop_name') && <h2>{s.shop_name}</h2>}
         {show('show_shop_address') && s.shop_address && <p>{s.shop_address}</p>}
         {(show('show_shop_phone') && s.shop_phone) || (show('show_shop_email') && s.shop_email)
@@ -105,7 +109,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
         {s.bank_details && !thermal && <div><h4>Bank details</h4><p>{s.bank_details}</p></div>}
         {s.terms_text && <div><h4>Terms</h4><p>{s.terms_text}</p></div>}
       </section>
-      {!thermal && <p className="invoice-sign">For {s.shop_name}<br /><br />Authorised signatory</p>}
+      {!thermal && <p className="invoice-sign">For {s.shop_name}<br />{signature ? <img className="invoice-signature" src={signature} alt="Signature" /> : <br />}<br />Authorised signatory</p>}
       {show('show_footer_text') && s.footer_text && <footer>{s.footer_text}</footer>}
     </article>
   )

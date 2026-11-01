@@ -16,5 +16,4 @@
 .customer-facts dd { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
 .row-actions { white-space: nowrap; text-align: right; }
 .row-actions .link + .link { margin-left: .75rem; }
-.danger-link { color: var(--danger, #b42318); }
 @media (max-width: 900px) { .customer-grid { grid-template-columns: 1fr; } }

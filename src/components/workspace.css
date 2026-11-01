@@ -112,3 +112,11 @@
 .getting-started a::before { content: counter(step); position: absolute; left: 1rem; top: .9rem; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--navy, #14213d); color: white; display: grid; place-items: center; font-size: .8rem; font-weight: 700; }
 .getting-started a:hover { border-color: var(--gold, #f5a623); }
 .getting-started span { color: var(--muted); font-size: .875rem; }
+.image-pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.image-picker { display: grid; gap: .5rem; align-content: start; }
+.image-picker-box { display: grid; place-items: center; height: 96px; border: 1px dashed #c4c9d2; border-radius: 8px; background: #fafbfc; padding: .5rem; }
+.image-picker-box img { max-width: 100%; max-height: 80px; object-fit: contain; }
+.image-picker-actions { display: flex; align-items: center; gap: .75rem; }
+.image-picker-actions .button { cursor: pointer; }
+.image-picker-actions .button.disabled { opacity: .6; pointer-events: none; }
+.danger-link { color: var(--danger, #b42318); }

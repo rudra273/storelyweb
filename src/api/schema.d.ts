@@ -2571,6 +2571,8 @@ export interface components {
         InvoiceSettings: {
             /** Bank Details */
             bank_details: string | null;
+            /** Digital Signature */
+            digital_signature?: string | null;
             /** Footer Text */
             footer_text: string;
             /** Gst Registered */
@@ -2592,6 +2594,8 @@ export interface components {
             shop_email: string | null;
             /** Shop Gstin */
             shop_gstin: string | null;
+            /** Shop Logo */
+            shop_logo?: string | null;
             /** Shop Name */
             shop_name: string;
             /** Shop Phone */
@@ -2612,6 +2616,8 @@ export interface components {
         InvoiceSettingsIn: {
             /** Bank Details */
             bank_details?: string | null;
+            /** Digital Signature */
+            digital_signature?: string | null;
             /** Footer Text */
             footer_text?: string | null;
             /** Gst Scheme */
@@ -2628,6 +2634,8 @@ export interface components {
             shop_email?: string | null;
             /** Shop Gstin */
             shop_gstin?: string | null;
+            /** Shop Logo */
+            shop_logo?: string | null;
             /** Shop Name */
             shop_name?: string | null;
             /** Shop Phone */
