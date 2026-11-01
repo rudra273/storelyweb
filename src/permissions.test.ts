@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { NAV, can, type Capability } from './permissions'
+import { visibleGroups } from './navigation'
+import { can, type Capability } from './permissions'
 
 const ALL: Capability[] = [
   'products.view', 'products.edit', 'customers.view', 'billing.create', 'billing.cancel', 'expenses.manage',
@@ -22,7 +23,13 @@ test('an unknown, empty or tampered role gets nothing', () => {
   }
 })
 
-test('staff never see reports, team or shop activity in the menu', () => {
-  const labels = NAV.filter((item) => can('staff', item.needs)).map((item) => item.label)
-  expect(labels).toEqual(['Products', 'Billing', 'Customers'])
+test('staff never see reports, expenses, team, activity or settings in the menu', () => {
+  const labels = visibleGroups('staff', true).flatMap(g => g.items.map(i => i.label))
+  expect(labels).toEqual(['Dashboard', 'Invoices', 'Customers', 'Products', 'Subscription'])
+})
+
+test('owners see every group, and a shop without access only the dashboard and subscription', () => {
+  expect(visibleGroups('owner', true).map(g => g.label)).toEqual(['Overview', 'Sales', 'Inventory', 'Business', 'Administration'])
+  expect(visibleGroups('owner', false).flatMap(g => g.items.map(i => i.label))).toEqual(['Dashboard', 'Subscription'])
+  expect(visibleGroups(null, true).flatMap(g => g.items.map(i => i.label))).toEqual(['Dashboard', 'Subscription'])
 })

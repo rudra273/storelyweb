@@ -21,7 +21,7 @@ export function BillsPage() {
   for (const [k, v] of Object.entries({ q, status, kind, from, to })) if (v) params.set(k, v)
   const query = useBillingQuery<BillPage>('bills', `bills?${params}`)
   return <div className="billing-page">
-    <PageHeader eyebrow="SALES WORKSPACE" title="Billing" description="Find invoices, follow up on payments and manage returns." actions={<Link className="primary button" to="/billing/new">New bill</Link>} />
+    <PageHeader eyebrow="SALES" title="Invoices" description="Find invoices, follow up on payments and manage returns." actions={<Link className="primary button" to="/billing/new">New invoice</Link>} />
     <Toolbar label="Filter bills" className="bill-filters" onChange={() => setPage(0)}>
       <Field label="Search bills" type="search" maxLength={100} value={search} onChange={e => setSearch(e.target.value)} />
       <label>Payment status<select value={status} onChange={e => setStatus(e.target.value)}><option value="">All statuses</option><option value="paid">Paid</option><option value="partial">Part paid</option><option value="unpaid">Unpaid</option></select></label>

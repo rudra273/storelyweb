@@ -12,7 +12,7 @@ export function ShopActivity() {
   const events = useQuery({ queryKey: ['shop-events', shopId], queryFn: () => api.get<ShopEvent[]>(`/v1/shops/${shopId}/security-events`), enabled: !!shopId })
   return (
     <div>
-      <PageHeader eyebrow="WORKSPACE HISTORY" title="Shop activity" description="Who joined, left or changed role in this shop, and the invitations sent." />
+      <PageHeader eyebrow="WORKSPACE HISTORY" title="Team activity" description="Who joined, left or changed role in this shop, and the invitations sent." />
       {events.isPending && <Loading />}
       {events.error && <Alert>Could not load activity. <button className="link" onClick={() => void events.refetch()}>Retry activity</button></Alert>}
       {events.data?.length === 0 && <Empty title="Nothing yet" />}

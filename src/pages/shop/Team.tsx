@@ -51,7 +51,7 @@ export function Team() {
 
   return (
     <div className="team-page">
-      <PageHeader eyebrow="WORKSPACE ACCESS" title="Team" description="Bring your team together and manage who can access your shop." />
+      <PageHeader eyebrow="WORKSPACE ACCESS" title="Team & permissions" description="Bring your team together and manage who can access your shop." />
       {action.error && <Alert>{action.error}</Alert>}
       {invited && <Alert kind="success">Invitation sent. Your teammate can accept it when they sign in.</Alert>}
       <div className="team-grid"><div><Card title="People with access">

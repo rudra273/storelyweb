@@ -2,7 +2,8 @@ import { PageHeader } from '../../components/ui/workspace'
 import { useProducts } from '../../products/queries'
 import { Link } from 'react-router'
 import { useAuth } from '../../auth/context'
-import { NAV, can } from '../../permissions'
+import { can } from '../../permissions'
+import { ALL_DESTINATIONS } from '../../navigation'
 import { useShop } from '../../shops/context'
 import { Tile } from '../../reports/ReportBits'
 import { useReport, type Kpis } from '../../reports/queries'
@@ -10,26 +11,18 @@ import { State } from '../../reports/State'
 import { today } from '../../reports/periods'
 import { formatMoney } from '../../lib/money'
 
-const BLURB: Record<string, string> = {
-  '/products': 'Find products, check stock and keep your catalogue up to date.',
-  '/reports': 'Understand sales, profit and outstanding payments.',
-  '/billing': 'Create a bill, record a payment or find an invoice.',
-  '/team': 'Invite your team and manage their access.',
-  '/activity': 'Review recent changes made in your shop.',
-}
-
 export function Home() {
   const { user } = useAuth()
   const { current, role } = useShop()
   return (
     <div className="home-page">
-      <PageHeader eyebrow="YOUR WORKSPACE" title={`Hello${user?.full_name ? `, ${user.full_name}` : ''}`} description={`Here’s what’s happening at ${current?.name}.`} actions={can(role, 'billing.create') ? <Link className="primary button" to="/billing/new">Create bill <span aria-hidden="true">↗</span></Link> : undefined} />
+      <PageHeader eyebrow="YOUR WORKSPACE" title={`Hello${user?.full_name ? `, ${user.full_name}` : ''}`} description={`Here’s what’s happening at ${current?.name}.`} actions={can(role, 'billing.create') ? <Link className="primary button" to="/billing/new">New invoice <span aria-hidden="true">↗</span></Link> : undefined} />
       {can(role, 'products.edit') && <GettingStarted />}
       {can(role, 'reports.view') ? <DailySummary /> : <section className="staff-welcome"><div><p className="eyebrow">READY FOR THE DAY</p><h2>Everything you need at the counter.</h2><p>Look up a product, check its availability or start your next bill.</p></div><Link className="button secondary" to="/products">Browse products →</Link></section>}
       <section className="home-shortcuts" aria-labelledby="shortcuts-heading">
         <div className="section-heading"><div><h2 id="shortcuts-heading">Your daily tools</h2><p className="muted">Pick up where you need to work.</p></div></div>
         <div className="tiles">
-          {NAV.filter(item => can(role, item.needs)).map((item, index) => <Link key={item.to} to={item.to} className="tile"><span className="shortcut-number" aria-hidden="true">0{index + 1}</span><strong>{item.label}<span aria-hidden="true">↗</span></strong><span>{BLURB[item.to]}</span></Link>)}
+          {ALL_DESTINATIONS.filter(item => item.blurb && (!item.needs || can(role, item.needs))).map((item, index) => <Link key={item.to} to={item.to} className="tile"><span className="shortcut-number" aria-hidden="true">0{index + 1}</span><strong>{item.label}<span aria-hidden="true">↗</span></strong><span>{item.blurb}</span></Link>)}
         </div>
       </section>
       <footer className="home-footer"><span>Make Storely yours</span><div><Link to="/account">Profile settings</Link><Link to="/account/security">Security and sessions</Link></div></footer>

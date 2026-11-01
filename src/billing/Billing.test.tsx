@@ -231,7 +231,7 @@ test('clearing bill filters restores the unfiltered request', async () => {
 test('business bills expand the required tax details', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff'), products])
   renderApp('/billing/new')
-  await screen.findByRole('heading', { name: 'New bill' })
+  await screen.findByRole('heading', { name: 'New invoice' })
   await userEvent.selectOptions(screen.getByLabelText('Bill type'), 'b2b')
   expect(screen.getByLabelText('GSTIN')).toBeRequired()
   expect(screen.getByLabelText('GSTIN').closest('details')).toHaveAttribute('open')

@@ -47,20 +47,3 @@ function isRole(value: string | null | undefined): value is Role {
 export function can(role: string | null | undefined, capability: Capability): boolean {
   return isRole(role) && MATRIX[role].has(capability)
 }
-
-export interface NavItem {
-  to: string
-  label: string
-  needs: Capability
-}
-
-export const NAV: NavItem[] = [
-  { to: '/products', label: 'Products', needs: 'products.view' },
-  { to: '/reports', label: 'Reports', needs: 'reports.view' },
-  { to: '/billing', label: 'Billing', needs: 'billing.create' },
-  { to: '/customers', label: 'Customers', needs: 'customers.view' },
-  { to: '/expenses', label: 'Expenses', needs: 'expenses.manage' },
-  { to: '/team', label: 'Team', needs: 'team.manage' },
-  { to: '/activity', label: 'Shop activity', needs: 'shop.events' },
-  { to: '/settings', label: 'Shop settings', needs: 'shop.settings' },
-]

@@ -142,7 +142,7 @@ function BillForm() {
     finally { sending.current = false }
   }
   return <div className="checkout-page">
-    <PageHeader eyebrow="BILLING / NEW BILL" title="New bill" description="Add your items, review the total and record payment." actions={<Link className="button secondary" to="/billing">← Back to bills</Link>} />
+    <PageHeader eyebrow="SALES / INVOICES" title="New invoice" description="Add your items, review the total and record payment." actions={<Link className="button secondary" to="/billing">← Back to bills</Link>} />
     {restored && <Alert kind="info">
       {attempt ? 'A bill you were saving was not confirmed before this page closed. Retry saving to safely finish this same bill; it will not be created twice.' : `Your unfinished bill from ${new Date(restored.savedAt).toLocaleString()} was restored.`}
       {!attempt && <> <button type="button" className="link" onClick={discard}>Discard draft</button></>}
