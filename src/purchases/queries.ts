@@ -15,7 +15,7 @@ export function useConfirmReceipt() {
   return useMutation({ retry: false,
     mutationFn: (input: ReceiptInput) => api.post<Receipt>(`/v1/shops/${shop}/purchase-receipts`, input),
     onSuccess: () => {
-      for (const key of ['purchase-receipts', 'products', 'product', 'report', 'categories', 'units']) {
+      for (const key of ['purchase-receipts', 'suppliers', 'supplier-statement', 'products', 'product', 'report', 'categories', 'units']) {
         void client.invalidateQueries({ queryKey: [key, shop] })
       }
     },

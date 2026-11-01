@@ -1,4 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
+import { receiptMoney } from '../purchases/money'
+import { SupplierStatement } from './SupplierStatement'
 import { Modal } from '../components/Modal'
 import { Alert, Field, Loading } from '../components/ui'
 import { Button } from '../components/workspace'
@@ -38,15 +40,19 @@ export function SupplierEditor({ supplier, onClose, onSaved }: { supplier?: Supp
 
 export function SuppliersManager({ onClose }: { onClose: () => void }) {
   const suppliers = useSuppliers()
+  const [statement, setStatement] = useState<Supplier | null>(null)
+  const [owing, setOwing] = useState(false)
   const [search, setSearch] = useState('')
   const [editor, setEditor] = useState<Supplier | 'new' | null>(null)
-  const rows = suppliers.data?.filter(s => [s.name, s.phone, s.gstin].some(value => value?.toLowerCase().includes(search.trim().toLowerCase())))
+  const rows = suppliers.data?.filter(s => (!owing || Number(s.balance_due ?? '0') > 0) && [s.name, s.phone, s.gstin].some(value => value?.toLowerCase().includes(search.trim().toLowerCase()))).sort((a, b) => Number(b.balance_due ?? '0') - Number(a.balance_due ?? '0'))
   return <Modal title="Suppliers" onClose={onClose} wide>
     {suppliers.isPending && <Loading />}
     {suppliers.error && <Alert>Suppliers could not be loaded. <button className="link" onClick={() => void suppliers.refetch()}>Retry suppliers</button></Alert>}
     <div className="actions"><Field label="Search suppliers" value={search} onChange={e => setSearch(e.target.value)} /><Button variant="primary" onClick={() => setEditor('new')}>Add supplier</Button></div>
     {rows?.length === 0 && <p className="muted">{search ? 'No suppliers match.' : 'No suppliers yet. Add your first supplier.'}</p>}
-    <ul className="plain">{rows?.map(s => <li key={s.uuid} className="row"><span><strong>{s.name}</strong><br /><small>{[s.phone, s.gstin].filter(Boolean).join(' · ')}</small></span><Button onClick={() => setEditor(s)}>Edit {s.name}</Button></li>)}</ul>
+    <label><input type="checkbox" checked={owing} onChange={e => setOwing(e.target.checked)} /> Only suppliers we owe</label>
+    <ul className="plain">{rows?.map(s => <li key={s.uuid} className="row"><span><strong>{s.name}</strong><br /><span>Balance due: {receiptMoney(s.balance_due ?? '0')}</span><br /><small>{[s.phone, s.gstin].filter(Boolean).join(' · ')}</small></span><div className="actions"><Button onClick={() => setStatement(s)}>Statement and payments</Button><Button onClick={() => setEditor(s)}>Edit {s.name}</Button></div></li>)}</ul>
+    {statement && <SupplierStatement supplier={statement} onClose={() => setStatement(null)} />}
     {editor && <SupplierEditor supplier={editor === 'new' ? undefined : editor} onClose={() => setEditor(null)} onSaved={() => setEditor(null)} />}
   </Modal>
 }

@@ -1,4 +1,7 @@
 import { PageHeader } from '../components/workspace'
+import { useToast } from '../components/toastContext'
+import { billAction, day, paymentMethod, paymentStatus } from '../components/labels'
+import { when } from '../components/format'
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ApiError, request } from '../api/client'
@@ -29,7 +32,7 @@ function Detail({ detail }: { detail: BillDetail }) {
   const [printing, setPrinting] = useState(false)
   const b = detail.bill
   return <>
-    <div className="no-print"><PageHeader eyebrow="BILL DETAILS" title={b.bill_number} description={`${b.customer_name} · ${b.created_at.slice(0, 10)} · ${b.cancelled ? 'Cancelled' : b.payment_status}`} /></div>
+    <div className="no-print"><PageHeader eyebrow="BILL DETAILS" title={b.bill_number} description={`${b.customer_name} · ${day(b.created_at)} · ${b.cancelled ? 'Cancelled' : paymentStatus(b.payment_status)}`} /></div>
     {b.cancelled && <Alert kind="info">Cancelled: {b.cancel_reason}</Alert>}
     <div className="actions no-print">
       <button onClick={() => setPrinting(!printing)}>{printing ? 'Close invoice' : 'Invoice / Print / PDF'}</button>
@@ -42,10 +45,10 @@ function Detail({ detail }: { detail: BillDetail }) {
     {printing ? <Invoice detail={detail} /> : <div className="bill-screen bill-detail-grid">
       <div className="table-wrap"><table className="table"><thead><tr><th>Item</th><th>Quantity</th><th>Unit price</th><th>Taxable</th><th>GST</th><th>Amount</th></tr></thead><tbody>{detail.items.map(i => <tr key={i.uuid}><td>{i.product_name}</td><td>{formatQty(i.quantity)} {i.unit}</td><td>{formatMoney(i.selling_price)}</td><td>{formatMoney(i.line_taxable_value)}</td><td>{formatMoney(i.line_gst)}</td><td>{formatMoney(i.amount)}</td></tr>)}</tbody></table></div>
       <section className="card bill-detail-totals"><h2>Totals</h2><dl className="bill-totals">{[['Subtotal', b.subtotal_amount], ['Discount', b.discount_amount], ['Taxable amount', b.taxable_amount], ['CGST', b.cgst_amount], ['SGST', b.sgst_amount], ['IGST', b.igst_amount], ['Round-off', b.round_off_amount], ['Total', b.total_amount], ['Paid', b.paid_amount], ['Due', b.balance_due]].map(([k, v]) => <div className="row" key={k}><dt>{k}</dt><dd>{formatMoney(v)}</dd></div>)}</dl></section>
-      <section className="card"><h2>Payments</h2>{detail.payments.length ? <ul className="plain">{detail.payments.map(p => <li className="row" key={p.uuid}><span>{p.received_at.slice(0, 10)} · {p.payment_method}<br />{p.payment_reference} {p.notes}</span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p>No payments recorded.</p>}</section>
+      <section className="card"><h2>Payments</h2>{detail.payments.length ? <ul className="plain">{detail.payments.map(p => <li className="row" key={p.uuid}><span>{day(p.received_at)} · {paymentMethod(p.payment_method)}<br /><small className="muted">{[p.payment_reference, p.notes].filter(Boolean).join(' · ')}</small></span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p>No payments recorded.</p>}</section>
       {!!b.original_bill_uuid && <p>Against invoice <Link to={`/billing/${b.original_bill_uuid}`}>{b.original_bill_number}</Link></p>}
       {!!detail.credit_notes.length && <section className="card"><h2>Credit notes</h2>{detail.credit_notes.map(n => <p key={n.uuid}><Link to={`/billing/${n.uuid}`}>{n.bill_number}</Link> · {formatMoney(n.total_amount)}</p>)}</section>}
-      <section className="card"><h2>History</h2>{detail.history.length ? <ul className="plain">{detail.history.map((h, i) => <li className="row" key={i}><span>{h.action} · {h.actor}<br />{h.details}</span><small>{h.created_at}</small></li>)}</ul> : <p>No activity yet.</p>}</section>
+      <section className="card"><h2>History</h2>{detail.history.length ? <ul className="plain">{detail.history.map((h, i) => <li className="row" key={i}><span>{billAction(h.action)}{h.actor ? ` · ${h.actor}` : ''}<br /><small className="muted">{h.details}</small></span><small>{when(h.created_at)}</small></li>)}</ul> : <p>No activity yet.</p>}</section>
     </div>}
     {action && <BillAction key={action} action={action} detail={detail} close={() => setAction(null)} />}
   </>
@@ -62,6 +65,7 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
   type Attempt = { body: PaymentInput | CreditInput | { reason: string }; key?: string }
   const [attempt, setAttempt] = useState<Attempt | null>(null)
   const sending = useRef(false)
+  const toast = useToast()
   const mutation = useBillingMutation(async (base: string, input: Attempt) => request<BillDetail>('POST', `${base}/bills/${detail.bill.uuid}/${action === 'payment' ? 'payments' : action === 'return' ? 'credit-note' : 'cancel'}`, { body: input.body, idempotencyKey: input.key }))
   const uncertainCancel = action === 'cancel' && mutation.error instanceof ApiError && (mutation.error.status === 0 || mutation.error.status >= 500)
   async function submit(e: FormEvent) {
@@ -74,6 +78,7 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
     try {
       const result = await mutation.mutateAsync(next)
       close()
+      toast(action === 'payment' ? 'Payment recorded' : action === 'return' ? `Return saved as ${result.bill.bill_number}` : 'Bill cancelled')
       if (action === 'return') void navigate(`/billing/${result.bill.uuid}`)
     } catch (error) {
       if (error instanceof ApiError && (error.status === 422 || (error.status === 409 && error.code !== 'idempotency_conflict'))) setAttempt(null)
@@ -84,7 +89,7 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
     {action === 'cancel' && <Alert kind="info">This cancels the document and reverses its stock movements.</Alert>}
     {action === 'payment' && <Field label="Amount (₹)" type="number" min="0.01" max={detail.bill.balance_due} step="0.01" required value={amount} onChange={e => setAmount(e.target.value)} />}
     {action === 'return' && <><p>Enter the quantities being returned. The server checks earlier returns and calculates the credit.</p>{detail.items.map(i => <Field key={i.uuid} label={`Return ${i.product_name}`} type="number" min="0" max={i.quantity} step="0.001" value={quantities[i.uuid] ?? ''} onChange={e => setQuantities({ ...quantities, [i.uuid]: e.target.value })} />)}<label>Settlement<select value={settlement} onChange={e => setSettlement(e.target.value as typeof settlement)}><option value="refund">Refund customer</option><option value="adjust">Reduce invoice due</option></select></label></>}
-    {action !== 'cancel' && <label>Payment method<select value={method} onChange={e => setMethod(e.target.value as typeof method)}>{['cash', 'upi', 'card', 'bank', 'online'].map(m => <option key={m}>{m}</option>)}</select></label>}
+    {action !== 'cancel' && <label>Payment method<select value={method} onChange={e => setMethod(e.target.value as typeof method)}>{['cash', 'upi', 'card', 'bank', 'online'].map(m => <option key={m} value={m}>{paymentMethod(m)}</option>)}</select></label>}
     {action === 'payment' && <Field label="Reference" maxLength={100} value={reference} onChange={e => setReference(e.target.value)} />}
     <Field label={action === 'payment' ? 'Notes' : 'Reason'} maxLength={200} value={reason} onChange={e => setReason(e.target.value)} />
     </fieldset>{mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Details are locked. Retry to safely confirm the original request.' : 'Check the bill before trying again if the connection was interrupted.'}</Alert>}

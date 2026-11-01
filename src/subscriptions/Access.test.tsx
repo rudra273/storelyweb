@@ -22,6 +22,19 @@ describe('paid web access', () => {
       expect(roleMenu()).toEqual(['Home','Cloud subscription'])
     })
   }
+  it('does not flash the subscription page while a paying shop is being checked', async () => {
+    fakeApi([...ACCOUNT_SESSION,shops,requests,ok('GET','/v1/shops/s1/entitlement',ACTIVE_ENTITLEMENT)])
+    const answer = globalThis.fetch
+    let release = () => {}
+    const slow = new Promise<void>(resolve => { release = resolve })
+    vi.stubGlobal('fetch', async (path: string, init: RequestInit) => { if (path.endsWith('/entitlement')) await slow; return answer(path, init) })
+    renderApp('/')
+    expect(await screen.findByText('Opening your workspace…')).toBeInTheDocument()
+    expect(screen.queryByRole('heading',{name:'Cloud subscription'})).not.toBeInTheDocument()
+    release()
+    await waitFor(() => expect(screen.queryByText('Opening your workspace…')).not.toBeInTheDocument())
+    expect(screen.queryByRole('heading',{name:'Cloud subscription'})).not.toBeInTheDocument()
+  })
   it('fails closed when subscription verification is unavailable and can retry', async () => {
     const user=userEvent.setup()
     const routes=[...ACCOUNT_SESSION,shops,requests,

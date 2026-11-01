@@ -11,6 +11,8 @@ export type Capability =
   | 'customers.view'
   | 'billing.create'
   | 'billing.cancel'
+  | 'billing.custom'
+  | 'expenses.manage'
   | 'reports.view'
   | 'data.export'
   | 'team.manage'
@@ -22,6 +24,8 @@ const ADMIN: Capability[] = [
   ...STAFF,
   'products.edit',
   'billing.cancel',
+  'billing.custom',
+  'expenses.manage',
   'reports.view',
   'data.export',
   'team.manage',
@@ -54,6 +58,9 @@ export const NAV: NavItem[] = [
   { to: '/products', label: 'Products', needs: 'products.view' },
   { to: '/reports', label: 'Reports', needs: 'reports.view' },
   { to: '/billing', label: 'Billing', needs: 'billing.create' },
+  { to: '/customers', label: 'Customers', needs: 'customers.view' },
+  { to: '/expenses', label: 'Expenses', needs: 'expenses.manage' },
   { to: '/team', label: 'Team', needs: 'team.manage' },
   { to: '/activity', label: 'Shop activity', needs: 'shop.events' },
+  { to: '/settings', label: 'Shop settings', needs: 'shop.settings' },
 ]

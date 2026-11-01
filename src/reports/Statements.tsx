@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router'
+import { paymentMethod } from '../components/labels'
 import { Empty } from '../components/ui'
 import { formatMoney } from '../lib/money'
 import { DownloadBar, PeriodPicker } from './ReportBits'
@@ -60,7 +61,7 @@ export function DayBookPage() {
               <section className="card">
                 <h2>Expenses</h2>
                 {b.expenses.length === 0 ? <p className="muted">None.</p> : (
-                  <table className="table"><tbody>{b.expenses.map((e) => <tr key={e.uuid}><td>{e.category}<br /><small className="muted">{e.payment_method}</small></td><td>{formatMoney(e.amount)}</td></tr>)}</tbody></table>
+                  <table className="table"><tbody>{b.expenses.map((e) => <tr key={e.uuid}><td>{e.category}<br /><small className="muted">{paymentMethod(e.payment_method)}</small></td><td>{formatMoney(e.amount)}</td></tr>)}</tbody></table>
                 )}
               </section>
             </div>
@@ -94,7 +95,7 @@ export function ProfitLossPage() {
                   <tr className="total"><td>Net profit</td><td className={Number(p.net_profit) < 0 ? 'bad' : undefined}>{formatMoney(p.net_profit)}</td></tr>
                 </tbody>
               </table>
-              <p className="muted">GST collected in this period, which is not income: {formatMoney(p.gst_collected)}. Sales and cost are after returns.</p>
+              <p className="muted">GST collected in this period, which is not income: {formatMoney(p.gst_collected)}. Sales and cost are after returns.{!p.gst_registered && ' Your shop is not GST-registered, so cost of goods includes the GST paid when buying stock (see Stock value for the rate per product).'}</p>
             </>
           )}
         </State>

@@ -79,7 +79,8 @@ test('an empty shop explains what to do, differently for owners and staff', asyn
   setup('owner', [])
   const view = renderApp('/products')
   expect(await screen.findByText('No products yet')).toBeInTheDocument()
-  expect(screen.getByText('Add a product, or import a file.')).toBeInTheDocument()
+  expect(screen.getByText('Add your first product, or import a list from Excel or CSV.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Import a file' })).toBeInTheDocument()
   view.unmount()
   setup('staff', [])
   renderApp('/products')
@@ -173,7 +174,7 @@ test('switching shops clears the previous catalogue, selection and dialogs while
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Basmati Rice' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Print labels' })).not.toBeInTheDocument()
-  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Checking subscription')
+  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Opening your workspace')
   expect(calls.length).toBeGreaterThan(0)
 })
 
@@ -239,6 +240,39 @@ test('stock adjustment rejects invalid quantity and preserves input after server
   expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))?.body).toMatchObject({ delta: '-51.25' })
 })
 
+test('a category with its own GST can be created from the product form and is selected', async () => {
+  const made = { uuid: 'c2', name: 'Biscuits', hsn_code: null, gst_percent: '18', product_count: 0 }
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', '/v1/shops/s1/suppliers', []),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([])),
+    ok('POST', '/v1/shops/s1/categories', made, 201),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  await userEvent.type(screen.getByLabelText('Product name'), 'Marie')
+  await userEvent.click(screen.getByRole('button', { name: '+ New category' }))
+  const editor = screen.getByRole('dialog', { name: 'New category' })
+  await userEvent.type(within(editor).getByLabelText('Category name'), 'Biscuits')
+  await userEvent.selectOptions(within(editor).getByLabelText('GST % (optional)'), '18')
+  await userEvent.click(within(editor).getByRole('button', { name: 'Add category' }))
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/categories'))?.body).toEqual({ name: 'Biscuits', gst_percent: '18', hsn_code: null })
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'New category' })).not.toBeInTheDocument())
+  expect(screen.getByLabelText('Product name')).toHaveValue('Marie')
+})
+
+test('a product without a selling price is stopped with a message on the price field', async () => {
+  const calls = setup('owner', [{ ...RICE, ...COST }])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const dialog = await screen.findByRole('dialog', { hidden: true })
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'Tea')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  expect(within(dialog).getByLabelText('Selling price (₹)')).toHaveAttribute('aria-invalid', 'true')
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('Enter the price you sell this product at.')
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/products'))).toBe(false)
+})
+
 for (const kind of ['product', 'stock']) {
   test(`${kind} saving freezes fields and close controls until completion`, async () => {
     setup('owner', [{ ...RICE, ...COST }])
@@ -255,6 +289,7 @@ for (const kind of ['product', 'stock']) {
     if (kind === 'product') {
       await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
       await userEvent.type(screen.getByLabelText('Product name'), 'Tea')
+      await userEvent.type(screen.getByLabelText('Selling price (₹)'), '20')
     } else {
       await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
       await userEvent.click(await screen.findByRole('button', { name: 'Adjust stock' }))
@@ -320,11 +355,52 @@ test('grouped product fields retain pricing, stock, identifiers and tax in the s
   await userEvent.type(within(dialog).getByLabelText('Cost price (₹)'), '18.25')
   await userEvent.type(within(dialog).getByLabelText('Opening stock'), '3.5')
   await userEvent.type(within(dialog).getByLabelText('Reorder level'), '2')
-  await userEvent.click(within(dialog).getByText('Codes and tax details (optional)'))
+  await userEvent.click(within(dialog).getByText('Codes and HSN (optional)'))
   await userEvent.type(within(dialog).getByLabelText('Product code'), 'TEA-01')
   await userEvent.type(within(dialog).getByLabelText('HSN / SAC code'), '0902')
-  await userEvent.selectOptions(within(dialog).getByLabelText('GST %'), '5')
+  await userEvent.selectOptions(within(dialog).getByLabelText('GST rate'), '5')
   await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/products'))?.body).toMatchObject({ name: 'Tea', selling_price: '25.50', purchase_price: '18.25', opening_quantity: '3.5', reorder_level: '2', product_code: 'TEA-01', hsn_code: '0902', gst_percent: '5', track_stock: true })
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/products'))?.body).toMatchObject({ name: 'Tea', selling_price: '25.50', purchase_price: '18.25', opening_quantity: '3.5', reorder_level: '2', product_code: 'TEA-01', hsn_code: '0902', gst_percent: '5', track_stock: true, price_mode: 'fixed' })
 })
+
+test('a cost + margin product shows the server breakdown, including where GST came from', async () => {
+  const shown = { price_mode: 'formula', selling_price: '129.80', pre_gst_selling_price: '129.80', output_gst_amount: '0.00', purchase_price: '100.00', purchase_gst_amount: '18.00', overhead_cost: '0.00', total_cost: '118.00', profit_margin_percent: '10', profit_amount: '11.80', gst_percent: '18', gst_source: 'shop', category_name: null, gst_registered: false }
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', '/v1/shops/s1/suppliers', []),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([])),
+    ok('POST', '/v1/shops/s1/products/price-preview', shown),
+    ok('POST', '/v1/shops/s1/products', { product: { ...RICE, ...COST }, movements: [] }),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] }),
+  ])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'Tea')
+  await userEvent.click(within(dialog).getByLabelText('Work it out from cost + margin'))
+  expect(within(dialog).queryByLabelText('Selling price (₹)')).not.toBeInTheDocument()
+  await userEvent.type(within(dialog).getByLabelText('Cost price (₹)'), '100')
+  await userEvent.type(within(dialog).getByLabelText('Margin (%)'), '10')
+  expect(await within(dialog).findByText('+ GST paid on purchase (18%, your shop default)')).toBeInTheDocument()
+  expect(within(dialog).getByText('₹129.80')).toBeInTheDocument()
+  expect(calls.filter(c => c.path.endsWith('/price-preview')).at(-1)?.body).toMatchObject({ price_mode: 'formula', purchase_price: '100', profit_margin_percent: '10', selling_price: null })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  const body = calls.find(c => c.method === 'POST' && c.path.endsWith('/s1/products'))?.body as Record<string, unknown>
+  expect(body).toMatchObject({ price_mode: 'formula', purchase_price: '100', profit_margin_percent: '10' })
+  expect(body).not.toHaveProperty('selling_price')
+})
+
+test('the product panel shows how it is priced and where its GST rate comes from', async () => {
+  const pricing = { price_mode: 'fixed', selling_price: '25.50', pre_gst_selling_price: '25.50', output_gst_amount: '0.00', purchase_price: '18.00', purchase_gst_amount: '0.90', overhead_cost: '1.00', total_cost: '19.90', profit_margin_percent: '0', profit_amount: '5.60', gst_percent: '5', gst_source: 'category', category_name: 'Grains', gst_registered: false }
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, price_mode: 'fixed' }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST, price_mode: 'fixed' }, movements: [], pricing }),
+  ])
+  renderApp('/products/p1')
+  const panel = await screen.findByRole('complementary', { name: 'Product details' })
+  expect(await within(panel).findByText('5% · from Grains')).toBeInTheDocument()
+  expect(within(panel).getByText('Selling price you set')).toBeInTheDocument()
+  expect(within(panel).getByText('Profit per unit')).toBeInTheDocument()
+})
+

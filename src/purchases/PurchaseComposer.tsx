@@ -146,7 +146,6 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
       <p className="muted">Record stock you have received. Drafts stay on this browser for this account and shop.</p>
       {conflict && <Alert>This draft changed in another tab. Close and reopen it to load the latest version.</Alert>}
       {storageError && <Alert>{storageError} {!loaded.error && <Button onClick={() => persist(draftRef.current)}>Retry saving draft</Button>}</Alert>}
-      {error && <Alert>{error}</Alert>}
       {duplicateImport && !draft.submitted && draft.items.some(line => line.import_key) && <label className="check"><input type="checkbox" checked={!!draft.allow_duplicate_import_keys?.length} onChange={e => change({ ...draftRef.current, allow_duplicate_import_keys: e.target.checked ? [...new Set(draft.items.flatMap(line => line.import_key ? [line.import_key] : []))] : [] })} />I reviewed the file history and intend to import these quantities again</label>}
       {draft.submitted && <Alert kind="info">The save needs confirmation. Retry the same purchase to recover its result before making changes.</Alert>}
       <form onSubmit={confirm} noValidate aria-busy={busy}>
@@ -171,7 +170,7 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
           <ol className="plain purchase-lines">{draft.items.map((line, index) => {
             const amount = amountInCents(line.quantity, line.unit_cost)
             return <li key={line.id} className="purchase-line" ref={node => {
-              if (node && focusLine.current === line.id) { focusLine.current = null; node.querySelector('input')?.focus() }
+              if (node && focusLine.current === line.id) { focusLine.current = null; node.querySelector('input')?.focus({ preventScroll: true }); node.scrollIntoView?.({ block: 'center' }) }
             }}><div className="row"><strong>{index + 1}. {line.name}{line.new_product && <span className="badge">New</span>}{line.unit && ` (${line.unit})`}</strong><Button onClick={() => change({ ...draft, items: draft.items.filter(item => item.id !== line.id) })}>Remove item {index + 1}</Button></div>
               {line.new_product && <div className="actions"><Button onClick={() => setProductEditor(line)}>Edit new product {index + 1}</Button><Button disabled={draft.items.length >= 200} onClick={() => change({ ...draftRef.current, items: [...draftRef.current.items, { ...line, id: crypto.randomUUID(), batch_no: '', expiry_date: '' }] })}>Add another lot of {line.name}</Button></div>}
               <div className="purchase-line-fields"><Field label={`Quantity · item ${index + 1}`} inputMode="decimal" value={line.quantity} onChange={e => updateLine(line.id, { quantity: e.target.value })} /><Field label={`Unit cost (₹) · item ${index + 1}`} inputMode="decimal" value={line.unit_cost} onChange={e => updateLine(line.id, { unit_cost: e.target.value })} /><p>Amount: <strong>{amount === null ? '—' : receiptMoney(centsText(amount))}</strong></p></div>
@@ -179,7 +178,17 @@ export function PurchaseComposer({ onClose, initialProduct }: { onClose: () => v
             </li>
           })}</ol>
         </fieldset>
-        <div className="purchase-footer"><p>Stock cost subtotal: <strong>{total === null ? 'Complete quantities and costs' : receiptMoney(total)}</strong></p><small className="muted">Payment, tax and additional charges are not recorded here.</small><div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div>
+        <fieldset disabled={locked}>
+          <details><summary>Charges, tax and payment terms</summary>
+            {(['tax_amount', 'charges_amount', 'discount_amount'] as const).map(field => <Field key={field} label={{ tax_amount: 'GST amount (₹)', charges_amount: 'Other charges (₹)', discount_amount: 'Discount (₹)' }[field]} inputMode="decimal" value={draft[field] ?? ''} onChange={e => change({ ...draftRef.current, [field]: e.target.value })} />)}
+            <label>Payment<select aria-label="Payment" value={draft.payment_choice ?? (draft.record_payment_terms ? 'unpaid' : 'not_recorded')} onChange={e => change({ ...draftRef.current, payment_choice: e.target.value as PurchaseDraft['payment_choice'], record_payment_terms: e.target.value !== 'not_recorded' })}><option value="not_recorded">Not recorded</option><option value="unpaid">Unpaid</option><option value="partial">Part paid</option><option value="paid">Paid in full</option></select></label>
+            {draft.payment_choice === 'partial' && <Field label="Paid now (₹)" inputMode="decimal" value={draft.paid_now ?? ''} onChange={e => change({ ...draftRef.current, paid_now: e.target.value })} />}
+            {(draft.payment_choice === 'paid' || draft.payment_choice === 'partial') && <label>Payment method<select aria-label="Payment method" value={draft.payment_method ?? 'cash'} onChange={e => change({ ...draftRef.current, payment_method: e.target.value as PurchaseDraft['payment_method'] })}>{(['cash', 'upi', 'card', 'bank_transfer', 'online'] as const).map(method => <option key={method} value={method}>{({ cash: 'Cash', upi: 'UPI', card: 'Card', bank_transfer: 'Bank transfer', online: 'Online' })[method]}</option>)}</select></label>}
+            <p className="muted">Choose a supplier when recording payment terms. Paid in full uses the final total calculated by the server.</p>
+            {draft.record_payment_terms && <Field label="Due date (optional)" type="date" min={draft.purchase_date} value={draft.due_date ?? ''} onChange={e => change({ ...draftRef.current, due_date: e.target.value })} />}
+          </details>
+        </fieldset>
+        <div className="purchase-footer">{error && <Alert>{error}</Alert>}<div className="purchase-footer-row"><p>Stock cost subtotal: <strong>{total === null ? 'Complete quantities and costs' : receiptMoney(total)}</strong><br /><small className="muted">The saved receipt shows the final total including entered tax, charges and discount.</small></p><div className="actions"><Button disabled={busy} onClick={close}>Close and keep draft</Button><Button disabled={busy || !!draft.submitted || conflict} onClick={discard}>Discard draft</Button><Button type="submit" variant="primary" disabled={busy || conflict || !!storageError || !draft.items.length}>{busy ? 'Saving purchase…' : draft.submitted ? 'Retry purchase' : 'Save purchase'}</Button></div></div></div>
       </form>
       {productEditor && <NewProductDraft line={productEditor === 'new' ? undefined : productEditor} onClose={() => setProductEditor(null)} onStage={line => {
         const active = draftRef.current

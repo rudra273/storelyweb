@@ -1,4 +1,5 @@
 import { PageHeader } from '../components/workspace'
+import { useProducts } from '../products/queries'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/context'
 import { NAV, can } from '../permissions'
@@ -23,6 +24,7 @@ export function Home() {
   return (
     <div className="home-page">
       <PageHeader eyebrow="YOUR WORKSPACE" title={`Hello${user?.full_name ? `, ${user.full_name}` : ''}`} description={`Here’s what’s happening at ${current?.name}.`} actions={can(role, 'billing.create') ? <Link className="primary button" to="/billing/new">Create bill <span aria-hidden="true">↗</span></Link> : undefined} />
+      {can(role, 'products.edit') && <GettingStarted />}
       {can(role, 'reports.view') ? <DailySummary /> : <section className="staff-welcome"><div><p className="eyebrow">READY FOR THE DAY</p><h2>Everything you need at the counter.</h2><p>Look up a product, check its availability or start your next bill.</p></div><Link className="button secondary" to="/products">Browse products →</Link></section>}
       <section className="home-shortcuts" aria-labelledby="shortcuts-heading">
         <div className="section-heading"><div><h2 id="shortcuts-heading">Your daily tools</h2><p className="muted">Pick up where you need to work.</p></div></div>
@@ -44,9 +46,25 @@ function DailySummary() {
         <Tile label="Today’s sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'} · net of returns`} />
         <Tile label="Money received today" value={formatMoney(k.collected)} />
         <Tile label="Outstanding payments" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid bill${k.unpaid_count === 1 ? '' : 's'} · all time`} tone={k.unpaid_count ? 'bad' : undefined} />
-        <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note="Current inventory value" />
+        <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={k.gst_registered ? 'Current inventory value' : 'Current inventory value, incl. GST paid on purchase'} />
       </div>
       <div className="attention-strip"><div><span className="attention-dot" aria-hidden="true" /><strong>Stock watch</strong><span>{k.low_stock_count} running low · {k.out_of_stock_count} out of stock</span></div><Link to="/products?low=1">Review stock →</Link></div>
     </>}</State>
   </section>
 }
+
+/** For a shop with nothing in it yet: the three things to do first, in order. */
+function GettingStarted() {
+  const products = useProducts({ q: '', category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
+  if (!products.data || products.data.items.length > 0) return null
+  return <section className="card wide getting-started" aria-labelledby="start-heading">
+    <h2 id="start-heading">Get your shop ready</h2>
+    <p className="muted">Three steps and you can bill your first customer.</p>
+    <ol>
+      <li><Link to="/settings"><strong>Check your shop details</strong><span>Address, phone and GST registration, as they print on invoices.</span></Link></li>
+      <li><Link to="/products?new=1"><strong>Add your first product</strong><span>Name and price are enough to start; add stock now or later.</span></Link></li>
+      <li><Link to="/billing/new"><strong>Create your first bill</strong><span>Pick products, take payment and print or share the invoice.</span></Link></li>
+    </ol>
+  </section>
+}
+

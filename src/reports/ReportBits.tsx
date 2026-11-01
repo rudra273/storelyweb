@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { dayRange } from '../components/labels'
 import { Alert } from '../components/ui'
 import { describeError } from '../components/useAction'
 import { PRESETS, type Preset } from './periods'
@@ -30,7 +31,7 @@ export function PeriodPicker({ period }: { period: Period }) {
         </>
       )}
       <p className="muted period-text">
-        {period.from === period.to ? period.from : `${period.from} to ${period.to}`}
+        {dayRange(period.from, period.to)}
       </p>
     </div>
   )

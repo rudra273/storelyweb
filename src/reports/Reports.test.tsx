@@ -64,7 +64,7 @@ test('an empty period says so instead of drawing empty charts', async () => {
 test('a server error is shown in words, not left spinning', async () => {
   fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', REPORT, { error: { code: 'internal_error', message: 'Something went wrong.' } }, 500)])
   renderApp('/reports')
-  expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong.')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong on our side.')
 })
 
 test('the day book lists the bills and the cash drawer change', async () => {
@@ -126,5 +126,18 @@ test('switching shops never shows the previous shop report while the next loads'
   await screen.findByText('₹205.90')
   await userEvent.selectOptions(screen.getByLabelText('Shop'), 's2')
   expect(screen.queryByText('₹205.90')).not.toBeInTheDocument()
-  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Checking subscription')
+  expect(screen.getAllByRole('status')[0]).toHaveTextContent('Opening your workspace')
 })
+
+test('stock value shows each product\'s GST and cost per unit, and why GST is in cost', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', /^\/v1\/shops\/s1\/reports\/stock-valuation/, {
+    items: [{ name: 'Basmati Rice', category: 'Grains', unit: 'kg', quantity: '40', gst_percent: '18', unit_cost: '47.20', cost_value: '1888.00', sale_value: '2000.00' }],
+    gst_registered: false, total_cost: '1888.00', total_sale: '2000.00',
+  })])
+  renderApp('/reports/stock')
+  const row = (await screen.findByText('Basmati Rice')).closest('tr')!
+  expect(within(row).getByText('18%')).toBeInTheDocument()
+  expect(within(row).getByText('₹47.20')).toBeInTheDocument()
+  expect(screen.getByText(/not GST-registered, so GST paid on purchases is part of cost/)).toBeInTheDocument()
+})
+

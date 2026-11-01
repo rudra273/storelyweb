@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { roleLabel } from '../components/labels'
 import { api } from '../api/client'
 import type { MyInvite } from '../api/types'
 import { useAction } from '../components/useAction'
@@ -74,7 +75,7 @@ export function Onboarding() {
               {invites.data?.map((invite) => (
                 <li key={invite.shop_id} className="row">
                   <span>
-                    Join as <strong>{invite.role}</strong> <small className="muted">(invited {when(invite.created_at)})</small>
+                    Join as <strong>{roleLabel(invite.role)}</strong> <small className="muted">(invited {when(invite.created_at)})</small>
                   </span>
                   <button className="primary" disabled={accept.busy} onClick={() => acceptInvite(invite.shop_id)}>
                     Accept

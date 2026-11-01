@@ -29,3 +29,18 @@ test('staff get daily tools without requesting restricted report data', async ()
   expect(calls.some(c => c.path.includes('/reports/'))).toBe(false)
   expect(screen.queryByText('Today at a glance')).not.toBeInTheDocument()
 })
+
+test('a new shop with no products gets three steps to get started', async () => {
+  fakeApi([...SIGNED_IN, shop('owner'), ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [], total: 0, next_cursor: null })])
+  renderApp('/')
+  expect(await screen.findByRole('heading', { name: 'Get your shop ready' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: /Add your first product/ })).toHaveAttribute('href', '/products?new=1')
+  expect(screen.getByRole('link', { name: /Check your shop details/ })).toHaveAttribute('href', '/settings')
+})
+
+test('a shop that has products does not see the get-started steps', async () => {
+  fakeApi([...SIGNED_IN, shop('owner'), ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [{ uuid: 'p1', name: 'Rice' }], total: 1, next_cursor: null })])
+  renderApp('/')
+  await waitFor(() => expect(screen.getByRole('heading', { name: 'Your daily tools' })).toBeInTheDocument())
+  expect(screen.queryByRole('heading', { name: 'Get your shop ready' })).not.toBeInTheDocument()
+})

@@ -20,7 +20,11 @@ export interface paths {
         post?: never;
         delete?: never;
         options?: never;
-        head?: never;
+        /**
+         * Health
+         * @description Liveness: the process is up. Touches nothing else.
+         */
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -894,7 +898,69 @@ export interface paths {
         /** Find Customers */
         get: operations["find_customers_v1_shops__shop_id__customers_get"];
         put?: never;
+        /** Create Customer */
+        post: operations["create_customer_v1_shops__shop_id__customers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/customers/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Customers
+         * @description Every customer with what they owe, those owing most first.
+         */
+        get: operations["list_customers_v1_shops__shop_id__customers_accounts_get"];
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/customers/{customer_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Customer */
+        get: operations["get_customer_v1_shops__shop_id__customers__customer_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Customer
+         * @description Change only the fields sent. Name and phone cannot be cleared.
+         */
+        patch: operations["edit_customer_v1_shops__shop_id__customers__customer_id__patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/customers/{customer_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle
+         * @description Money received from a customer, put against their unpaid bills oldest first.
+         */
+        post: operations["settle_v1_shops__shop_id__customers__customer_id__payments_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -916,6 +982,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Expenses */
+        get: operations["list_expenses_v1_shops__shop_id__expenses_get"];
+        put?: never;
+        /** Create Expense */
+        post: operations["create_expense_v1_shops__shop_id__expenses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/expenses/{expense_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Expense */
+        delete: operations["delete_expense_v1_shops__shop_id__expenses__expense_id__delete"];
+        options?: never;
+        head?: never;
+        /** Edit Expense */
+        patch: operations["edit_expense_v1_shops__shop_id__expenses__expense_id__patch"];
         trace?: never;
     };
     "/v1/shops/{shop_id}/invites": {
@@ -970,7 +1072,12 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit Invoice Settings
+         * @description Save the shop's details and invoice layout to the same synced rows the phone uses,
+         *     so a change on either side shows on both.
+         */
+        patch: operations["edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch"];
         trace?: never;
     };
     "/v1/shops/{shop_id}/members": {
@@ -1067,6 +1174,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/products/price-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Price Preview
+         * @description The price a product would sell at, worked out exactly as billing will.
+         */
+        post: operations["price_preview_v1_shops__shop_id__products_price_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/products/{product_id}": {
         parameters: {
             query?: never;
@@ -1097,6 +1224,92 @@ export interface paths {
         put?: never;
         /** Adjust Stock */
         post: operations["adjust_stock_v1_shops__shop_id__products__product_id__stock_adjustments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Receipts */
+        get: operations["list_receipts_v1_shops__shop_id__purchase_receipts_get"];
+        put?: never;
+        /** Confirm Receipt */
+        post: operations["confirm_receipt_v1_shops__shop_id__purchase_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt Changes */
+        get: operations["receipt_changes_v1_shops__shop_id__purchase_receipts_changes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/import-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Purchase Import */
+        post: operations["preview_purchase_import_v1_shops__shop_id__purchase_receipts_import_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Native Receipt */
+        post: operations["publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt Detail */
+        get: operations["receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1343,6 +1556,40 @@ export interface paths {
         head?: never;
         /** Edit Supplier */
         patch: operations["edit_supplier_v1_shops__shop_id__suppliers__supplier_id__patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Supplier Payment */
+        post: operations["supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Supplier Statement */
+        get: operations["supplier_statement_v1_shops__shop_id__suppliers__supplier_id__statement_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/shops/{shop_id}/sync/pull": {
@@ -1640,6 +1887,20 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /** Candidate */
+        Candidate: {
+            /** Name */
+            name: string;
+            /**
+             * Unit Compatible
+             * @default true
+             */
+            unit_compatible: boolean;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Uuid */
+            uuid: string;
+        };
         /** CartIn */
         CartIn: {
             /**
@@ -1670,12 +1931,28 @@ export interface components {
             /** Place Of Supply State Code */
             place_of_supply_state_code?: string | null;
         };
-        /** CartItem */
+        /**
+         * CartItem
+         * @description A catalogue product, or (owner/admin only) a line that is not in the catalogue:
+         *     then name, unit_price and gst_percent are given and no stock is moved.
+         */
         CartItem: {
+            /** Cost */
+            cost?: number | string | null;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Name */
+            name?: string | null;
             /** Product Uuid */
-            product_uuid: string;
+            product_uuid?: string | null;
             /** Quantity */
             quantity: number | string;
+            /** Unit */
+            unit?: string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
         };
         /** CategoryIn */
         CategoryIn: {
@@ -1715,6 +1992,13 @@ export interface components {
             /** Revenue */
             revenue: string;
         };
+        /** CategoryTotal */
+        CategoryTotal: {
+            /** Amount */
+            amount: string;
+            /** Category */
+            category: string;
+        };
         /** CreditNoteIn */
         CreditNoteIn: {
             /** Quantities */
@@ -1736,6 +2020,80 @@ export interface components {
              */
             settlement: "refund" | "adjust";
         };
+        /** CustomerBill */
+        CustomerBill: {
+            /** Balance Due */
+            balance_due: string;
+            /** Bill Number */
+            bill_number: string;
+            /** Cancelled */
+            cancelled: boolean;
+            /** Created At */
+            created_at: string;
+            /** Document Type */
+            document_type: string | null;
+            /** Paid Amount */
+            paid_amount: string;
+            /** Payment Status */
+            payment_status: string | null;
+            /** Total Amount */
+            total_amount: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** CustomerDetail */
+        CustomerDetail: {
+            /** Bills */
+            bills: components["schemas"]["CustomerBill"][];
+            customer: components["schemas"]["CustomerRow"];
+            /** Payments */
+            payments: components["schemas"]["CustomerPayment"][];
+        };
+        /**
+         * CustomerFields
+         * @description What a person types about a customer. Phone is 10 to 12 digits, as on the phone.
+         */
+        CustomerFields: {
+            /** Address */
+            address?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Gst Legal Name */
+            gst_legal_name?: string | null;
+            /** Gst Trade Name */
+            gst_trade_name?: string | null;
+            /** Gstin */
+            gstin?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Place Of Supply State Code */
+            place_of_supply_state_code?: string | null;
+        };
+        /** CustomerIn */
+        CustomerIn: {
+            /** Address */
+            address?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Gst Legal Name */
+            gst_legal_name?: string | null;
+            /** Gst Trade Name */
+            gst_trade_name?: string | null;
+            /** Gstin */
+            gstin?: string | null;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes?: string | null;
+            /** Phone */
+            phone: string;
+            /** Place Of Supply State Code */
+            place_of_supply_state_code?: string | null;
+        };
         /** CustomerOut */
         CustomerOut: {
             /** Address */
@@ -1750,6 +2108,71 @@ export interface components {
             gstin: string | null;
             /** Name */
             name: string;
+            /** Phone */
+            phone: string | null;
+            /** Place Of Supply State Code */
+            place_of_supply_state_code: string | null;
+            /** Total Purchase Amount */
+            total_purchase_amount: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** CustomerPage */
+        CustomerPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["CustomerRow"][];
+            /** Owing Customers */
+            owing_customers: number;
+            /** Total Due */
+            total_due: string;
+        };
+        /** CustomerPayment */
+        CustomerPayment: {
+            /** Amount */
+            amount: string;
+            /** Bill Number */
+            bill_number: string;
+            /** Bill Uuid */
+            bill_uuid: string;
+            /** Notes */
+            notes: string | null;
+            /** Payment Method */
+            payment_method: string;
+            /** Payment Reference */
+            payment_reference: string | null;
+            /** Received At */
+            received_at: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** CustomerRow */
+        CustomerRow: {
+            /** Address */
+            address: string | null;
+            /** Bill Count */
+            bill_count: number;
+            /** Created At */
+            created_at: string;
+            /** Due */
+            due: string;
+            /** Due Bills */
+            due_bills: number;
+            /** Email */
+            email: string | null;
+            /** Gst Legal Name */
+            gst_legal_name: string | null;
+            /** Gst Trade Name */
+            gst_trade_name: string | null;
+            /** Gstin */
+            gstin: string | null;
+            /** Last Purchase At */
+            last_purchase_at: string | null;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string | null;
             /** Phone */
             phone: string | null;
             /** Place Of Supply State Code */
@@ -1942,6 +2365,71 @@ export interface components {
             /** Category */
             category: string;
         };
+        /** ExpenseFields */
+        ExpenseFields: {
+            /** Amount */
+            amount?: number | string | null;
+            /** Category */
+            category?: string | null;
+            /** Expense Date */
+            expense_date?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Payment Method */
+            payment_method?: ("cash" | "upi" | "card" | "bank") | null;
+        };
+        /** ExpenseIn */
+        ExpenseIn: {
+            /** Amount */
+            amount: number | string;
+            /** Category */
+            category?: string | null;
+            /**
+             * Expense Date
+             * Format: date
+             */
+            expense_date: string;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Payment Method
+             * @default cash
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank";
+        };
+        /** ExpenseOut */
+        ExpenseOut: {
+            /** Amount */
+            amount: string;
+            /** Category */
+            category: string;
+            /** Created At */
+            created_at: string;
+            /** Expense Date */
+            expense_date: string;
+            /** Notes */
+            notes: string | null;
+            /** Payment Method */
+            payment_method: string;
+            /** Updated At */
+            updated_at: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** ExpensePage */
+        ExpensePage: {
+            /** By Category */
+            by_category: components["schemas"]["CategoryTotal"][];
+            /** Cash Total */
+            cash_total: string;
+            /** Categories */
+            categories: string[];
+            /** Items */
+            items: components["schemas"]["ExpenseOut"][];
+            /** Total */
+            total: string;
+        };
         /** Expiring */
         Expiring: {
             /** As Of */
@@ -2024,6 +2512,17 @@ export interface components {
             /** Row */
             row: number;
         };
+        /** ImportPreview */
+        ImportPreview: {
+            /** Fingerprint */
+            fingerprint: string;
+            /** Possible Duplicate */
+            possible_duplicate: boolean;
+            /** Rows */
+            rows: components["schemas"]["ImportRow"][];
+            /** Warnings */
+            warnings: string[];
+        };
         /** ImportReport */
         ImportReport: {
             /** Added */
@@ -2045,6 +2544,31 @@ export interface components {
             skipped: number;
             /** Updated */
             updated: number;
+        };
+        /** ImportRow */
+        ImportRow: {
+            /**
+             * Candidates
+             * @default []
+             */
+            candidates: components["schemas"]["Candidate"][];
+            /** Error */
+            error?: string | null;
+            /**
+             * Identifier Conflict
+             * @default false
+             */
+            identifier_conflict: boolean;
+            item?: components["schemas"]["ReceiptItem-Output"] | null;
+            /** Name */
+            name: string;
+            /** Number */
+            number: number;
+            /**
+             * Requires Choice
+             * @default false
+             */
+            requires_choice: boolean;
         };
         /** InviteIn */
         InviteIn: {
@@ -2081,10 +2605,17 @@ export interface components {
         InvoiceSettings: {
             /** Bank Details */
             bank_details: string | null;
+            /** Digital Signature */
+            digital_signature?: string | null;
             /** Footer Text */
             footer_text: string;
             /** Gst Registered */
             gst_registered: boolean;
+            /**
+             * Gst Scheme
+             * @enum {string}
+             */
+            gst_scheme: "regular" | "composition" | "unregistered";
             /** Invoice Title */
             invoice_title: string;
             /** Paper Size */
@@ -2097,14 +2628,60 @@ export interface components {
             shop_email: string | null;
             /** Shop Gstin */
             shop_gstin: string | null;
+            /** Shop Logo */
+            shop_logo?: string | null;
             /** Shop Name */
             shop_name: string;
             /** Shop Phone */
             shop_phone: string | null;
+            /** Show */
+            show: {
+                [key: string]: boolean;
+            };
             /** Terms Text */
             terms_text: string | null;
             /** Upi Id */
             upi_id: string | null;
+        };
+        /**
+         * InvoiceSettingsIn
+         * @description Owner/admin edits to the shop's details and how invoices look. Omitted fields stay.
+         */
+        InvoiceSettingsIn: {
+            /** Bank Details */
+            bank_details?: string | null;
+            /** Digital Signature */
+            digital_signature?: string | null;
+            /** Footer Text */
+            footer_text?: string | null;
+            /** Gst Scheme */
+            gst_scheme?: ("regular" | "composition" | "unregistered") | null;
+            /** Invoice Title */
+            invoice_title?: string | null;
+            /** Paper Size */
+            paper_size?: ("a4" | "a5") | null;
+            /** Round Off Total */
+            round_off_total?: boolean | null;
+            /** Shop Address */
+            shop_address?: string | null;
+            /** Shop Email */
+            shop_email?: string | null;
+            /** Shop Gstin */
+            shop_gstin?: string | null;
+            /** Shop Logo */
+            shop_logo?: string | null;
+            /** Shop Name */
+            shop_name?: string | null;
+            /** Shop Phone */
+            shop_phone?: string | null;
+            /** Show */
+            show?: {
+                [key: string]: boolean;
+            } | null;
+            /** Terms Text */
+            terms_text?: string | null;
+            /** Upi Id */
+            upi_id?: string | null;
         };
         /** Kpis */
         Kpis: {
@@ -2128,6 +2705,11 @@ export interface components {
             gross_profit: string;
             /** Gst Collected */
             gst_collected: string;
+            /**
+             * Gst Registered
+             * @default false
+             */
+            gst_registered: boolean;
             /** Inventory Value */
             inventory_value: string;
             /** Invoices */
@@ -2354,6 +2936,129 @@ export interface components {
              */
             updated_at: string;
         };
+        /** NativeReceiptIn */
+        NativeReceiptIn: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Invoice Number */
+            invoice_number?: string | null;
+            /** Items */
+            items: components["schemas"]["NativeReceiptLine"][];
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Origin
+             * @default android
+             * @constant
+             */
+            origin: "android";
+            /**
+             * Payment Status
+             * @default not_recorded
+             * @constant
+             */
+            payment_status: "not_recorded";
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Supplier Name */
+            supplier_name?: string | null;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
+        };
+        /** NativeReceiptLine */
+        NativeReceiptLine: {
+            /** Amount */
+            amount: number | string;
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Line Number */
+            line_number: number;
+            /**
+             * Movement Uuid
+             * Format: uuid
+             */
+            movement_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Cost */
+            unit_cost: number | string;
+            /** Unit Name */
+            unit_name?: string | null;
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
+        };
+        /** NewReceiptProduct */
+        "NewReceiptProduct-Input": {
+            /** Barcode */
+            barcode?: string | null;
+            /** Category Name */
+            category_name?: string | null;
+            /** Client Key */
+            client_key: string;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Mrp Price */
+            mrp_price?: number | string | null;
+            /** Name */
+            name: string;
+            /** Product Code */
+            product_code?: string | null;
+            /** Reorder Level */
+            reorder_level?: number | string | null;
+            /** Selling Price */
+            selling_price?: number | string | null;
+            /** Unit Name */
+            unit_name?: string | null;
+        };
+        /** NewReceiptProduct */
+        "NewReceiptProduct-Output": {
+            /** Barcode */
+            barcode?: string | null;
+            /** Category Name */
+            category_name?: string | null;
+            /** Client Key */
+            client_key: string;
+            /** Gst Percent */
+            gst_percent?: string | null;
+            /** Hsn Code */
+            hsn_code?: string | null;
+            /** Mrp Price */
+            mrp_price?: string | null;
+            /** Name */
+            name: string;
+            /** Product Code */
+            product_code?: string | null;
+            /** Reorder Level */
+            reorder_level?: string | null;
+            /** Selling Price */
+            selling_price?: string | null;
+            /** Unit Name */
+            unit_name?: string | null;
+        };
         /** NoteRow */
         NoteRow: {
             /** Bill Number */
@@ -2414,6 +3119,11 @@ export interface components {
             notes?: string | null;
             /** Reference */
             reference?: string | null;
+        };
+        /** PaymentRecorded */
+        PaymentRecorded: {
+            /** Uuid */
+            uuid: string;
         };
         /** PaymentRow */
         PaymentRow: {
@@ -2634,13 +3344,70 @@ export interface components {
             /** Name */
             name: string;
             /** Product Uuid */
-            product_uuid: string;
+            product_uuid: string | null;
             /** Quantity */
             quantity: string;
             /** Taxable Value */
             taxable_value: string;
             /** Unit Price */
             unit_price: string;
+        };
+        /** PricePreviewIn */
+        PricePreviewIn: {
+            /** Category Uuid */
+            category_uuid?: string | null;
+            /** Gst Percent */
+            gst_percent?: number | string | null;
+            /** Overhead Cost */
+            overhead_cost?: number | string | null;
+            /**
+             * Price Mode
+             * @enum {string}
+             */
+            price_mode: "fixed" | "formula";
+            /** Profit Margin Percent */
+            profit_margin_percent?: number | string | null;
+            /** Purchase Price */
+            purchase_price?: number | string | null;
+            /** Selling Price */
+            selling_price?: number | string | null;
+        };
+        /** PricePreviewOut */
+        PricePreviewOut: {
+            /** Category Name */
+            category_name: string | null;
+            /** Gst Percent */
+            gst_percent: string;
+            /** Gst Registered */
+            gst_registered: boolean;
+            /**
+             * Gst Source
+             * @enum {string}
+             */
+            gst_source: "product" | "category" | "shop";
+            /** Output Gst Amount */
+            output_gst_amount: string;
+            /** Overhead Cost */
+            overhead_cost: string;
+            /** Pre Gst Selling Price */
+            pre_gst_selling_price: string;
+            /**
+             * Price Mode
+             * @enum {string}
+             */
+            price_mode: "fixed" | "formula";
+            /** Profit Amount */
+            profit_amount: string;
+            /** Profit Margin Percent */
+            profit_margin_percent: string;
+            /** Purchase Gst Amount */
+            purchase_gst_amount: string;
+            /** Purchase Price */
+            purchase_price: string;
+            /** Selling Price */
+            selling_price: string;
+            /** Total Cost */
+            total_cost: string;
         };
         /** ProductCreate */
         ProductCreate: {
@@ -2660,6 +3427,8 @@ export interface components {
             opening_quantity?: number | string | null;
             /** Overhead Cost */
             overhead_cost?: number | string | null;
+            /** Price Mode */
+            price_mode?: ("fixed" | "formula") | null;
             /** Product Code */
             product_code?: string | null;
             /** Profit Margin Percent */
@@ -2681,6 +3450,7 @@ export interface components {
         ProductDetail: {
             /** Movements */
             movements: components["schemas"]["MovementOut"][];
+            pricing?: components["schemas"]["PricePreviewOut"] | null;
             product: components["schemas"]["ProductOut"];
         };
         /**
@@ -2708,6 +3478,11 @@ export interface components {
             next_expiry: string | null;
             /** Overhead Cost */
             overhead_cost?: string | null;
+            /**
+             * Price Mode
+             * @enum {string}
+             */
+            price_mode: "fixed" | "formula";
             /** Product Code */
             product_code: string | null;
             /** Profit Margin Percent */
@@ -2758,6 +3533,8 @@ export interface components {
             name?: string | null;
             /** Overhead Cost */
             overhead_cost?: number | string | null;
+            /** Price Mode */
+            price_mode?: ("fixed" | "formula") | null;
             /** Product Code */
             product_code?: string | null;
             /** Profit Margin Percent */
@@ -2792,6 +3569,11 @@ export interface components {
             gross_profit: string;
             /** Gst Collected */
             gst_collected: string;
+            /**
+             * Gst Registered
+             * @default false
+             */
+            gst_registered: boolean;
             /** Net Profit */
             net_profit: string;
             /** Sales */
@@ -2883,6 +3665,212 @@ export interface components {
         Receipt: {
             /** Receipt Secret */
             receipt_secret: string;
+        };
+        /** ReceiptIn */
+        ReceiptIn: {
+            /** Allow Duplicate Import Keys */
+            allow_duplicate_import_keys?: string[];
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: number | string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /** Due Date */
+            due_date?: string | null;
+            /** Import Keys */
+            import_keys?: string[];
+            /** Invoice Number */
+            invoice_number?: string | null;
+            /** Items */
+            items: components["schemas"]["ReceiptItem-Input"][];
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Paid In Full
+             * @default false
+             */
+            paid_in_full: boolean;
+            /** Paid Now */
+            paid_now?: number | string | null;
+            /**
+             * Payment Method
+             * @default cash
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /**
+             * Record Payment Terms
+             * @default false
+             */
+            record_payment_terms: boolean;
+            /** Request Key */
+            request_key: string;
+            /** Supplier Uuid */
+            supplier_uuid?: string | null;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
+        };
+        /** ReceiptItem */
+        "ReceiptItem-Input": {
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Import Key */
+            import_key?: string | null;
+            /** Import Row Number */
+            import_row_number?: number | null;
+            new_product?: components["schemas"]["NewReceiptProduct-Input"] | null;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Cost */
+            unit_cost: number | string;
+        };
+        /** ReceiptItem */
+        "ReceiptItem-Output": {
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Import Key */
+            import_key?: string | null;
+            /** Import Row Number */
+            import_row_number?: number | null;
+            new_product?: components["schemas"]["NewReceiptProduct-Output"] | null;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: string;
+            /** Unit Cost */
+            unit_cost: string;
+        };
+        /** ReceiptLineOut */
+        ReceiptLineOut: {
+            /** Amount */
+            amount: string;
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Line Number */
+            line_number: number;
+            /** Movement Uuid */
+            movement_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Cost */
+            unit_cost: string;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** ReceiptOut */
+        ReceiptOut: {
+            /** Balance Due */
+            balance_due?: string | null;
+            /**
+             * Change Sequence
+             * @default 0
+             */
+            change_sequence: number;
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: string;
+            /** Created At */
+            created_at: string;
+            /** Device Created At */
+            device_created_at?: string | null;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: string;
+            /** Due Date */
+            due_date?: string | null;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Items */
+            items: components["schemas"]["ReceiptLineOut"][];
+            /** Notes */
+            notes: string | null;
+            /**
+             * Origin
+             * @default web
+             * @enum {string}
+             */
+            origin: "web" | "android";
+            /**
+             * Paid Amount
+             * @default 0
+             */
+            paid_amount: string;
+            /**
+             * Payment Status
+             * @enum {string}
+             */
+            payment_status: "not_recorded" | "unpaid" | "partial" | "paid";
+            /** Payments */
+            payments?: components["schemas"]["ReceiptPaymentOut"][];
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Supplier Name */
+            supplier_name: string | null;
+            /** Supplier Uuid */
+            supplier_uuid: string | null;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: string;
+            /** Total */
+            total?: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** ReceiptPaymentOut */
+        ReceiptPaymentOut: {
+            /** Amount */
+            amount: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /** Payment Method */
+            payment_method: string;
+            /** Reference */
+            reference: string | null;
+            /** Uuid */
+            uuid: string;
         };
         /** RefreshIn */
         RefreshIn: {
@@ -3019,6 +4007,19 @@ export interface components {
              */
             last_used_at: string;
         };
+        /** SettleIn */
+        SettleIn: {
+            /** Amount */
+            amount: number | string;
+            /**
+             * Method
+             * @default cash
+             * @enum {string}
+             */
+            method: "cash" | "upi" | "card" | "bank" | "online";
+            /** Reference */
+            reference?: string | null;
+        };
         /** ShopCreatedOut */
         ShopCreatedOut: {
             /** Shop Id */
@@ -3087,6 +4088,8 @@ export interface components {
         };
         /** StockValuation */
         StockValuation: {
+            /** Gst Registered */
+            gst_registered: boolean;
             /** Items */
             items: components["schemas"]["StockValueRow"][];
             /** Total Cost */
@@ -3100,6 +4103,8 @@ export interface components {
             category: string | null;
             /** Cost Value */
             cost_value: string;
+            /** Gst Percent */
+            gst_percent: string;
             /** Name */
             name: string;
             /** Quantity */
@@ -3108,6 +4113,8 @@ export interface components {
             sale_value: string;
             /** Unit */
             unit: string | null;
+            /** Unit Cost */
+            unit_cost: string;
         };
         /** SubscriptionChange */
         SubscriptionChange: {
@@ -3144,6 +4151,11 @@ export interface components {
         SupplierOut: {
             /** Address */
             address: string | null;
+            /**
+             * Balance Due
+             * @default 0
+             */
+            balance_due: string;
             /** Email */
             email: string | null;
             /** Gstin */
@@ -3172,6 +4184,76 @@ export interface components {
             /** Phone */
             phone?: string | null;
         };
+        /** SupplierPaymentIn */
+        SupplierPaymentIn: {
+            /** Amount */
+            amount: number | string;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /**
+             * Payment Method
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /** Reference */
+            reference?: string | null;
+            /** Request Key */
+            request_key: string;
+        };
+        /** SupplierPaymentOut */
+        SupplierPaymentOut: {
+            /** Amount */
+            amount: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /** Payment Method */
+            payment_method: string;
+            /** Reference */
+            reference: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** SupplierPurchaseOut */
+        SupplierPurchaseOut: {
+            /** Balance Due */
+            balance_due: string | null;
+            /** Due Date */
+            due_date: string | null;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Paid Amount */
+            paid_amount: string;
+            /** Payment Status */
+            payment_status: string;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Total */
+            total: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** SupplierStatementOut */
+        SupplierStatementOut: {
+            /** Balance Due */
+            balance_due: string;
+            /** Payments */
+            payments: components["schemas"]["SupplierPaymentOut"][];
+            /** Purchases */
+            purchases: components["schemas"]["SupplierPurchaseOut"][];
+        };
         /** TaxRate */
         TaxRate: {
             /** Cgst */
@@ -3191,6 +4273,11 @@ export interface components {
         TaxSummary: {
             /** From */
             from: string;
+            /**
+             * Gst Registered
+             * @default false
+             */
+            gst_registered: boolean;
             /** Rates */
             rates: components["schemas"]["TaxRate"][];
             /** To */
@@ -3310,6 +4397,28 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    health_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
     health_health_get: {
         parameters: {
             query?: never;
@@ -5107,6 +6216,183 @@ export interface operations {
             };
         };
     };
+    create_customer_v1_shops__shop_id__customers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_customers_v1_shops__shop_id__customers_accounts_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                owing?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_customer_v1_shops__shop_id__customers__customer_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_customer_v1_shops__shop_id__customers__customer_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerFields"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settle_v1_shops__shop_id__customers__customer_id__payments_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     entitlement_v1_shops__shop_id__entitlement_get: {
         parameters: {
             query?: never;
@@ -5125,6 +6411,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EntitlementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_expenses_v1_shops__shop_id__expenses_get: {
+        parameters: {
+            query: {
+                start: string;
+                end: string;
+                category?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpensePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_expense_v1_shops__shop_id__expenses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_expense_v1_shops__shop_id__expenses__expense_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                expense_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_expense_v1_shops__shop_id__expenses__expense_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                expense_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseFields"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenseOut"];
                 };
             };
             /** @description Validation Error */
@@ -5244,6 +6666,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceSettingsIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -5505,6 +6962,41 @@ export interface operations {
             };
         };
     };
+    price_preview_v1_shops__shop_id__products_price_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricePreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PricePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     product_detail_v1_shops__shop_id__products__product_id__get: {
         parameters: {
             query?: never;
@@ -5628,6 +7120,209 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QuantityOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_receipts_v1_shops__shop_id__purchase_receipts_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_receipt_v1_shops__shop_id__purchase_receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_changes_v1_shops__shop_id__purchase_receipts_changes_get: {
+        parameters: {
+            query?: {
+                after_sequence?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_purchase_import_v1_shops__shop_id__purchase_receipts_import_preview_post: {
+        parameters: {
+            query: {
+                filename: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeReceiptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
                 };
             };
             /** @description Validation Error */
@@ -6153,6 +7848,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupplierOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecorded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    supplier_statement_v1_shops__shop_id__suppliers__supplier_id__statement_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierStatementOut"];
                 };
             };
             /** @description Validation Error */

@@ -1,11 +1,15 @@
 import { Link, Route, Routes } from 'react-router'
+import { ToastProvider } from './components/Toast'
 import { AuthProvider } from './auth/AuthProvider'
 import { AppLayout } from './components/AppLayout'
 import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
 import { BillsPage } from './billing/BillsPage'
 import { NewBill } from './billing/NewBill'
 import { BillDetailPage } from './billing/BillDetailPage'
+import { InvoiceSettingsPage } from './billing/InvoiceSettingsPage'
 import { ProductsPage } from './products/ProductsPage'
+import { CustomersPage } from './customers/CustomersPage'
+import { ExpensesPage } from './customers/ExpensesPage'
 import { Overview } from './reports/Overview'
 import { ExpiringPage, PurchasesPage, StockValuePage, TaxPage } from './reports/Registers'
 import { ReportsLayout } from './reports/ReportsLayout'
@@ -46,7 +50,7 @@ function NotFound() {
 /** Needs a router and a QueryClientProvider around it (see main.tsx and the tests). */
 export default function App() {
   return (
-    <AuthProvider>
+    <AuthProvider><ToastProvider>
       <Routes>
         <Route element={<PublicOnly />}>
           <Route path="/login" element={<Login />} />
@@ -104,11 +108,21 @@ export default function App() {
                 <Route path="billing/new" element={<NewBill />} />
                 <Route path="billing/:id" element={<BillDetailPage />} />
               </Route>
+              <Route element={<RequireCapability needs="customers.view" />}>
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="customers/:id" element={<CustomersPage />} />
+              </Route>
+              <Route element={<RequireCapability needs="expenses.manage" />}>
+                <Route path="expenses" element={<ExpensesPage />} />
+              </Route>
               <Route element={<RequireCapability needs="team.manage" />}>
                 <Route path="team" element={<Team />} />
               </Route>
               <Route element={<RequireCapability needs="shop.events" />}>
                 <Route path="activity" element={<ShopActivity />} />
+              </Route>
+              <Route element={<RequireCapability needs="shop.settings" />}>
+                <Route path="settings" element={<InvoiceSettingsPage />} />
               </Route>
               </Route>
             </Route>
@@ -116,6 +130,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AuthProvider>
+    </ToastProvider></AuthProvider>
   )
 }

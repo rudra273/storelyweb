@@ -12,6 +12,11 @@ export type Category = S['CategoryOut']
 export type Unit = S['UnitOut']
 export type Supplier = S['SupplierOut']
 export type ImportReport = S['ImportReport']
+export type PriceInput = S['PricePreviewIn']
+export type PricePreview = S['PricePreviewOut']
+
+/** GST slabs offered for products and categories. */
+export const GST_RATES = ['0', '0.25', '3', '5', '12', '18', '28', '40']
 
 export const REASONS: { value: S['AdjustIn']['reason']; label: string; removes: boolean }[] = [
   { value: 'damage', label: 'Damaged', removes: true },
@@ -127,3 +132,15 @@ export function downloadExport(shop: string, format: 'csv' | 'xlsx'): Promise<vo
 }
 
 export { ApiError }
+
+/** The price a product would sell at, worked out on the server exactly as billing will. */
+export function usePricePreview(input: PriceInput | null) {
+  const shop = useShopId()
+  return useQuery({
+    queryKey: ['price-preview', shop, input],
+    queryFn: () => api.post<PricePreview>(`/v1/shops/${shop}/products/price-preview`, input),
+    enabled: !!shop && !!input,
+    placeholderData: previous => previous,
+    retry: false,
+  })
+}

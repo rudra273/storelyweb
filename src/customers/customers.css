@@ -1,0 +1,19 @@
+.customer-summary { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0 0 1rem; }
+.customer-summary > div { display: grid; gap: .15rem; min-width: 10rem; flex: 1 1 10rem; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.customer-summary strong { font-size: 1.25rem; color: var(--navy); }
+.customer-summary .muted { font-size: .82rem; }
+.customer-filters, .expense-filters { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: end; }
+.customer-filters .field { flex: 1 1 18rem; margin: 0; }
+.customer-filters .check { margin-bottom: .55rem; }
+.due-amount { color: var(--danger, #b42318); font-weight: 700; }
+.due-amount small { font-weight: 400; }
+.customer-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); gap: 1rem; align-items: start; }
+.customer-side { display: grid; gap: 1rem; }
+.customer-grid .card { margin: 0; }
+.customer-facts { display: grid; gap: .5rem; margin: 0; }
+.customer-facts > div { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: .5rem; }
+.customer-facts dt { color: var(--muted, #667085); font-size: .85rem; }
+.customer-facts dd { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.row-actions { white-space: nowrap; text-align: right; }
+.row-actions .link + .link { margin-left: .75rem; }
+@media (max-width: 900px) { .customer-grid { grid-template-columns: 1fr; } }

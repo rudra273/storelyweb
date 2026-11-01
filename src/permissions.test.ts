@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import { NAV, can, type Capability } from './permissions'
 
 const ALL: Capability[] = [
-  'products.view', 'products.edit', 'customers.view', 'billing.create', 'billing.cancel',
+  'products.view', 'products.edit', 'customers.view', 'billing.create', 'billing.cancel', 'expenses.manage',
   'reports.view', 'data.export', 'team.manage', 'shop.settings', 'shop.events',
 ]
 
@@ -24,5 +24,5 @@ test('an unknown, empty or tampered role gets nothing', () => {
 
 test('staff never see reports, team or shop activity in the menu', () => {
   const labels = NAV.filter((item) => can('staff', item.needs)).map((item) => item.label)
-  expect(labels).toEqual(['Products', 'Billing'])
+  expect(labels).toEqual(['Products', 'Billing', 'Customers'])
 })

@@ -1,4 +1,5 @@
 import { PageHeader, Toolbar } from '../components/workspace'
+import { day, paymentStatus } from '../components/labels'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Alert, Empty, Field, Loading } from '../components/ui'
@@ -34,7 +35,7 @@ export function BillsPage() {
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}
     {query.data && <>
       {query.data.items.length ? <div className="table-wrap"><table className="table"><thead><tr><th>Number / date</th><th>Customer</th><th>Status</th><th>Total</th><th>Due</th></tr></thead><tbody>
-        {query.data.items.map(b => <tr key={b.uuid}><td><Link to={`/billing/${b.uuid}`}>{b.bill_number}</Link><br /><small>{b.created_at.slice(0, 10)}{b.document_type === 'credit_note' ? ' · Credit note' : ''}</small></td><td>{b.customer_name}</td><td><span className={`payment-badge ${b.cancelled ? 'cancelled' : b.payment_status}`}>{b.cancelled ? 'Cancelled' : b.payment_status === 'partial' ? 'Part paid' : b.payment_status}</span></td><td>{formatMoney(b.total_amount)}</td><td>{formatMoney(b.balance_due)}</td></tr>)}
+        {query.data.items.map(b => <tr key={b.uuid}><td><Link to={`/billing/${b.uuid}`}>{b.bill_number}</Link><br /><small>{day(b.created_at)}{b.document_type === 'credit_note' ? ' · Credit note' : ''}</small></td><td>{b.customer_name}</td><td><span className={`payment-badge ${b.cancelled ? 'cancelled' : b.payment_status}`}>{b.cancelled ? 'Cancelled' : paymentStatus(b.payment_status)}</span></td><td>{formatMoney(b.total_amount)}</td><td>{formatMoney(b.balance_due)}</td></tr>)}
       </tbody></table></div> : <Empty title="No bills found">Create a bill or change the filters.</Empty>}
       <div className="pager"><span className="muted">{query.data.total} documents</span><button disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><button disabled={!query.data.next_cursor} onClick={() => setPage(page + 1)}>Next</button></div>
     </>}

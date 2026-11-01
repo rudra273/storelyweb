@@ -27,7 +27,7 @@ export function Overview() {
                 <Tile label="Average sale" value={formatMoney(k.average_order_value)} note={`${k.discount_rate_percent}% given as discount`} />
                 <Tile label="GST collected" value={formatMoney(k.gst_collected)} />
                 <Tile label="Still to receive" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid bill${k.unpaid_count === 1 ? '' : 's'}, all time`} tone={k.unpaid_count ? 'bad' : undefined} />
-                <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={`${k.out_of_stock_count} out of stock · ${k.low_stock_count} running low`} />
+                <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={`${k.out_of_stock_count} out of stock · ${k.low_stock_count} running low${k.gst_registered ? '' : ' · includes GST paid on purchase'}`} />
               </div>
               {k.daily.length === 0 ? (
                 <Empty title="No sales in this period" />

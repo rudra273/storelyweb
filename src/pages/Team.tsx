@@ -1,4 +1,5 @@
 import { PageHeader } from '../components/workspace'
+import { roleLabel } from '../components/labels'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { api } from '../api/client'
@@ -69,10 +70,10 @@ export function Team() {
                   <td>
                     {editable && role === 'owner' ? (
                       <select aria-label={`Role of ${m.email}`} value={m.role} onChange={(e) => change(m.user_id, e.target.value)} disabled={action.busy}>
-                        <option value="staff">staff</option>
-                        <option value="admin">admin</option>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
                       </select>
-                    ) : m.role}
+                    ) : roleLabel(m.role)}
                   </td>
                   <td>{when(m.created_at)}</td>
                   <td>{editable && <button className="link danger" onClick={() => remove(m)} disabled={action.busy}>Remove</button>}</td>
@@ -90,7 +91,7 @@ export function Team() {
         <ul className="plain">
           {invites.data?.map((i) => (
             <li key={i.id} className="row">
-              <span>{i.email} as <strong>{i.role}</strong> <small className="muted">({when(i.created_at)})</small></span>
+              <span>{i.email} as <strong>{roleLabel(i.role)}</strong> <small className="muted">({when(i.created_at)})</small></span>
               <button className="link danger" onClick={() => cancelInvite(i.id)} disabled={action.busy}>Cancel</button>
             </li>
           ))}
@@ -101,8 +102,8 @@ export function Team() {
             <div className="field">
               <label htmlFor="invite-role">Role</label>
               <select id="invite-role" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
-                <option value="staff">staff</option>
-                <option value="admin">admin</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
               </select>
             </div>
           )}
