@@ -1,8 +1,8 @@
-import { receiptMoney } from './money'
+import { receiptMoney } from './composer/money'
 import { day, paymentStatus } from '../components/labels'
-import { Modal } from '../components/Modal'
+import { Modal } from '../components/ui/Modal'
 import { formatQty } from '../lib/money'
-import type { Receipt } from './contracts'
+import type { Receipt } from './composer/contracts'
 
 export function PurchaseSummary({ receipt }: { receipt: Receipt }) {
   return <>

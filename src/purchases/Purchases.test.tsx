@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { fakeApi, ok, renderApp, SIGNED_IN } from '../test-utils'
-import { draftKey } from './draft'
+import { draftKey } from './composer/draft'
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); localStorage.clear() })
 const PRODUCT = { uuid: 'p1', name: 'Rice', product_code: 'R1', barcode: null, unit_uuid: null, unit_name: 'kg', category_uuid: null, category_name: null, hsn_code: null, gst_percent: null, selling_price: '30', purchase_price: '18', quantity: '10', track_stock: true, low_stock: false, next_expiry: null, reorder_level: null, mrp_price: null, updated_at: '2026-10-01' }

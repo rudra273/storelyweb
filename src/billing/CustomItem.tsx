@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { Button } from '../components/workspace'
-import { Modal } from '../components/Modal'
-import { Alert, Field } from '../components/ui'
+import { Button } from '../components/ui/workspace'
+import { Modal } from '../components/ui/Modal'
+import { Alert, Field } from '../components/ui/ui'
 import { isAmount } from '../lib/money'
 import { GST_RATES } from '../products/queries'
 

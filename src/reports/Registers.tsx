@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router'
 import { day } from '../components/labels'
-import { Alert, Empty } from '../components/ui'
+import { Alert, Empty } from '../components/ui/ui'
 import { formatMoney, formatQty } from '../lib/money'
 import { DownloadBar, PeriodPicker } from './ReportBits'
 import { useReport, useReportDownload, type Expiring, type Gstr1, type Purchases, type StockValuation, type TaxSummary } from './queries'

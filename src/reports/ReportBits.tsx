@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { dayRange } from '../components/labels'
-import { Alert } from '../components/ui'
+import { Alert } from '../components/ui/ui'
 import { describeError } from '../components/useAction'
 import { PRESETS, type Preset } from './periods'
 import type { Period } from './usePeriod'

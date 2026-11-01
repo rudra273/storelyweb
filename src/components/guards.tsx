@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../auth/context'
 import { can, type Capability } from '../permissions'
 import { useShop } from '../shops/context'
-import { Alert, Loading } from './ui'
+import { Alert, Loading } from './ui/ui'
 
 /** Everything inside needs a signed-in visitor. */
 export function RequireAuth() {

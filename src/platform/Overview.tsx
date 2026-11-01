@@ -1,6 +1,6 @@
 import { QueryState } from './Bits'
-import { Card } from '../components/ui'
-import { PageHeader, Button } from '../components/workspace'
+import { Card } from '../components/ui/ui'
+import { PageHeader, Button } from '../components/ui/workspace'
 import { date, usePlatform, type Schemas } from './shared'
 
 export function PlatformOverview() {

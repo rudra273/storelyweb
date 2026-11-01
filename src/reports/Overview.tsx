@@ -1,4 +1,4 @@
-import { Empty } from '../components/ui'
+import { Empty } from '../components/ui/ui'
 import { formatMoney, formatQty } from '../lib/money'
 import { BarChart, HBars } from './charts'
 import { DownloadBar, PeriodPicker, Tile } from './ReportBits'

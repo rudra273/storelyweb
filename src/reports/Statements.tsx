@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router'
 import { paymentMethod } from '../components/labels'
-import { Empty } from '../components/ui'
+import { Empty } from '../components/ui/ui'
 import { formatMoney } from '../lib/money'
 import { DownloadBar, PeriodPicker } from './ReportBits'
 import { today } from './periods'

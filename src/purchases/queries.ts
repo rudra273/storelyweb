@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, request } from '../api/client'
 import { useShop } from '../shops/context'
-import type { ImportPreview, Receipt, ReceiptInput } from './contracts'
+import type { ImportPreview, Receipt, ReceiptInput } from './composer/contracts'
 
 export const RECEIPT_PAGE_SIZE = 25
 export function useReceipts(page: number) {

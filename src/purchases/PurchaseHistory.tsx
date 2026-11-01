@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Modal } from '../components/Modal'
-import { Alert, Loading } from '../components/ui'
-import { Button } from '../components/workspace'
-import { receiptMoney } from './money'
+import { Modal } from '../components/ui/Modal'
+import { Alert, Loading } from '../components/ui/ui'
+import { Button } from '../components/ui/workspace'
+import { receiptMoney } from './composer/money'
 import { PurchaseDetail } from './PurchaseDetail'
 import { RECEIPT_PAGE_SIZE, useReceipts } from './queries'
-import type { Receipt } from './contracts'
+import type { Receipt } from './composer/contracts'
 
 export function PurchaseHistory({ onClose }: { onClose: () => void }) {
   const [page, setPage] = useState(0)

@@ -1,7 +1,7 @@
 import { Link, Outlet } from 'react-router'
 import { useAuth } from '../auth/context'
-import { Alert, Loading } from '../components/ui'
-import { Onboarding } from '../pages/Onboarding'
+import { Alert, Loading } from '../components/ui/ui'
+import { Onboarding } from '../pages/shop/Onboarding'
 import { useShop } from './context'
 import { AccessProvider } from '../subscriptions/AccessProvider'
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Alert, Loading } from '../components/ui'
+import { Alert, Loading } from '../components/ui/ui'
 import { describeError } from '../components/useAction'
 
 /** Loading and error states shared by every report; the report itself renders once data is in. */
