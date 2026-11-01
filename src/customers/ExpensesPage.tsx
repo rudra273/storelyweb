@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { api } from '../api/client'
+import { api, request } from '../api/client'
 import type { components } from '../api/schema'
 import { day, dayRange, paymentMethod } from '../components/labels'
 import { Modal } from '../components/ui/Modal'
@@ -10,6 +10,7 @@ import { Alert, Empty, Field, Loading } from '../components/ui/ui'
 import { describeError, useAction } from '../components/useAction'
 import { PageHeader, Toolbar } from '../components/ui/workspace'
 import { formatMoney } from '../lib/money'
+import { useRetryKey } from '../lib/retryKey'
 import { amountProblem, todayIso } from '../lib/validate'
 import { useShop } from '../shops/context'
 import './customers.css'
@@ -87,6 +88,7 @@ function ExpenseForm({ current, categories, close, saved }: { current?: Expense;
   const shop = useShop().current?.shop_id ?? ''
   const toast = useToast()
   const action = useAction()
+  const retryKey = useRetryKey()
   const { ref: formRef, focusFirstError } = useFirstError()
   const [draft, setDraft] = useState<Draft>(() => ({
     amount: current?.amount ?? '', expense_date: current?.expense_date.slice(0, 10) ?? todayIso(),
@@ -115,7 +117,7 @@ function ExpenseForm({ current, categories, close, saved }: { current?: Expense;
     const body = { ...draft, amount: draft.amount.trim(), notes: draft.notes.trim() || null }
     const ok = await action.run(async () => {
       if (current) await api.patch(`/v1/shops/${shop}/expenses/${current.uuid}`, body)
-      else await api.post(`/v1/shops/${shop}/expenses`, body)
+      else await request('POST', `/v1/shops/${shop}/expenses`, { body, idempotencyKey: retryKey(body) })
       return true
     })
     if (ok) {

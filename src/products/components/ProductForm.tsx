@@ -8,6 +8,7 @@ import { Alert, Field } from '../../components/ui/ui'
 import { useAction } from '../../components/useAction'
 import { decimalOrNull, isAmount } from '../../lib/money'
 import { useDebounced } from '../../lib/useDebounced'
+import { useRetryKey } from '../../lib/retryKey'
 import { GST_RATES, saveProduct, useCategories, usePricePreview, useProductMutation, useUnits, useSuppliers, type PriceInput, type Product } from '../queries'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
@@ -17,6 +18,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   const close = () => { if (!sending.current) onClose() }
   const editing = !!product
   const save = useProductMutation(saveProduct)
+  const retryKey = useRetryKey()
   const categories = useCategories()
   const units = useUnits()
   const suppliers = useSuppliers()
@@ -109,7 +111,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     if (!editing && decimalOrNull(f.opening)) body.opening_quantity = decimalOrNull(f.opening)
     sending.current = true
     try {
-      const saved = await run(() => save.mutateAsync({ id: product?.uuid, body }))
+      const saved = await run(() => save.mutateAsync({ id: product?.uuid, body, retryKey: product ? undefined : retryKey(body) }))
       if (saved) onSaved(saved.product.uuid)
       else setFocusTick(t => t + 1)
     } finally { sending.current = false }

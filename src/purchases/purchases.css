@@ -18,6 +18,8 @@
 .purchase-line select { max-width: 100%; }
 
 .purchase-footer { padding: 10px 0; }
+/* The dialog scrolls and has 1.25rem of padding: stick through it so lines never show beneath the footer. */
+.modal .purchase-footer { bottom: -1.25rem; margin-bottom: -1.25rem; padding-bottom: calc(10px + 1.25rem); }
 .purchase-footer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .purchase-footer-row p { margin: 0; }
 .purchase-footer .actions { margin-top: 0; }

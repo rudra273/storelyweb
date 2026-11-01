@@ -12695,6 +12695,7 @@
     ]
    },
    "post": {
+    "description": "Record an expense. Send an Idempotency-Key and a retry returns the same expense.",
     "operationId": "create_expense_v1_shops__shop_id__expenses_post",
     "parameters": [
      {
@@ -12704,6 +12705,22 @@
       "schema": {
        "title": "Shop Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
       }
      }
     ],
@@ -13398,6 +13415,7 @@
     ]
    },
    "post": {
+    "description": "Add a product. Send an Idempotency-Key and a retry returns the same product.",
     "operationId": "create_product_v1_shops__shop_id__products_post",
     "parameters": [
      {
@@ -13407,6 +13425,22 @@
       "schema": {
        "title": "Shop Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
       }
      }
     ],

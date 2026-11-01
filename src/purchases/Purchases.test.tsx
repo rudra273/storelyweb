@@ -265,7 +265,7 @@ test('purchase saves paid-in-full choice using server total and keeps financial 
 test('the footer shows the server total with charges and warns when payment is not recorded', async () => {
   const calls = setup(); renderApp('/products')
   await openPurchase(); await addRice()
-  expect(await screen.findByText(/Payment is not recorded, so this purchase will not appear in supplier dues/)).toBeInTheDocument()
+  expect(await screen.findByText(/Payment not recorded: left out of supplier dues/)).toBeInTheDocument()
   expect(screen.getByText('₹36.00', { selector: 'strong' })).toBeInTheDocument()
   expect(calls.find(c => c.path.endsWith('/purchase-receipts/preview'))?.body).toEqual({ items: [{ quantity: '1', unit_cost: '18' }] })
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/purchase-receipts'))).toBe(false)

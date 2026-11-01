@@ -1017,7 +1017,10 @@ export interface paths {
         /** List Expenses */
         get: operations["list_expenses_v1_shops__shop_id__expenses_get"];
         put?: never;
-        /** Create Expense */
+        /**
+         * Create Expense
+         * @description Record an expense. Send an Idempotency-Key and a retry returns the same expense.
+         */
         post: operations["create_expense_v1_shops__shop_id__expenses_post"];
         delete?: never;
         options?: never;
@@ -1151,7 +1154,10 @@ export interface paths {
         /** List Products */
         get: operations["list_products_v1_shops__shop_id__products_get"];
         put?: never;
-        /** Create Product */
+        /**
+         * Create Product
+         * @description Add a product. Send an Idempotency-Key and a retry returns the same product.
+         */
         post: operations["create_product_v1_shops__shop_id__products_post"];
         delete?: never;
         options?: never;
@@ -6709,7 +6715,9 @@ export interface operations {
     create_expense_v1_shops__shop_id__expenses_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path: {
                 shop_id: string;
             };
@@ -7109,7 +7117,9 @@ export interface operations {
     create_product_v1_shops__shop_id__products_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path: {
                 shop_id: string;
             };

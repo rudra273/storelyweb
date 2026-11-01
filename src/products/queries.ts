@@ -106,10 +106,11 @@ export function useProductMutation<TIn, TOut>(run: (shop: string, input: TIn) =>
   })
 }
 
-export const saveProduct = (shop: string, input: { id?: string; body: Record<string, unknown> }) =>
+// `retryKey` makes a repeated Add product (after a lost response) return the same product.
+export const saveProduct = (shop: string, input: { id?: string; body: Record<string, unknown>; retryKey?: string }) =>
   input.id
     ? api.patch<ProductDetail>(`/v1/shops/${shop}/products/${input.id}`, input.body)
-    : api.post<ProductDetail>(`/v1/shops/${shop}/products`, input.body)
+    : request<ProductDetail>('POST', `/v1/shops/${shop}/products`, { body: input.body, idempotencyKey: input.retryKey })
 
 export const removeProduct = (shop: string, id: string) => api.delete<void>(`/v1/shops/${shop}/products/${id}?confirm=true`)
 
