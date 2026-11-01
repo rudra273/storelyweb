@@ -64,3 +64,12 @@ test('two shops with one name can be told apart in the switcher', async () => {
   const select = await screen.findByLabelText('Shop', { selector: 'select' })
   expect(within(select).getAllByRole('option').map(o => o.textContent)).toEqual(['abcd · 1111', 'abcd · 2222', 'Other'])
 })
+
+test('the skip link leads to a main area that can take focus', async () => {
+  fakeApi([...SIGNED_IN, OWNER])
+  renderApp('/customers')
+  const skip = await screen.findByRole('link', { name: 'Skip to content' })
+  expect(skip).toHaveAttribute('href', '#main-content')
+  expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content')
+  expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1')
+})
