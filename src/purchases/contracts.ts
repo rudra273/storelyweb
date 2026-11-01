@@ -1,3 +1,4 @@
+import type { components } from '../api/schema'
 // Stock receipt API contracts. Money and quantities travel as decimal strings.
 export interface NewReceiptProduct {
   client_key: string
@@ -22,7 +23,7 @@ export interface ReceiptItemInput {
   batch_no: string | null
   expiry_date: string | null
 }
-export interface ReceiptInput {
+export interface ReceiptInput extends Partial<Pick<components['schemas']['ReceiptIn'], 'tax_amount' | 'charges_amount' | 'discount_amount' | 'record_payment_terms' | 'due_date' | 'paid_now' | 'paid_in_full' | 'payment_method'>> {
   request_key: string
   purchase_date: string
   supplier_uuid: string | null
@@ -41,7 +42,7 @@ export interface ReceiptLine extends ReceiptItemInput {
   movement_uuid: string
   line_number: number
 }
-export interface Receipt {
+export interface Receipt extends Partial<Pick<components['schemas']['ReceiptOut'], 'tax_amount' | 'charges_amount' | 'discount_amount' | 'total' | 'due_date' | 'paid_amount' | 'balance_due' | 'payments'>> {
   uuid: string
   supplier_uuid: string | null
   supplier_name: string | null
@@ -49,7 +50,7 @@ export interface Receipt {
   invoice_number: string | null
   notes: string | null
   subtotal: string
-  payment_status: 'not_recorded'
+  payment_status: 'not_recorded' | 'unpaid' | 'partial' | 'paid'
   created_at: string
   items: ReceiptLine[]
 }

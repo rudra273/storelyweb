@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { fakeApi, ok, renderApp, SIGNED_IN } from '../test-utils'
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 const supplier = { uuid: 'vendor1', name: 'Asha Wholesale', phone: '12345', email: null, gstin: null, address: null, notes: null }
-function setup(role = 'owner', failure = false) {
+function setup(role = 'owner', failure = false, paymentFailure = false) {
   return fakeApi([
     ...SIGNED_IN,
     ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role }]),
@@ -14,6 +14,8 @@ function setup(role = 'owner', failure = false) {
     ok('GET', '/v1/shops/s1/suppliers', [supplier]),
     ok('POST', '/v1/shops/s1/suppliers', failure ? { error: { code: 'duplicate', message: 'Supplier already exists.' } } : supplier, failure ? 409 : 201),
     ok('PATCH', '/v1/shops/s1/suppliers/vendor1', supplier),
+    ok('GET', '/v1/shops/s1/suppliers/vendor1/statement', { balance_due: '100.00', purchases: [], payments: [] }),
+    ok('POST', '/v1/shops/s1/suppliers/vendor1/payments', paymentFailure ? { error: { code: 'unavailable', message: 'Response interrupted.' } } : { uuid: 'payment1' }, paymentFailure ? 500 : 201),
     ok('POST', '/v1/shops/s1/products', { product: { uuid: 'p1' }, movements: [] }),
     ok('GET', '/v1/shops/s1/products/p1', { product: { uuid: 'p1', name: 'Tea', selling_price: '20', quantity: '0', track_stock: true, updated_at: '2026-10-29' }, movements: [] }),
   ])
@@ -70,4 +72,36 @@ test('staff cannot manage suppliers and do not request supplier data', async () 
   await screen.findByText('Ask the owner to add products.')
   expect(screen.queryByRole('button', { name: 'Suppliers' })).not.toBeInTheDocument()
   expect(calls.some(c => c.path.endsWith('/suppliers'))).toBe(false)
+})
+
+async function openStatement() {
+  await userEvent.click(await screen.findByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Suppliers' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Statement and payments' }))
+  await screen.findByText('Balance due:')
+}
+
+test('supplier payment posts a decimal amount with a stable request key', async () => {
+  const calls = setup()
+  renderApp('/products')
+  await openStatement()
+  await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
+  await userEvent.click(screen.getByRole('button', { name: 'Record payment' }))
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/payments'))?.body).toMatchObject({ amount: '25.50', payment_method: 'cash' }))
+  await waitFor(() => expect(screen.getByLabelText('Amount (₹)')).toHaveValue(''))
+  expect(localStorage.getItem('storely.supplier-payment:u1:s1:vendor1')).toBeNull()
+})
+
+test('uncertain supplier payment retries the saved payload', async () => {
+  const calls = setup('owner', false, true)
+  renderApp('/products')
+  await openStatement()
+  await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
+  await userEvent.click(screen.getByRole('button', { name: 'Record payment' }))
+  await screen.findByText('Response interrupted.')
+  expect(screen.getByLabelText('Amount (₹)')).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Retry payment' }))
+  await waitFor(() => expect(calls.filter(c => c.method === 'POST' && c.path.endsWith('/payments'))).toHaveLength(2))
+  const payments = calls.filter(c => c.method === 'POST' && c.path.endsWith('/payments'))
+  expect(payments[0]?.body).toEqual(payments[1]?.body)
 })

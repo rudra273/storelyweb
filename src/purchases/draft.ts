@@ -24,6 +24,14 @@ export interface PurchaseDraft {
   // Freeze the actual request before sending. An uncertain response must be
   // resolved with exactly this payload, even after closing/reloading the app.
   submitted: ReceiptInput | null
+  payment_choice?: 'not_recorded' | 'unpaid' | 'partial' | 'paid'
+  paid_now?: string
+  payment_method?: 'cash' | 'upi' | 'card' | 'bank_transfer' | 'online'
+  tax_amount?: string
+  charges_amount?: string
+  discount_amount?: string
+  record_payment_terms?: boolean
+  due_date?: string
   allow_duplicate_import_keys?: string[]
 }
 export function todayInShop(now = new Date()): string {
@@ -87,6 +95,12 @@ export function validDate(value: string): boolean {
 export function draftError(draft: PurchaseDraft): string | null {
   if (!validDate(draft.purchase_date) || draft.purchase_date > todayInShop()) return 'Choose a valid receipt date up to today.'
   if (new Set(draft.items.flatMap(line => line.import_key ? [line.import_key] : [])).size > 20) return 'A purchase supports up to 20 source files.'
+  if (draft.payment_choice === 'partial' && (!draft.paid_now || !/^\d{1,12}(\.\d{1,2})?$/.test(draft.paid_now) || !/[1-9]/.test(draft.paid_now))) return 'Enter the amount paid now, greater than zero with up to two decimal places.'
+  for (const field of ['tax_amount', 'charges_amount', 'discount_amount'] as const) {
+    if (draft[field] && !/^\d{1,12}(\.\d{1,2})?$/.test(draft[field]!)) return 'Enter tax, charges and discount with up to two decimal places.'
+  }
+  if ((draft.record_payment_terms || draft.payment_choice && draft.payment_choice !== 'not_recorded') && !draft.supplier_uuid) return 'Choose a supplier to record payment terms.'
+  if (draft.due_date && (!validDate(draft.due_date) || draft.due_date < draft.purchase_date)) return 'Choose a due date on or after the purchase date.'
   if (!draft.items.length) return 'Add at least one product.'
   for (const [index, line] of draft.items.entries()) {
     if (amountInCents(line.quantity, line.unit_cost) === null) return `Item ${index + 1}: enter a positive quantity and a non-negative unit cost with up to four decimal places.`
@@ -103,6 +117,12 @@ export function draftError(draft: PurchaseDraft): string | null {
 export function toInput(draft: PurchaseDraft): ReceiptInput {
   return {
     request_key: draft.request_key, purchase_date: draft.purchase_date,
+    ...(draft.tax_amount ? { tax_amount: draft.tax_amount } : {}),
+    ...(draft.charges_amount ? { charges_amount: draft.charges_amount } : {}),
+    ...(draft.discount_amount ? { discount_amount: draft.discount_amount } : {}),
+    ...(draft.payment_choice === 'paid' ? { paid_in_full: true, payment_method: draft.payment_method ?? 'cash' } : {}),
+    ...(draft.payment_choice === 'partial' ? { paid_now: draft.paid_now, payment_method: draft.payment_method ?? 'cash' } : {}),
+    ...(draft.record_payment_terms || draft.payment_choice === 'unpaid' ? { record_payment_terms: true, due_date: draft.due_date || null } : {}),
     supplier_uuid: draft.supplier_uuid || null, invoice_number: draft.invoice_number.trim() || null, notes: draft.notes.trim() || null,
     ...(draft.items.some(line => line.import_key) ? { import_keys: [...new Set(draft.items.flatMap(line => line.import_key ? [line.import_key] : []))].sort(), allow_duplicate_import_keys: draft.allow_duplicate_import_keys?.filter(key => draft.items.some(line => line.import_key === key)) ?? [] } : {}),
     items: draft.items.map(line => ({ product_uuid: line.new_product ? null : line.product_uuid, ...(line.new_product ? { new_product: line.new_product } : {}), ...(line.import_key ? { import_key: line.import_key, import_row_number: line.import_row_number } : {}), quantity: line.quantity.trim(), unit_cost: line.unit_cost.trim(), batch_no: line.batch_no.trim() || null, expiry_date: line.expiry_date || null })),

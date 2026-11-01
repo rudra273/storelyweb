@@ -4831,6 +4831,19 @@
     "title": "PaymentIn",
     "type": "object"
    },
+   "PaymentRecorded": {
+    "properties": {
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid"
+    ],
+    "title": "PaymentRecorded",
+    "type": "object"
+   },
    "PaymentRow": {
     "properties": {
      "amount": {
@@ -6812,6 +6825,44 @@
       "title": "Allow Duplicate Import Keys",
       "type": "array"
      },
+     "charges_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Charges Amount"
+     },
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Amount"
+     },
+     "due_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due Date"
+     },
      "import_keys": {
       "items": {
        "pattern": "^[a-f0-9]{64}$",
@@ -6854,10 +6905,47 @@
       ],
       "title": "Notes"
      },
+     "paid_in_full": {
+      "default": false,
+      "title": "Paid In Full",
+      "type": "boolean"
+     },
+     "paid_now": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Paid Now"
+     },
+     "payment_method": {
+      "default": "cash",
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank_transfer",
+       "online"
+      ],
+      "title": "Payment Method",
+      "type": "string"
+     },
      "purchase_date": {
       "format": "date",
       "title": "Purchase Date",
       "type": "string"
+     },
+     "record_payment_terms": {
+      "default": false,
+      "title": "Record Payment Terms",
+      "type": "boolean"
      },
      "request_key": {
       "pattern": "^[A-Za-z0-9_-]{8,128}$",
@@ -6875,6 +6963,19 @@
        }
       ],
       "title": "Supplier Uuid"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Tax Amount"
      }
     },
     "required": [
@@ -7170,10 +7271,26 @@
    },
    "ReceiptOut": {
     "properties": {
+     "balance_due": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Balance Due"
+     },
      "change_sequence": {
       "default": 0,
       "title": "Change Sequence",
       "type": "integer"
+     },
+     "charges_amount": {
+      "default": "0",
+      "title": "Charges Amount",
+      "type": "string"
      },
      "created_at": {
       "title": "Created At",
@@ -7189,6 +7306,23 @@
        }
       ],
       "title": "Device Created At"
+     },
+     "discount_amount": {
+      "default": "0",
+      "title": "Discount Amount",
+      "type": "string"
+     },
+     "due_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due Date"
      },
      "invoice_number": {
       "anyOf": [
@@ -7228,10 +7362,27 @@
       "title": "Origin",
       "type": "string"
      },
+     "paid_amount": {
+      "default": "0",
+      "title": "Paid Amount",
+      "type": "string"
+     },
      "payment_status": {
-      "const": "not_recorded",
+      "enum": [
+       "not_recorded",
+       "unpaid",
+       "partial",
+       "paid"
+      ],
       "title": "Payment Status",
       "type": "string"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptPaymentOut"
+      },
+      "title": "Payments",
+      "type": "array"
      },
      "purchase_date": {
       "format": "date",
@@ -7264,6 +7415,22 @@
       ],
       "title": "Supplier Uuid"
      },
+     "tax_amount": {
+      "default": "0",
+      "title": "Tax Amount",
+      "type": "string"
+     },
+     "total": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total"
+     },
      "uuid": {
       "title": "Uuid",
       "type": "string"
@@ -7282,6 +7449,59 @@
      "items"
     ],
     "title": "ReceiptOut",
+    "type": "object"
+   },
+   "ReceiptPaymentOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_date": {
+      "format": "date",
+      "title": "Payment Date",
+      "type": "string"
+     },
+     "payment_method": {
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "payment_date",
+     "amount",
+     "payment_method",
+     "reference",
+     "notes"
+    ],
+    "title": "ReceiptPaymentOut",
     "type": "object"
    },
    "RefreshIn": {
@@ -8124,6 +8344,11 @@
       ],
       "title": "Address"
      },
+     "balance_due": {
+      "default": "0",
+      "title": "Balance Due",
+      "type": "string"
+     },
      "email": {
       "anyOf": [
        {
@@ -8267,6 +8492,236 @@
      }
     },
     "title": "SupplierPatch",
+    "type": "object"
+   },
+   "SupplierPaymentIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_date": {
+      "format": "date",
+      "title": "Payment Date",
+      "type": "string"
+     },
+     "payment_method": {
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank_transfer",
+       "online"
+      ],
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     },
+     "request_key": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Request Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request_key",
+     "payment_date",
+     "amount",
+     "payment_method"
+    ],
+    "title": "SupplierPaymentIn",
+    "type": "object"
+   },
+   "SupplierPaymentOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_date": {
+      "format": "date",
+      "title": "Payment Date",
+      "type": "string"
+     },
+     "payment_method": {
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "payment_date",
+     "amount",
+     "payment_method",
+     "reference",
+     "notes"
+    ],
+    "title": "SupplierPaymentOut",
+    "type": "object"
+   },
+   "SupplierPurchaseOut": {
+    "properties": {
+     "balance_due": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Balance Due"
+     },
+     "due_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due Date"
+     },
+     "invoice_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "paid_amount": {
+      "title": "Paid Amount",
+      "type": "string"
+     },
+     "payment_status": {
+      "title": "Payment Status",
+      "type": "string"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "total": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "purchase_date",
+     "invoice_number",
+     "payment_status",
+     "total",
+     "due_date",
+     "paid_amount",
+     "balance_due"
+    ],
+    "title": "SupplierPurchaseOut",
+    "type": "object"
+   },
+   "SupplierStatementOut": {
+    "properties": {
+     "balance_due": {
+      "title": "Balance Due",
+      "type": "string"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/SupplierPaymentOut"
+      },
+      "title": "Payments",
+      "type": "array"
+     },
+     "purchases": {
+      "items": {
+       "$ref": "#/components/schemas/SupplierPurchaseOut"
+      },
+      "title": "Purchases",
+      "type": "array"
+     }
+    },
+    "required": [
+     "purchases",
+     "payments",
+     "balance_due"
+    ],
+    "title": "SupplierStatementOut",
     "type": "object"
    },
    "TaxRate": {
@@ -14276,6 +14731,120 @@
     "summary": "Edit Supplier",
     "tags": [
      "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments": {
+   "post": {
+    "operationId": "supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "supplier_id",
+      "required": true,
+      "schema": {
+       "title": "Supplier Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierPaymentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentRecorded"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Payment",
+    "tags": [
+     "catalog",
+     "supplier payments"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/suppliers/{supplier_id}/statement": {
+   "get": {
+    "operationId": "supplier_statement_v1_shops__shop_id__suppliers__supplier_id__statement_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "supplier_id",
+      "required": true,
+      "schema": {
+       "title": "Supplier Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SupplierStatementOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Supplier Statement",
+    "tags": [
+     "catalog",
+     "supplier payments"
     ]
    }
   },

@@ -1558,6 +1558,40 @@ export interface paths {
         patch: operations["edit_supplier_v1_shops__shop_id__suppliers__supplier_id__patch"];
         trace?: never;
     };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Supplier Payment */
+        post: operations["supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Supplier Statement */
+        get: operations["supplier_statement_v1_shops__shop_id__suppliers__supplier_id__statement_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/sync/pull": {
         parameters: {
             query?: never;
@@ -3086,6 +3120,11 @@ export interface components {
             /** Reference */
             reference?: string | null;
         };
+        /** PaymentRecorded */
+        PaymentRecorded: {
+            /** Uuid */
+            uuid: string;
+        };
         /** PaymentRow */
         PaymentRow: {
             /** Amount */
@@ -3631,6 +3670,18 @@ export interface components {
         ReceiptIn: {
             /** Allow Duplicate Import Keys */
             allow_duplicate_import_keys?: string[];
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: number | string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /** Due Date */
+            due_date?: string | null;
             /** Import Keys */
             import_keys?: string[];
             /** Invoice Number */
@@ -3640,14 +3691,37 @@ export interface components {
             /** Notes */
             notes?: string | null;
             /**
+             * Paid In Full
+             * @default false
+             */
+            paid_in_full: boolean;
+            /** Paid Now */
+            paid_now?: number | string | null;
+            /**
+             * Payment Method
+             * @default cash
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /**
              * Purchase Date
              * Format: date
              */
             purchase_date: string;
+            /**
+             * Record Payment Terms
+             * @default false
+             */
+            record_payment_terms: boolean;
             /** Request Key */
             request_key: string;
             /** Supplier Uuid */
             supplier_uuid?: string | null;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
         };
         /** ReceiptItem */
         "ReceiptItem-Input": {
@@ -3712,15 +3786,29 @@ export interface components {
         };
         /** ReceiptOut */
         ReceiptOut: {
+            /** Balance Due */
+            balance_due?: string | null;
             /**
              * Change Sequence
              * @default 0
              */
             change_sequence: number;
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: string;
             /** Created At */
             created_at: string;
             /** Device Created At */
             device_created_at?: string | null;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: string;
+            /** Due Date */
+            due_date?: string | null;
             /** Invoice Number */
             invoice_number: string | null;
             /** Items */
@@ -3734,10 +3822,17 @@ export interface components {
              */
             origin: "web" | "android";
             /**
-             * Payment Status
-             * @constant
+             * Paid Amount
+             * @default 0
              */
-            payment_status: "not_recorded";
+            paid_amount: string;
+            /**
+             * Payment Status
+             * @enum {string}
+             */
+            payment_status: "not_recorded" | "unpaid" | "partial" | "paid";
+            /** Payments */
+            payments?: components["schemas"]["ReceiptPaymentOut"][];
             /**
              * Purchase Date
              * Format: date
@@ -3749,6 +3844,31 @@ export interface components {
             supplier_name: string | null;
             /** Supplier Uuid */
             supplier_uuid: string | null;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: string;
+            /** Total */
+            total?: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** ReceiptPaymentOut */
+        ReceiptPaymentOut: {
+            /** Amount */
+            amount: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /** Payment Method */
+            payment_method: string;
+            /** Reference */
+            reference: string | null;
             /** Uuid */
             uuid: string;
         };
@@ -4031,6 +4151,11 @@ export interface components {
         SupplierOut: {
             /** Address */
             address: string | null;
+            /**
+             * Balance Due
+             * @default 0
+             */
+            balance_due: string;
             /** Email */
             email: string | null;
             /** Gstin */
@@ -4058,6 +4183,76 @@ export interface components {
             notes?: string | null;
             /** Phone */
             phone?: string | null;
+        };
+        /** SupplierPaymentIn */
+        SupplierPaymentIn: {
+            /** Amount */
+            amount: number | string;
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /**
+             * Payment Method
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /** Reference */
+            reference?: string | null;
+            /** Request Key */
+            request_key: string;
+        };
+        /** SupplierPaymentOut */
+        SupplierPaymentOut: {
+            /** Amount */
+            amount: string;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Payment Date
+             * Format: date
+             */
+            payment_date: string;
+            /** Payment Method */
+            payment_method: string;
+            /** Reference */
+            reference: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** SupplierPurchaseOut */
+        SupplierPurchaseOut: {
+            /** Balance Due */
+            balance_due: string | null;
+            /** Due Date */
+            due_date: string | null;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /** Paid Amount */
+            paid_amount: string;
+            /** Payment Status */
+            payment_status: string;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Total */
+            total: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** SupplierStatementOut */
+        SupplierStatementOut: {
+            /** Balance Due */
+            balance_due: string;
+            /** Payments */
+            payments: components["schemas"]["SupplierPaymentOut"][];
+            /** Purchases */
+            purchases: components["schemas"]["SupplierPurchaseOut"][];
         };
         /** TaxRate */
         TaxRate: {
@@ -7653,6 +7848,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SupplierOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecorded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    supplier_statement_v1_shops__shop_id__suppliers__supplier_id__statement_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierStatementOut"];
                 };
             };
             /** @description Validation Error */

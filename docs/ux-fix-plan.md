@@ -121,10 +121,10 @@ show the same pictures. The API checks the picture type and size.
 ✅ **Get started card:** checked in the browser on a new empty shop (and by tests):
 the three steps show, "Add your first product" opens the form, default units are there.
 
-**Still open: supplier payments and purchase tax (10).** Neither the phone nor the API
+**Supplier payments and purchase tax (10): implemented locally; see the validation section below.** Original approved scope: Neither the phone nor the API
 records these yet: purchase documents are immutable and `payment_status` is fixed to
 `not_recorded` by a database check; the phone's plan lists them as PAY-01 and PUR-02.
-Proposed scope, for approval before building:
+Approved implementation scope:
 
 1. [api] Migration: `supplier_payments` (supplier, date, amount, method, reference,
    notes) and `supplier_payment_allocations` (payment → purchase, amount), plus
@@ -213,3 +213,39 @@ Proposed scope, for approval before building:
   then check it in the browser.
 - [decide] items: agree the rule (check the Android app first) before coding.
 - Any API change that needs a migration: run it on production with the release.
+
+## Supplier accounting implementation in progress (1 Nov 2026)
+
+Migration 0018 adds payment headers/allocations and explicit purchase financial
+amounts. Existing receipts retain Not recorded and no inferred payable balance.
+The API calculates totals, serializes payment allocation under the shop receipt
+lock, rejects overpayments, and replays identical payment requests safely.
+Supplier statements and purchase details expose exact decimal amounts. A payment
+advances each affected receipt's change cursor so phones download its new state.
+
+The web purchase composer accepts GST amount, charges, discount and explicit
+supplier terms/due date. Suppliers → Statement and payments shows the balance,
+purchases and payment history and records a payment. Uncertain requests retain
+their original body/key in browser storage for retry. Android history now displays
+downloaded financial details and payments; applying an update creates no stock.
+
+The remaining payment work is now implemented: Paid now supports Unpaid / Part paid /
+Paid in full, and full payment uses the server total. Inline payment is allocated
+only to its new receipt, atomically with stock. The supplier directory displays
+balances, sorts most owed first and filters to suppliers owed. Android schema 25
+adds a durable supplier-payment queue, admin-only statement/entry UI, pending sync
+counts, stable retry IDs and reconciliation against downloaded purchase payments.
+An interrupted response replays the same request; a rejected payment is retained
+for review and is never automatically re-submitted. Start fresh keeps unsent
+payments local. Android can record payments offline against purchase balances
+already downloaded to the device; new native stock receipts retain their existing
+Not recorded terms until financial purchase entry is added to that composer.
+
+Validation: real browser purchase → partial payment → directory dues → final
+payment → receipt/stock/feed reconciliation (`e2e/supplier-payments.cjs`); real
+Android SQLite/sync engine → TLS API/PostgreSQL → web-side payment → second-device
+restore (`test/supplier_payments_live_test.dart`); native Android emulator screen
+entry and SQLite reopen (`integration_test/supplier_payments_on_device_test.dart`).
+API integration coverage includes allocation, concurrent overpayment prevention,
+request retries/conflicts, unknown terms, access denial and paid-now targeting.
+No production migration or release has been performed.
