@@ -9,7 +9,11 @@ import { useAction } from '../../components/useAction'
 import { decimalOrNull, isAmount } from '../../lib/money'
 import { useDebounced } from '../../lib/useDebounced'
 import { useRetryKey } from '../../lib/retryKey'
+import { useAuth } from '../../auth/context'
+import { useShop } from '../../shops/context'
+import { clearDraft, loadDraft, saveDraft } from '../../lib/drafts'
 import { GST_RATES, saveProduct, useCategories, usePricePreview, useProductMutation, useUnits, useSuppliers, type PriceInput, type Product } from '../queries'
+import { useDirtyClose, useIsDirty } from '../../lib/dirty'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
@@ -31,7 +35,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   const [focusTick, setFocusTick] = useState(0)
   // After a failed save, take the shop owner straight to the first field that needs fixing.
   useEffect(() => { if (focusTick) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus() }, [focusTick])
-  const [f, setF] = useState({
+  const blank = {
     name: product?.name ?? '',
     supplier: product?.supplier_uuid ?? '',
     code: product?.product_code ?? '',
@@ -49,7 +53,23 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     mode: product?.price_mode ?? 'fixed',
     margin: product?.profit_margin_percent ?? '',
     overhead: product?.overhead_cost ?? '',
-  })
+  }
+  type Fields = typeof blank
+  // A new product is kept per person and shop, so a reload or an accidental close does not lose it.
+  const userId = useAuth().user?.id ?? ''
+  const shopId = useShop().current?.shop_id ?? ''
+  const [restored, setRestored] = useState(() => editing ? null : loadDraft<Fields>('product', userId, shopId))
+  const [f, setF] = useState<Fields>(restored?.data ?? blank)
+  const dirtyText = JSON.stringify(f)
+  useEffect(() => {
+    if (editing || !userId || !shopId) return
+    if (dirtyText === JSON.stringify(blank)) clearDraft('product', userId, shopId)
+    else saveDraft('product', userId, shopId, JSON.parse(dirtyText) as Fields)
+  // `blank` is rebuilt from the same props each render; the saved text is what changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirtyText, editing, userId, shopId])
+  const forget = () => { clearDraft('product', userId, shopId); setRestored(null) }
+  const leave = useDirtyClose(useIsDirty(f) || !!restored, () => { if (!editing) clearDraft('product', userId, shopId); close() })
   const formula = f.mode === 'formula'
   // The breakdown comes from the server, so what the owner sees is what billing charges.
   const priceInput: PriceInput | null = (formula ? isAmount(f.purchase) : isAmount(f.selling)) && [f.purchase, f.margin, f.overhead].every(v => !v.trim() || isAmount(v))
@@ -112,14 +132,15 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     sending.current = true
     try {
       const saved = await run(() => save.mutateAsync({ id: product?.uuid, body, retryKey: product ? undefined : retryKey(body) }))
-      if (saved) onSaved(saved.product.uuid)
+      if (saved) { if (!editing) clearDraft('product', userId, shopId); onSaved(saved.product.uuid) }
       else setFocusTick(t => t + 1)
     } finally { sending.current = false }
   }
 
   return (
-    <Modal title={editing ? 'Edit product' : 'Add product'} onClose={close} canClose={!busy} wide>
+    <Modal title={editing ? 'Edit product' : 'Add product'} onClose={leave} canClose={!busy} wide>
       <form ref={formRef} onSubmit={submit} noValidate className="product-form" aria-busy={busy}>
+        {restored && <Alert kind="info">Your unfinished product from {new Date(restored.savedAt).toLocaleString()} was restored. <button type="button" className="link" onClick={() => { forget(); setF(blank) }}>Start again</button></Alert>}
         <p className="muted form-legend">Fields marked <span className="required-mark" aria-hidden="true">*</span> are required. Everything else is optional and can be added later.</p>
         {categories.error && <Alert>Categories could not be loaded. <button type="button" className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
         {units.error && <Alert>Units could not be loaded. <button type="button" className="link" onClick={() => void units.refetch()}>Retry units</button></Alert>}
@@ -187,7 +208,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
         {/* Next to the Save button, where the eye is after clicking it. */}
         {error && <Alert>{error}</Alert>}
         <div className="actions form-footer">
-          <Button disabled={busy} onClick={close}>Cancel</Button>
+          <Button disabled={busy} onClick={leave}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
         </div>
       </form>

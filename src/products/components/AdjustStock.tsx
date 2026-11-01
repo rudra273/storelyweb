@@ -6,6 +6,7 @@ import { Alert, Field } from '../../components/ui/ui'
 import { useAction } from '../../components/useAction'
 import { formatQty, isAmount } from '../../lib/money'
 import { adjustStock, REASONS, useProductMutation, type Product } from '../queries'
+import { useDirtyClose, useIsDirty } from '../../lib/dirty'
 
 export function AdjustStock({ product, onClose }: { product: Product; onClose: () => void }) {
   const sending = useRef(false)
@@ -18,6 +19,7 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState<string>(direction === 'remove' ? 'damage' : 'return')
   const [note, setNote] = useState('')
+  const leave = useDirtyClose(useIsDirty([direction, amount, reason, note]), close)
   const reasons = REASONS.filter((r) => (direction === 'remove' ? r.removes || r.value === 'count' || r.value === 'other' : !r.removes))
 
   async function submit(e: FormEvent) {
@@ -35,7 +37,7 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
   }
 
   return (
-    <Modal title={`Adjust stock · ${product.name}`} onClose={close} canClose={!busy}>
+    <Modal title={`Adjust stock · ${product.name}`} onClose={leave} canClose={!busy}>
       <form onSubmit={submit} noValidate aria-busy={busy}>
         <p className="muted">
           Now in stock: <strong>{formatQty(product.quantity)}</strong> {product.unit_name ?? ''}
@@ -69,7 +71,7 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
         </div>
         <Field label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} />
         </fieldset><div className="actions">
-          <Button disabled={busy} onClick={close}>Cancel</Button>
+          <Button disabled={busy} onClick={leave}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : 'Save'}</Button>
         </div>
       </form>

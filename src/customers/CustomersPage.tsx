@@ -16,6 +16,7 @@ import { useDebounced } from '../lib/useDebounced'
 import { amountProblem, emailProblem, gstinProblem, phoneLabel, phoneProblem } from '../lib/validate'
 import { useShop } from '../shops/context'
 import './customers.css'
+import { useDirtyClose, useIsDirty } from '../lib/dirty'
 
 type S = components['schemas']
 type Row = S['CustomerRow']
@@ -160,6 +161,7 @@ export function CustomerForm({ current, close, saved }: { current?: Row; close: 
   const action = useAction()
   const [draft, setDraft] = useState<Draft>(() => Object.fromEntries(KEYS.map(k => [k, current?.[k] ?? ''])) as Draft)
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({})
+  const leave = useDirtyClose(useIsDirty(draft), close)
   const { ref: formRef, focusFirstError } = useFirstError()
   const set = (k: keyof Draft) => (e: { target: { value: string } }) => {
     setDraft({ ...draft, [k]: e.target.value })
@@ -187,7 +189,7 @@ export function CustomerForm({ current, close, saved }: { current?: Row; close: 
     }
   }
   const err = (k: keyof Draft) => errors[k] ?? action.fieldErrors[k]
-  return <Modal title={current ? 'Edit customer' : 'Add customer'} onClose={close} canClose={!action.busy}>
+  return <Modal title={current ? 'Edit customer' : 'Add customer'} onClose={leave} canClose={!action.busy}>
     <form ref={formRef} onSubmit={submit} noValidate><fieldset disabled={action.busy}>
       <p className="muted form-legend">Fields marked <span className="required-mark" aria-hidden="true">*</span> are required.</p>
       <Field label="Name" required maxLength={120} autoFocus value={draft.name} onChange={set('name')} error={err('name')} />
@@ -203,7 +205,7 @@ export function CustomerForm({ current, close, saved }: { current?: Row; close: 
       <label className="field-block">Notes<textarea rows={2} maxLength={500} value={draft.notes} onChange={set('notes')} /></label>
     </fieldset>
     {action.error && <Alert>{action.error}</Alert>}
-    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? 'Save customer' : 'Add customer'}</button><button type="button" onClick={close} disabled={action.busy}>Cancel</button></div>
+    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? 'Save customer' : 'Add customer'}</button><button type="button" onClick={leave} disabled={action.busy}>Cancel</button></div>
     </form>
   </Modal>
 }
@@ -217,6 +219,7 @@ function SettleDialog({ customer, close, saved }: { customer: Row; close: () => 
   const [amount, setAmount] = useState(customer.due)
   const [method, setMethod] = useState<(typeof METHODS)[number]>('cash')
   const [reference, setReference] = useState('')
+  const leave = useDirtyClose(useIsDirty([amount, method, reference]), close)
   const [problem, setProblem] = useState<string | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
@@ -242,7 +245,7 @@ function SettleDialog({ customer, close, saved }: { customer: Row; close: () => 
       if (err instanceof ApiError && err.status >= 400 && err.status < 500 && err.code !== 'idempotency_conflict') setAttempt(null)
     } finally { setBusy(false) }
   }
-  return <Modal title="Record payment" onClose={close} canClose={!busy && !attempt}>
+  return <Modal title="Record payment" onClose={leave} canClose={!busy && !attempt}>
     <form onSubmit={submit} noValidate><fieldset disabled={busy || !!attempt}>
       <p>{customer.name} owes <strong>{formatMoney(customer.due)}</strong> on {customer.due_bills} {customer.due_bills === 1 ? 'bill' : 'bills'}. The payment is put against the oldest bill first.</p>
       <Field label="Amount received (₹)" required type="text" inputMode="decimal" value={amount} onChange={e => { setAmount(e.target.value); setProblem(null) }} error={problem ?? undefined} />
@@ -250,7 +253,7 @@ function SettleDialog({ customer, close, saved }: { customer: Row; close: () => 
       <Field label="Reference" maxLength={100} placeholder="UPI or cheque number" value={reference} onChange={e => setReference(e.target.value)} />
     </fieldset>
     {!!error && <Alert>{describeError(error)} {attempt ? 'Details are locked. Retry to safely confirm the same payment.' : ''}</Alert>}
-    <div className="actions"><button className="primary" disabled={busy}>{busy ? 'Saving…' : attempt ? 'Retry payment' : 'Record payment'}</button><button type="button" onClick={close} disabled={busy || !!attempt}>Cancel</button></div>
+    <div className="actions"><button className="primary" disabled={busy}>{busy ? 'Saving…' : attempt ? 'Retry payment' : 'Record payment'}</button><button type="button" onClick={leave} disabled={busy || !!attempt}>Cancel</button></div>
     </form>
   </Modal>
 }

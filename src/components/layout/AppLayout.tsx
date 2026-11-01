@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../auth/context'
+import { useConfirmLeave } from '../../lib/dirty'
 import { NAV, can } from '../../permissions'
 import { useShop } from '../../shops/context'
 import { useShopAccess } from '../../subscriptions/context'
@@ -9,6 +10,7 @@ export function AppLayout() {
   const { user, logout } = useAuth()
   const { shops, current, role, select } = useShop()
   const { active, pending } = useShopAccess()
+  const confirmLeave = useConfirmLeave()
   const navigate = useNavigate()
   const location = useLocation()
   const page = NAV.find(item => location.pathname.startsWith(item.to))?.label ?? (location.pathname.startsWith('/account') ? 'Your account' : location.pathname === '/subscription' ? 'Cloud subscription' : 'Overview')
@@ -28,7 +30,7 @@ export function AppLayout() {
           {shops.length > 1 ? (
             <label className="shop-switch">
               <span>Shop</span>
-              <select aria-label="Shop" value={current?.shop_id ?? ''} onChange={(e) => select(e.target.value)}>
+              <select aria-label="Shop" value={current?.shop_id ?? ''} onChange={(e) => { if (confirmLeave('Switch shop? Changes you have not saved in this shop will be lost.')) select(e.target.value) }}>
                 {shops.map((s) => (
                   <option key={s.shop_id} value={s.shop_id}>
                     {s.name}
@@ -67,7 +69,7 @@ export function AppLayout() {
           </nav>
         </div>
       </aside>
-      <div className="workspace"><header className="workspace-header"><span>Workspace <span className="breadcrumb-divider">/</span> <strong>{page}</strong></span><span className="workspace-shop">{current?.name}</span></header><main className="content" id="main-content"><Outlet /></main></div>
+      <div className="workspace"><header className="workspace-header"><span>Workspace <span className="breadcrumb-divider">/</span> <strong>{page}</strong></span><span className="workspace-shop">{current?.name}</span></header><main className="content" id="main-content"><Outlet key={current?.shop_id} /></main></div>
     </div>
   )
 }

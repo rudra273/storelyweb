@@ -17,6 +17,7 @@ import { useShop } from '../shops/context'
 import { Invoice } from './invoice/Invoice'
 type ReturnPreview = components['schemas']['ReturnPreview']
 import { useBillingMutation, useBillingQuery, type BillDetail, type PaymentInput, type CreditInput } from './queries'
+import { useDirtyClose, useIsDirty } from '../lib/dirty'
 
 export function BillDetailPage() {
   const { id } = useParams()
@@ -70,6 +71,7 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
   const [attempt, setAttempt] = useState<Attempt | null>(null)
   const sending = useRef(false)
   const toast = useToast()
+  const leave = useDirtyClose(useIsDirty([amount, method, reason, reference, settlement, quantities]) && !attempt, close)
   const shop = useShop().current?.shop_id ?? ''
   // The server prices the return (earlier returns, tax, round-off) before anything is saved.
   const picked = Object.fromEntries(Object.entries(quantities).filter(([, q]) => Number(q) > 0))
@@ -100,7 +102,7 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
     } finally { sending.current = false }
   }
   const title = action === 'payment' ? 'Record payment' : action === 'cancel' ? 'Cancel document' : 'Return items'
-  return <Modal title={title} canClose={!mutation.isPending && !attempt} onClose={() => { if (!mutation.isPending && !attempt) close() }}><form onSubmit={submit}><fieldset disabled={mutation.isPending || !!attempt}>
+  return <Modal title={title} canClose={!mutation.isPending && !attempt} onClose={() => { if (!mutation.isPending && !attempt) leave() }}><form onSubmit={submit}><fieldset disabled={mutation.isPending || !!attempt}>
     {action === 'cancel' && <Alert kind="info">This cancels the document and reverses its stock movements.</Alert>}
     {action === 'payment' && <Field label="Amount (₹)" type="number" min="0.01" max={detail.bill.balance_due} step="0.01" required value={amount} onChange={e => setAmount(e.target.value)} />}
     {action === 'return' && <>
@@ -123,6 +125,6 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
     {action === 'payment' && <Field label="Reference" maxLength={100} value={reference} onChange={e => setReference(e.target.value)} />}
     <Field label={action === 'payment' ? 'Notes' : 'Reason'} maxLength={200} value={reason} onChange={e => setReason(e.target.value)} />
     </fieldset>{mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Details are locked. Retry to safely confirm the original request.' : 'Check the bill before trying again if the connection was interrupted.'}</Alert>}
-    <div className="actions"><button className={action === 'cancel' ? 'danger-button' : 'primary'} disabled={mutation.isPending || uncertainCancel || (action === 'return' && !attempt && !(Object.keys(picked).length > 0 && reviewCurrent && review.data.can_return))}>{mutation.isPending ? 'Saving…' : attempt ? `Retry ${action === 'payment' ? 'payment' : 'return'}` : title}</button><button type="button" disabled={mutation.isPending || !!attempt} onClick={close}>Close</button></div>
+    <div className="actions"><button className={action === 'cancel' ? 'danger-button' : 'primary'} disabled={mutation.isPending || uncertainCancel || (action === 'return' && !attempt && !(Object.keys(picked).length > 0 && reviewCurrent && review.data.can_return))}>{mutation.isPending ? 'Saving…' : attempt ? `Retry ${action === 'payment' ? 'payment' : 'return'}` : title}</button><button type="button" disabled={mutation.isPending || !!attempt} onClick={leave}>Close</button></div>
   </form></Modal>
 }

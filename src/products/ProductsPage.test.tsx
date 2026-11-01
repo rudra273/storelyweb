@@ -122,6 +122,24 @@ test('adding a product sends decimals as strings and rejects typos before callin
   expect(calls.some((c) => c.method === 'POST' && c.path.endsWith('/products'))).toBe(false)
 })
 
+test('an unfinished new product comes back after the form is lost, and Start again clears it', async () => {
+  setup('owner', [{ ...RICE, ...COST }])
+  const first = renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  await userEvent.type(within(await screen.findByRole('dialog', { hidden: true })).getByLabelText('Product name'), 'Tea')
+  first.unmount()
+
+  setup('owner', [{ ...RICE, ...COST }])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const form = await screen.findByRole('dialog', { hidden: true })
+  expect(within(form).getByLabelText('Product name')).toHaveValue('Tea')
+  expect(within(form).getByText(/unfinished product from/)).toBeInTheDocument()
+  await userEvent.click(within(form).getByRole('button', { name: 'Start again' }))
+  expect(within(form).getByLabelText('Product name')).toHaveValue('')
+  expect(Object.keys(localStorage).filter(k => k.startsWith('storely.draft.product'))).toEqual([])
+})
+
 test('barcode labels accept ordinary codes and refuse what Code 128 cannot hold', () => {
   expect(canEncode('8901234567890')).toBe(true)
   expect(canEncode('P3F9A2C1')).toBe(true)

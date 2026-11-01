@@ -14,6 +14,7 @@ import { useRetryKey } from '../lib/retryKey'
 import { amountProblem, todayIso } from '../lib/validate'
 import { useShop } from '../shops/context'
 import './customers.css'
+import { useDirtyClose, useIsDirty } from '../lib/dirty'
 
 type S = components['schemas']
 type Expense = S['ExpenseOut']
@@ -96,6 +97,7 @@ function ExpenseForm({ current, categories, close, saved }: { current?: Expense;
     notes: current?.notes ?? '',
   }))
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({})
+  const leave = useDirtyClose(useIsDirty(draft), close)
   const options = categories.includes(draft.category) ? categories : [...categories, draft.category]
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => {
     setDraft({ ...draft, [k]: v })
@@ -126,7 +128,7 @@ function ExpenseForm({ current, categories, close, saved }: { current?: Expense;
     }
   }
   const err = (k: keyof Draft) => errors[k] ?? action.fieldErrors[k]
-  return <Modal title={current ? 'Edit expense' : 'Add expense'} onClose={close} canClose={!action.busy}>
+  return <Modal title={current ? 'Edit expense' : 'Add expense'} onClose={leave} canClose={!action.busy}>
     <form ref={formRef} onSubmit={submit} noValidate><fieldset disabled={action.busy}>
       <p className="muted form-legend">Fields marked <span className="required-mark" aria-hidden="true">*</span> are required.</p>
       <Field label="Amount (₹)" required inputMode="decimal" autoFocus placeholder="0.00" value={draft.amount} onChange={e => set('amount', e.target.value)} error={err('amount')} />
@@ -136,7 +138,7 @@ function ExpenseForm({ current, categories, close, saved }: { current?: Expense;
       <label className="field-block">Notes<textarea rows={2} maxLength={300} placeholder="What it was for" value={draft.notes} onChange={e => set('notes', e.target.value)} /></label>
     </fieldset>
     {action.error && <Alert>{action.error}</Alert>}
-    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? 'Save expense' : 'Add expense'}</button><button type="button" onClick={close} disabled={action.busy}>Cancel</button></div>
+    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? 'Save expense' : 'Add expense'}</button><button type="button" onClick={leave} disabled={action.busy}>Cancel</button></div>
     </form>
   </Modal>
 }
