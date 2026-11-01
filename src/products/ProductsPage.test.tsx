@@ -138,6 +138,12 @@ test('an unfinished new product comes back after the form is lost, and Start aga
   await userEvent.click(within(form).getByRole('button', { name: 'Start again' }))
   expect(within(form).getByLabelText('Product name')).toHaveValue('')
   expect(Object.keys(localStorage).filter(k => k.startsWith('storely.draft.product'))).toEqual([])
+  // A form that is blank again closes without asking to discard anything.
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  await userEvent.click(within(form).getByRole('button', { name: 'Cancel' }))
+  expect(confirm).not.toHaveBeenCalled()
+  await waitFor(() => expect(screen.queryByRole('dialog', { hidden: true })).not.toBeInTheDocument())
+  confirm.mockRestore()
 })
 
 test('barcode labels accept ordinary codes and refuse what Code 128 cannot hold', () => {

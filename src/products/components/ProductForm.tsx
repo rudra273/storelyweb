@@ -13,7 +13,7 @@ import { useAuth } from '../../auth/context'
 import { useShop } from '../../shops/context'
 import { clearDraft, loadDraft, saveDraft } from '../../lib/drafts'
 import { GST_RATES, saveProduct, useCategories, usePricePreview, useProductMutation, useUnits, useSuppliers, type PriceInput, type Product } from '../queries'
-import { useDirtyClose, useIsDirty } from '../../lib/dirty'
+import { useDirtyClose } from '../../lib/dirty'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
@@ -69,7 +69,8 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dirtyText, editing, userId, shopId])
   const forget = () => { clearDraft('product', userId, shopId); setRestored(null) }
-  const leave = useDirtyClose(useIsDirty(f) || !!restored, () => { if (!editing) clearDraft('product', userId, shopId); close() })
+  // Dirty means different from a fresh form, so a restored draft counts and "Start again" does not.
+  const leave = useDirtyClose(dirtyText !== JSON.stringify(blank), () => { if (!editing) clearDraft('product', userId, shopId); close() })
   const formula = f.mode === 'formula'
   // The breakdown comes from the server, so what the owner sees is what billing charges.
   const priceInput: PriceInput | null = (formula ? isAmount(f.purchase) : isAmount(f.selling)) && [f.purchase, f.margin, f.overhead].every(v => !v.trim() || isAmount(v))

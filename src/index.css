@@ -550,3 +550,6 @@ dialog.modal { margin-top: 6vh; margin-bottom: auto; max-height: 88vh; }
 .invoice.thermal .invoice-head.with-logo { display: block; }
 .invoice.thermal .invoice-logo { display: block; margin: 0 auto .3rem; max-width: 60%; max-height: 56px; }
 .invoice-signature { display: inline-block; max-width: 160px; max-height: 56px; object-fit: contain; margin: .3rem 0; }
+
+/* A dialog's actions stay in view while its body scrolls. The dialog pads 1.25rem, so stick through it. */
+.modal .sticky-actions { position: sticky; bottom: -1.25rem; margin-bottom: -1.25rem; padding: .75rem 0 1.25rem; background: var(--surface); border-top: 1px solid var(--line); }
