@@ -1,4 +1,5 @@
 import { Empty } from '../components/ui/ui'
+import { KpiSkeletons } from '../components/ui/states'
 import { formatMoney, formatQty } from '../lib/money'
 import { BarChart, HBars } from './charts'
 import { DownloadBar, PeriodPicker, Tile } from './ReportBits'
@@ -15,12 +16,12 @@ export function Overview() {
     <div>
       <PeriodPicker period={period} />
       {period.invalid ? <Empty title="Pick a start and an end date">The start must not be after the end.</Empty> : (
-        <State query={query}>
+        <State query={query} fallback={<KpiSkeletons count={8} />}>
           {(k) => (
             <>
               <DownloadBar save={save} />
               <div className="kpis">
-                <Tile label="Sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'}, net of returns`} />
+                <Tile label="Sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'}, net of returns`} trend={k.daily.map(d => ({ label: d.day, value: Number(d.revenue) }))} trendTitle="Sales by day" />
                 <Tile label="Money received" value={formatMoney(k.collected)} />
                 <Tile label="Gross profit" value={formatMoney(k.gross_profit)} note={`${k.gross_margin_percent}% margin${k.uncosted_item_count ? ` · ${k.uncosted_item_count} sold item${k.uncosted_item_count === 1 ? '' : 's'} with no cost price left out` : ''}`} tone={Number(k.gross_profit) < 0 ? 'bad' : 'good'} />
                 <Tile label="Expenses" value={formatMoney(k.expenses)} />

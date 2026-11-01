@@ -70,12 +70,4 @@ export function DownloadBar({ save, excelOnly = false }: { save: (format: 'csv' 
   )
 }
 
-export function Tile({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: 'good' | 'bad' }) {
-  return (
-    <div className="kpi">
-      <span className="kpi-label">{label}</span>
-      <strong className={tone ? `kpi-value ${tone}` : 'kpi-value'}>{value}</strong>
-      {note && <small className="muted">{note}</small>}
-    </div>
-  )
-}
+export { Kpi as Tile } from '../components/ui/Kpi'

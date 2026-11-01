@@ -7,6 +7,7 @@ import { can } from '../../permissions'
 import { useShop } from '../../shops/context'
 import { shopLabel } from '../../shops/label'
 import { useShopAccess } from '../../subscriptions/context'
+import { OfflineBanner } from '../ui/states'
 import { AccountMenu } from './AccountMenu'
 import { NavIcon } from './NavIcon'
 
@@ -85,7 +86,7 @@ export function AppLayout() {
         </div>
       </aside>
       {open && <div className="drawer-backdrop" onClick={() => setOpen(false)} aria-hidden="true" />}
-      <div className="workspace"><header className="workspace-header"><span>Workspace {meta.crumbs.map((c, i) => <span key={c}><span className="breadcrumb-divider">/</span>{i === meta.crumbs.length - 1 ? <strong aria-current="page">{c}</strong> : c}</span>)}</span><span className="workspace-shop" title={currentLabel}>{currentLabel}</span></header><main className="content" id="main-content"><Outlet key={current?.shop_id} /></main></div>
+      <div className="workspace"><OfflineBanner /><header className="workspace-header"><span>Workspace {meta.crumbs.map((c, i) => <span key={c}><span className="breadcrumb-divider">/</span>{i === meta.crumbs.length - 1 ? <strong aria-current="page">{c}</strong> : c}</span>)}</span><span className="workspace-shop" title={currentLabel}>{currentLabel}</span></header><main className="content" id="main-content"><Outlet key={current?.shop_id} /></main></div>
     </div>
   )
 }

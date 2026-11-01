@@ -8,6 +8,7 @@ import { useShop } from '../../shops/context'
 import { Tile } from '../../reports/ReportBits'
 import { useReport, type Kpis } from '../../reports/queries'
 import { State } from '../../reports/State'
+import { KpiSkeletons } from '../../components/ui/states'
 import { today } from '../../reports/periods'
 import { formatMoney } from '../../lib/money'
 
@@ -34,7 +35,7 @@ function DailySummary() {
   const day = today()
   const query = useReport<Kpis>('kpis', { from: day, to: day })
   return <section aria-labelledby="daily-heading"><div className="section-heading"><div><h2 id="daily-heading">Today at a glance</h2><p className="muted">Sales and collections for today. Stock and unpaid bills across your shop.</p></div><Link to="/reports">View reports →</Link></div>
-    <State query={query}>{k => <>
+    <State query={query} fallback={<KpiSkeletons count={4} className="kpis home-kpis" />}>{k => <>
       <div className="kpis home-kpis">
         <Tile label="Today’s sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'} · net of returns`} />
         <Tile label="Money received today" value={formatMoney(k.collected)} />
