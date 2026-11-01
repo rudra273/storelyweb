@@ -4,6 +4,7 @@ import { Alert, Field } from '../../components/ui/ui'
 import { Button } from '../../components/ui/workspace'
 import { useAction } from '../../components/useAction'
 import { saveSupplier, useProductMutation, type Supplier } from '../queries'
+import { ACTION } from '../../lib/vocabulary'
 
 export function SupplierEditor({ supplier, onClose, onSaved }: { supplier?: Supplier; onClose: () => void; onSaved: (supplier: Supplier) => void }) {
   const sending = useRef(false)
@@ -31,7 +32,7 @@ export function SupplierEditor({ supplier, onClose, onSaved }: { supplier?: Supp
           {(['phone', 'email', 'gstin', 'address', 'notes'] as const).map(key => <Field key={key} maxLength={{ phone: 30, email: 254, gstin: 20, address: 500, notes: 500 }[key]} label={{ phone: 'Phone', email: 'Email', gstin: 'GSTIN', address: 'Address', notes: 'Notes' }[key]} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />)}
         </details>
       </fieldset>
-      <div className="actions"><Button disabled={busy} onClick={close}>Cancel</Button><Button type="submit" variant="primary" disabled={busy || !form.name.trim()}>{busy ? 'Saving…' : 'Save supplier'}</Button></div>
+      <div className="actions"><Button disabled={busy} onClick={close}>Cancel</Button><Button type="submit" variant="primary" disabled={busy || !form.name.trim()}>{busy ? 'Saving…' : supplier ? ACTION.saveChanges : 'Add supplier'}</Button></div>
     </form>
   </Modal>
 }

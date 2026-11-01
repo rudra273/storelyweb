@@ -17,6 +17,7 @@ import { amountProblem, emailProblem, gstinProblem, phoneLabel, phoneProblem } f
 import { useShop } from '../shops/context'
 import './customers.css'
 import { useDirtyClose, useIsDirty } from '../lib/dirty'
+import { ACTION } from '../lib/vocabulary'
 
 type S = components['schemas']
 type Row = S['CustomerRow']
@@ -61,12 +62,12 @@ function CustomerList() {
     {query.isPending && <Loading />}
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}
     {query.data && <>
-      {query.data.items.length ? <div className="table-wrap"><table className="table customer-table"><thead><tr><th>Customer</th><th>Bills</th><th>Bought</th><th>Last bill</th><th>Due</th></tr></thead><tbody>
+      {query.data.items.length ? <div className="table-wrap"><table className="table customer-table"><thead><tr><th>Customer</th><th className="hide-sm">Bills</th><th className="hide-sm">Bought</th><th className="hide-sm">Last bill</th><th>Due</th></tr></thead><tbody>
         {query.data.items.map(c => <tr key={c.uuid}>
           <td><Link to={`/customers/${c.uuid}`}>{c.name}</Link><br /><small className="muted">{phoneLabel(c.phone)}</small></td>
-          <td>{c.bill_count}</td>
-          <td>{formatMoney(c.total_purchase_amount)}</td>
-          <td>{c.last_purchase_at ? day(c.last_purchase_at) : '—'}</td>
+          <td className="hide-sm">{c.bill_count}</td>
+          <td className="hide-sm">{formatMoney(c.total_purchase_amount)}</td>
+          <td className="hide-sm">{c.last_purchase_at ? day(c.last_purchase_at) : '—'}</td>
           <td>{Number(c.due) > 0 ? <span className="due-amount">{formatMoney(c.due)}<small className="muted"> · {c.due_bills} {c.due_bills === 1 ? 'bill' : 'bills'}</small></span> : <span className="muted">Nothing due</span>}</td>
         </tr>)}
       </tbody></table></div> : filtered
@@ -205,7 +206,7 @@ export function CustomerForm({ current, close, saved }: { current?: Row; close: 
       <label className="field-block">Notes<textarea rows={2} maxLength={500} value={draft.notes} onChange={set('notes')} /></label>
     </fieldset>
     {action.error && <Alert>{action.error}</Alert>}
-    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? 'Save customer' : 'Add customer'}</button><button type="button" onClick={leave} disabled={action.busy}>Cancel</button></div>
+    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? ACTION.saveChanges : 'Add customer'}</button><button type="button" onClick={leave} disabled={action.busy}>Cancel</button></div>
     </form>
   </Modal>
 }

@@ -146,7 +146,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .auth-card .primary { width: 100%; margin-top: .25rem; }
 
 /* signed-in shell */
-.content { padding: 2.25rem; max-width: 110rem; margin: 0 auto; width: 100%; min-width: 0; }
+.content { padding: 1.75rem 2rem; max-width: 110rem; margin: 0 auto; width: 100%; min-width: 0; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.25rem; margin: 1rem 0; max-width: 40rem; min-width: 0; overflow-wrap: anywhere; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); gap: 1rem; margin: 1.25rem 0; }
@@ -159,7 +159,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .codes { background: var(--surface-2); padding: .75rem 1rem; border-radius: 8px; user-select: all; overflow-x: auto; }
 .inline-form { margin-top: 1rem; }
 .table { width: 100%; border-collapse: collapse; background: var(--surface); }
-.table th, .table td { text-align: left; padding: .95rem 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table th, .table td { text-align: left; padding: .6rem 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 .table th { background: var(--surface-2); font-size: .72rem; letter-spacing: .045em; text-transform: uppercase; color: var(--muted); }
 
 @media (max-width: 860px) {
@@ -290,13 +290,13 @@ a.button { display: inline-block; text-decoration: none; }
 .brand-accent { color: var(--gold); }
 .brand-dot { color: var(--gold); margin-left: -.6rem; }
 .workspace { min-width: 0; }
-.workspace-header { min-height: 72px; padding: 1rem 2.25rem; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: var(--muted); font-size: .85rem; }
+.workspace-header { min-height: 56px; padding: .75rem 2rem; background: var(--surface); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: var(--muted); font-size: .85rem; }
 .workspace-header strong { color: var(--heading); font-weight: 550; }
 .breadcrumb-divider { padding: 0 .8rem; color: var(--muted); }
 .workspace-shop { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
 .eyebrow { font-size: .68rem; font-weight: 700; letter-spacing: .12em; color: var(--gold-text); margin: 0 0 .5rem; }
 .page-description { margin: 0; color: var(--muted); }
-.catalogue .page-head { margin-bottom: 2rem; }
+.catalogue .page-head { margin-bottom: 1.25rem; }
 .catalogue .page-head .actions { margin-top: .5rem; }
 .catalogue-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 .catalogue-heading h2 { margin: 0; font-size: 1rem; }
@@ -606,8 +606,8 @@ dialog.modal { margin-top: 6vh; margin-bottom: auto; max-height: 88vh; }
 .invoice.thermal .invoice-logo { display: block; margin: 0 auto .3rem; max-width: 60%; max-height: 56px; }
 .invoice-signature { display: inline-block; max-width: 160px; max-height: 56px; object-fit: contain; margin: .3rem 0; }
 
-/* A dialog's actions stay in view while its body scrolls. The dialog pads 1.25rem, so stick through it. */
-.modal .sticky-actions { position: sticky; bottom: -1.25rem; margin-bottom: -1.25rem; padding: .75rem 0 1.25rem; background: var(--surface); border-top: 1px solid var(--line); }
+/* Every form dialog keeps its actions in view while the body scrolls. The dialog pads 1.25rem, so stick through it. */
+.modal form > .actions:last-child, .modal .sticky-actions { position: sticky; bottom: -1.25rem; margin-bottom: -1.25rem; padding: .75rem 0 1.25rem; background: var(--surface); border-top: 1px solid var(--line); z-index: 1; }
 
 /* Appearance (Light / Dark / System) */
 .appearance { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-size: .8rem; margin-top: 1rem; color: var(--muted); }
@@ -648,7 +648,7 @@ dialog.modal { margin-top: 6vh; margin-bottom: auto; max-height: 88vh; }
 .main-nav a.active { background: rgb(255 255 255 / .1); color: #fff; font-weight: 600; box-shadow: inset 3px 0 var(--gold); }
 .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: #a9b6ce; }
 .active .nav-icon { color: var(--gold); }
-.sidebar-foot { border-top: 1px solid rgb(255 255 255 / .15); padding: .5rem 0 .75rem; display: grid; gap: .25rem; }
+.sidebar-foot { border-top: 1px solid rgb(255 255 255 / .15); padding: .5rem 0 .75rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; }
 .compact-toggle { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: none; color: #a9b6ce; flex-shrink: 0; }
 .compact-toggle:hover { background: rgb(255 255 255 / .08); color: #fff; }
 .account-menu { position: relative; }
@@ -704,3 +704,24 @@ dialog.modal { margin-top: 6vh; margin-bottom: auto; max-height: 88vh; }
 .shell[data-compact='true'] .shop-switch select { appearance: none; text-align: center; text-align-last: center; padding: .4rem 0; background: rgb(255 255 255 / .1); color: #fff; border-color: rgb(255 255 255 / .25); text-overflow: clip; cursor: pointer; }
 @media (max-width: 860px) { .shell[data-compact='true'] .shop-switch select { appearance: auto; text-align: start; text-align-last: auto; padding: .6rem .7rem; background: var(--surface); color: var(--text); text-overflow: ellipsis; } }
 .main-nav a:focus-visible, .nav-group-head:focus-visible { outline-offset: -3px; }
+
+/* Narrow screens: lists keep what identifies a row, its money and its actions. Secondary columns are one tap away on the detail page. */
+@media (max-width: 640px) {
+  .table .hide-sm { display: none; }
+  .table-wrap > .table, .table-wrap > .table:not(.products) { min-width: 0; }
+  .table th, .table td { padding: .7rem .55rem; }
+  .table-wrap > .table:not(.products) th:first-child { min-width: 0; }
+  .table.products td, .table.products th { white-space: normal; }
+  .table td, .table th { overflow-wrap: anywhere; }
+  .row-actions, .row-actions .link { white-space: nowrap; overflow-wrap: normal; }
+  .table .show-sm { display: block; }
+  .row-actions .link { padding: .35rem .4rem; }
+}
+.nowrap { white-space: nowrap; }
+.show-sm { display: none; }
+
+/* Long, unbroken names (a customer, a product, an email) wrap instead of stretching the page. */
+h1, h2, h3 { overflow-wrap: anywhere; }
+.page-head > div { min-width: 0; }
+.table td, .table th { overflow-wrap: anywhere; }
+.table th { overflow-wrap: normal; }

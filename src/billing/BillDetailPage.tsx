@@ -18,6 +18,7 @@ import { Invoice } from './invoice/Invoice'
 type ReturnPreview = components['schemas']['ReturnPreview']
 import { useBillingMutation, useBillingQuery, type BillDetail, type PaymentInput, type CreditInput } from './queries'
 import { useDirtyClose, useIsDirty } from '../lib/dirty'
+import { ACTION } from '../lib/vocabulary'
 
 export function BillDetailPage() {
   const { id } = useParams()
@@ -125,6 +126,6 @@ function BillAction({ action, detail, close }: { action: 'payment' | 'cancel' | 
     {action === 'payment' && <Field label="Reference" maxLength={100} value={reference} onChange={e => setReference(e.target.value)} />}
     <Field label={action === 'payment' ? 'Notes' : 'Reason'} maxLength={200} value={reason} onChange={e => setReason(e.target.value)} />
     </fieldset>{mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Details are locked. Retry to safely confirm the original request.' : 'Check the bill before trying again if the connection was interrupted.'}</Alert>}
-    <div className="actions sticky-actions"><button className={action === 'cancel' ? 'danger-button' : 'primary'} disabled={mutation.isPending || uncertainCancel || (action === 'return' && !attempt && !(Object.keys(picked).length > 0 && reviewCurrent && review.data.can_return))}>{mutation.isPending ? 'Saving…' : attempt ? `Retry ${action === 'payment' ? 'payment' : 'return'}` : title}</button><button type="button" disabled={mutation.isPending || !!attempt} onClick={leave}>Close</button></div>
+    <div className="actions sticky-actions"><button className={action === 'cancel' ? 'danger-button' : 'primary'} disabled={mutation.isPending || uncertainCancel || (action === 'return' && !attempt && !(Object.keys(picked).length > 0 && reviewCurrent && review.data.can_return))}>{mutation.isPending ? 'Saving…' : attempt ? `Retry ${action === 'payment' ? 'payment' : 'return'}` : title}</button><button type="button" disabled={mutation.isPending || !!attempt} onClick={leave}>{ACTION.cancel}</button></div>
   </form></Modal>
 }

@@ -72,7 +72,7 @@ export function AdjustStock({ product, onClose }: { product: Product; onClose: (
         <Field label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} />
         </fieldset><div className="actions">
           <Button disabled={busy} onClick={leave}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : 'Save'}</Button>
+          <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : 'Adjust stock'}</Button>
         </div>
       </form>
     </Modal>

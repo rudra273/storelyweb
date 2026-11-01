@@ -165,11 +165,11 @@ function ProductsWorkspace() {
                       <span className="sr-only">Select</span>
                     </th>
                     {head('name', 'Product')}
-                    <th>Category</th>
+                    <th className="hide-sm">Category</th>
                     {head('price', 'Price')}
-                    {seeCost && <th>Cost</th>}
+                    {seeCost && <th className="hide-sm">Cost</th>}
                     {head('quantity', 'Stock')}
-                    <th>Expiry</th>
+                    <th className="hide-sm">Expiry</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,9 +185,9 @@ function ProductsWorkspace() {
                         <br />
                         <small className="muted">{[p.product_code, p.barcode].filter(Boolean).join(' · ')}</small>
                       </td>
-                      <td>{p.category_name ?? '—'}</td>
+                      <td className="hide-sm">{p.category_name ?? '—'}</td>
                       <td>{formatMoney(p.selling_price)}</td>
-                      {seeCost && <td>{formatMoney(p.purchase_price)}</td>}
+                      {seeCost && <td className="hide-sm">{formatMoney(p.purchase_price)}</td>}
                       <td>
                         {p.track_stock ? (
                           <>
@@ -197,7 +197,7 @@ function ProductsWorkspace() {
                           <span className="muted">not tracked</span>
                         )}
                       </td>
-                      <td>{p.next_expiry ?? '—'}</td>
+                      <td className="hide-sm">{p.next_expiry ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>

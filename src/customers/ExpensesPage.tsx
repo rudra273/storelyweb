@@ -15,6 +15,7 @@ import { amountProblem, todayIso } from '../lib/validate'
 import { useShop } from '../shops/context'
 import './customers.css'
 import { useDirtyClose, useIsDirty } from '../lib/dirty'
+import { ACTION } from '../lib/vocabulary'
 
 type S = components['schemas']
 type Expense = S['ExpenseOut']
@@ -74,8 +75,8 @@ function ExpensesWorkspace() {
         <div><span className="muted">Paid in cash</span><strong>{formatMoney(query.data.cash_total)}</strong><small className="muted">Lowers the day's closing cash</small></div>
         {query.data.by_category.slice(0, 3).map(c => <div key={c.category}><span className="muted">{c.category}</span><strong>{formatMoney(c.amount)}</strong></div>)}
       </div>
-      {query.data.items.length ? <div className="table-wrap"><table className="table expense-table"><thead><tr><th>Date</th><th>Category</th><th>Notes</th><th>Paid by</th><th className="num">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
-        {query.data.items.map(e => <tr key={e.uuid}><td>{day(e.expense_date)}</td><td>{e.category}</td><td>{e.notes || <span className="muted">—</span>}</td><td>{paymentMethod(e.payment_method)}</td><td className="num">{formatMoney(e.amount)}</td>
+      {query.data.items.length ? <div className="table-wrap"><table className="table expense-table"><thead><tr><th className="hide-sm">Date</th><th>Category</th><th className="hide-sm">Notes</th><th className="hide-sm">Paid by</th><th className="num">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>
+        {query.data.items.map(e => <tr key={e.uuid}><td className="nowrap hide-sm">{day(e.expense_date)}</td><td>{e.category}<small className="show-sm muted">{day(e.expense_date)}</small></td><td className="hide-sm">{e.notes || <span className="muted">—</span>}</td><td className="hide-sm">{paymentMethod(e.payment_method)}</td><td className="num">{formatMoney(e.amount)}</td>
           <td className="row-actions"><button className="link" onClick={() => setEditing(e)}>Edit</button><button className="link danger-link" disabled={remove.busy} onClick={() => void del(e)}>Delete</button></td></tr>)}
       </tbody></table>{query.data.has_more && <p className="muted">Showing the latest {query.data.items.length} of {query.data.count} expenses. The totals above include all {query.data.count}. Narrow the month or category to see the rest.</p>}</div> : <Empty title={category ? `No ${category} expenses in this period` : 'No expenses in this period'}>Add rent, salaries, bills and other costs to see your real profit.</Empty>}
     </>}
@@ -138,7 +139,7 @@ function ExpenseForm({ current, categories, close, saved }: { current?: Expense;
       <label className="field-block">Notes<textarea rows={2} maxLength={300} placeholder="What it was for" value={draft.notes} onChange={e => set('notes', e.target.value)} /></label>
     </fieldset>
     {action.error && <Alert>{action.error}</Alert>}
-    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? 'Save expense' : 'Add expense'}</button><button type="button" onClick={leave} disabled={action.busy}>Cancel</button></div>
+    <div className="actions"><button className="primary" disabled={action.busy}>{action.busy ? 'Saving…' : current ? ACTION.saveChanges : 'Add expense'}</button><button type="button" onClick={leave} disabled={action.busy}>Cancel</button></div>
     </form>
   </Modal>
 }

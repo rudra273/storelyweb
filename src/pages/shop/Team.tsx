@@ -58,7 +58,7 @@ export function Team() {
         {members.isPending && <Loading />}
         {members.error && <Alert>Could not load the team. <button className="link" onClick={() => void members.refetch()}>Retry team</button></Alert>}
         <div className="table-wrap"><table className="table">
-          <thead><tr><th>Person</th><th>Role</th><th>Since</th><th /></tr></thead>
+          <thead><tr><th>Person</th><th>Role</th><th className="hide-sm">Since</th><th /></tr></thead>
           <tbody>
             {members.data?.map((m) => {
               const mine = m.user_id === user?.id
@@ -75,7 +75,7 @@ export function Team() {
                       </select>
                     ) : roleLabel(m.role)}
                   </td>
-                  <td>{when(m.created_at)}</td>
+                  <td className="hide-sm">{when(m.created_at)}</td>
                   <td>{editable && <button className="link danger" onClick={() => remove(m)} disabled={action.busy}>Remove</button>}</td>
                 </tr>
               )

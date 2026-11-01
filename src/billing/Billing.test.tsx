@@ -190,7 +190,7 @@ for (const action of ['payment', 'return'] as const) {
     await userEvent.click(within(dialog).getByRole('button', { name: label }))
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Details are locked')
     expect(within(dialog).getByLabelText(action === 'payment' ? 'Amount (₹)' : 'Return Rice')).toBeDisabled()
-    expect(within(dialog).getAllByRole('button', { name: 'Close' }).every(b => b.hasAttribute('disabled'))).toBe(true)
+    expect(within(dialog).getAllByRole('button', { name: /^(Close|Cancel)$/ }).every(b => b.hasAttribute('disabled'))).toBe(true)
     await userEvent.click(within(dialog).getByRole('button', { name: `Retry ${action}` }))
     const writes = calls.filter(c => c.path.endsWith(`/${endpoint}`))
     expect(writes).toHaveLength(2)

@@ -34,13 +34,13 @@ export function PurchaseInvoicesPage() {
       ? <Empty title="No purchases on this page"><Button onClick={() => goTo(page - 1)}>Previous page</Button></Empty>
       : <Empty title="No purchases recorded yet">Record stock you receive from a supplier to keep stock and what you owe accurate.{canRecord && <div className="actions empty-actions"><Button variant="primary" onClick={() => setRecording(true)}>Record purchase</Button></div>}</Empty>)}
     {rows.length > 0 && <div className="table-wrap"><table className="table">
-      <thead><tr><th>Date</th><th>Supplier</th><th>Supplier invoice</th><th className="num">Total</th><th>Payment</th><th className="num">Balance due</th><th><span className="sr-only">Actions</span></th></tr></thead>
+      <thead><tr><th className="hide-sm">Date</th><th>Supplier</th><th className="hide-sm">Supplier invoice</th><th className="num">Total</th><th className="hide-sm">Payment</th><th className="num">Balance due</th><th><span className="sr-only">Actions</span></th></tr></thead>
       <tbody>{rows.map(r => <tr key={r.uuid}>
-        <td>{day(r.purchase_date)}</td>
-        <td>{r.supplier_name ?? <span className="muted">No supplier</span>}</td>
-        <td>{r.invoice_number ?? <span className="muted">—</span>}</td>
+        <td className="nowrap hide-sm">{day(r.purchase_date)}</td>
+        <td>{r.supplier_name ?? <span className="muted">No supplier</span>}<small className="show-sm muted">{day(r.purchase_date)}</small></td>
+        <td className="hide-sm">{r.invoice_number ?? <span className="muted">—</span>}</td>
         <td className="num">{receiptMoney(r.total ?? r.subtotal)}</td>
-        <td>{paymentStatus(r.payment_status)}</td>
+        <td className="hide-sm">{paymentStatus(r.payment_status)}</td>
         <td className="num">{r.balance_due == null ? <span className="muted">—</span> : receiptMoney(r.balance_due)}</td>
         <td className="row-actions"><button className="link" aria-label={`View purchase ${r.invoice_number ?? r.purchase_date}`} onClick={() => setSelected(r)}>View</button></td>
       </tr>)}</tbody>

@@ -1,4 +1,5 @@
 import { can, type Capability } from './permissions'
+import { SALES } from './lib/vocabulary'
 
 /**
  * The one definition of where things live. The sidebar, breadcrumbs, page titles and the
@@ -24,7 +25,7 @@ export interface NavGroup {
   items: Destination[]
 }
 
-export const NEW_INVOICE: Destination = { to: '/billing/new', label: 'New invoice', needs: 'billing.create', icon: 'plus' }
+export const NEW_INVOICE: Destination = { to: '/billing/new', label: SALES.newInvoice, needs: 'billing.create', icon: 'plus' }
 
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'overview', label: 'Overview', items: [

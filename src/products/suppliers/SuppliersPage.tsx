@@ -43,10 +43,10 @@ export function SuppliersPage() {
       ? <Empty title="No suppliers match">Change or clear the filters.</Empty>
       : <Empty title="No suppliers yet">Add the people you buy stock from to track purchases and what you owe them.{canEdit && <div className="actions empty-actions"><Button variant="primary" onClick={() => setEditor('new')}>Add supplier</Button></div>}</Empty>)}
     {!!rows?.length && <div className="table-wrap"><table className="table">
-      <thead><tr><th>Supplier</th><th>Contact</th><th className="num">Balance due</th><th><span className="sr-only">Actions</span></th></tr></thead>
+      <thead><tr><th>Supplier</th><th className="hide-sm">Contact</th><th className="num">Balance due</th><th><span className="sr-only">Actions</span></th></tr></thead>
       <tbody>{rows.map(s => <tr key={s.uuid}>
         <td><strong>{s.name}</strong></td>
-        <td>{[s.phone, s.gstin].filter(Boolean).join(' · ') || <span className="muted">—</span>}</td>
+        <td className="hide-sm">{[s.phone, s.gstin].filter(Boolean).join(' · ') || <span className="muted">—</span>}</td>
         <td className={`num${Number(s.balance_due ?? '0') > 0 ? ' bad' : ''}`}>{receiptMoney(s.balance_due ?? '0')}</td>
         <td className="row-actions"><button className="link" aria-label={`Statement for ${s.name}`} onClick={() => setStatement(s)}>Statement</button>{canEdit && <button className="link" aria-label={`Edit ${s.name}`} onClick={() => setEditor(s)}>Edit</button>}</td>
       </tr>)}</tbody>
