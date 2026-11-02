@@ -130,6 +130,8 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
     }
     // The cost fields exist for owners and admins only; a staff member never sees this form.
     body.supplier_uuid = f.supplier || null
+    // The version this form was opened on: if someone changed the product since, the save is refused, not applied.
+    if (editing) body.expected_updated_at = product.updated_at
     body.purchase_price = decimalOrNull(f.purchase)
     if (!editing && decimalOrNull(f.opening)) body.opening_quantity = decimalOrNull(f.opening)
     sending.current = true

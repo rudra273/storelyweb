@@ -2,7 +2,6 @@ import { PurchaseComposer } from '../purchases/composer/PurchaseComposer'
 import { useToast } from '../components/ui/toastContext'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
-import { formatMoney, formatQty } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
 import { Alert, Empty, Loading } from '../components/ui/ui'
 import { ActionMenu, Button, PageHeader, Toolbar } from '../components/ui/workspace'
@@ -13,6 +12,7 @@ import { Labels } from './components/Labels'
 import { ListsManager } from './components/ListsManager'
 import { ProductDetailPanel } from './components/ProductDetailPanel'
 import { ProductForm } from './components/ProductForm'
+import { ProductRow } from './components/ProductRow'
 import { downloadExport, PAGE_SIZE, useCategories, useProducts, type ProductQuery } from './queries'
 import { describeError } from '../components/useAction'
 
@@ -143,6 +143,7 @@ function ProductsWorkspace() {
           </label>
           {(query.q || query.category || query.low || query.expiring) && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null }) }}>Clear filters</button>}
         </Toolbar>
+        {canEdit && data && data.items.length > 0 && <p className="muted inline-hint">Use the pencil on a row to change its name, category, price or reorder level. Open a product for everything else. Stock changes from its details, so the history stays complete.</p>}
         {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
 
         {products.isPending && <Loading />}
@@ -169,36 +170,15 @@ function ProductsWorkspace() {
                     {head('price', 'Price')}
                     {seeCost && <th className="hide-sm">Cost</th>}
                     {head('quantity', 'Stock')}
+                    <th className="hide-sm">Reorder at</th>
                     <th className="hide-sm">Expiry</th>
+                    {canEdit && <th><span className="sr-only">Actions</span></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((p) => (
-                    <tr key={p.uuid} className={p.uuid === selectedId ? 'selected' : undefined}>
-                      <td>
-                        <input type="checkbox" aria-label={`Select ${p.name}`} checked={picked.has(p.uuid)} onChange={() => togglePick(p.uuid)} />
-                      </td>
-                      <td>
-                        <button className="link row-link" onClick={() => open(p.uuid)}>
-                          {p.name}
-                        </button>
-                        <br />
-                        <small className="muted">{[p.product_code, p.barcode].filter(Boolean).join(' · ')}</small>
-                      </td>
-                      <td className="hide-sm">{p.category_name ?? '—'}</td>
-                      <td>{formatMoney(p.selling_price)}</td>
-                      {seeCost && <td className="hide-sm">{formatMoney(p.purchase_price)}</td>}
-                      <td>
-                        {p.track_stock ? (
-                          <>
-                            {formatQty(p.quantity)} {p.unit_name ?? ''} {p.low_stock && <span className="badge warn">low</span>}
-                          </>
-                        ) : (
-                          <span className="muted">not tracked</span>
-                        )}
-                      </td>
-                      <td className="hide-sm">{p.next_expiry ?? '—'}</td>
-                    </tr>
+                    <ProductRow key={p.uuid} p={p} selected={p.uuid === selectedId} picked={picked.has(p.uuid)} canEdit={canEdit} seeCost={seeCost}
+                      categories={categories.data ?? []} onPick={() => togglePick(p.uuid)} onOpen={() => open(p.uuid)} />
                   ))}
                 </tbody>
               </table>

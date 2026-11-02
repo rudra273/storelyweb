@@ -809,6 +809,13 @@ dialog.modal { margin-top: 6vh; margin-bottom: auto; max-height: 88vh; }
   .table th, .table td { padding: .7rem .55rem; }
   .table-wrap > .table:not(.products) th:first-child { min-width: 0; }
   .table.products td, .table.products th { white-space: normal; }
+  .table-wrap > .table.products { min-width: 0; }
+  .cell-input, .cell-number { min-width: 0; max-width: none; }
+  .cell-number { width: 4.75rem; }
+  .table.products td:first-child, .table.products th:first-child { padding-left: .4rem; padding-right: .1rem; }
+  .table.products .row-actions { padding-left: .2rem; padding-right: .4rem; }
+  .row-edit-actions { flex-direction: column; align-items: stretch; }
+  .table.products td:nth-child(2) { min-width: 0; }
   .table td, .table th { overflow-wrap: anywhere; }
   .row-actions, .row-actions .link { white-space: nowrap; overflow-wrap: normal; }
   .table .show-sm { display: block; }
@@ -852,3 +859,17 @@ dialog.modal :is(input, select, textarea, button, summary, a[href]) { scroll-mar
 dialog.modal:has(.purchase-footer) { scroll-padding-bottom: 11rem; }
 dialog.modal:has(.purchase-footer) :is(input, select, textarea, button, summary, a[href]) { scroll-margin-bottom: 11rem; }
 main:focus { outline: none; }
+
+/* Row edit (catalogue): the edit icon turns the row's values into fields, and the same button becomes Save. */
+.icon-button { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; min-height: 34px; min-width: 34px; padding: .2rem .55rem; }
+.button-icon { width: 17px; height: 17px; flex-shrink: 0; color: currentColor; }
+.row-edit-actions { display: inline-flex; gap: .4rem; }
+.row-actions button, .row-edit-actions button { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+.cell-input { min-height: 34px; padding: .25rem .5rem; width: 100%; min-width: 7rem; }
+.cell-number { min-width: 5.5rem; max-width: 8rem; }
+.inline-saved { font-size: .75rem; color: var(--ok-text); font-weight: 600; margin-right: .5rem; }
+.row-note td { padding-top: .1rem; padding-bottom: .6rem; }
+.inline-review, .inline-error { margin: 0; font-size: .85rem; }
+.inline-error { color: var(--danger); }
+.inline-hint { margin: 0 0 .5rem; font-size: .8rem; }
+.row-actions { text-align: right; white-space: nowrap; }

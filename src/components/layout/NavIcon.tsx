@@ -15,6 +15,9 @@ const PATHS: Record<string, string> = {
   chevron: 'm6 9 6 6 6-6',
   collapse: 'm15 6-6 6 6 6',
   expand: 'm9 6 6 6-6 6',
+  edit: 'M4 20h4L19 9l-4-4L4 16v4Zm9.5-13.5 4 4',
+  check: 'm5 12.5 4.5 4.5L19 7.5',
+  close: 'M6 6l12 12M18 6 6 18',
 }
 
 export function NavIcon({ name, className = 'nav-icon' }: { name: string; className?: string }) {

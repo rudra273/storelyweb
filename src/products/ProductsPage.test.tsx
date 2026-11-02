@@ -14,7 +14,7 @@ const RICE = {
   uuid: 'p1', name: 'Basmati Rice', product_code: 'R1', barcode: '8901', hsn_code: null,
   category_uuid: 'c1', category_name: 'Grains', unit_uuid: 'u1', unit_name: 'kg',
   selling_price: '25.5', mrp_price: null, gst_percent: null, quantity: '50', track_stock: true,
-  reorder_level: '10', low_stock: false, next_expiry: null, updated_at: '2026-10-01T00:00:10Z',
+  reorder_level: '10', low_stock: false, next_expiry: null, updated_at: '2026-10-01T00:00:10Z', price_mode: 'fixed',
 }
 const COST = { purchase_price: '18', overhead_cost: '1', profit_margin_percent: null, supplier_uuid: null }
 const page = (items: object[], extra: object = {}) => ({ items, total: items.length, next_cursor: null, ...extra })
@@ -439,4 +439,138 @@ test('a product with no cost price shows no profit', async () => {
   const panel = await screen.findByRole('complementary', { name: 'Product details' })
   expect(await within(panel).findByText('Add a cost price to see profit.')).toBeInTheDocument()
   expect(within(panel).queryByText('Profit per unit')).not.toBeInTheDocument()
+})
+
+const PATCHED = ok('PATCH', '/v1/shops/s1/products/p1', { product: { ...RICE, selling_price: '30' }, movements: [] })
+const patches = (calls: { method: string; path: string; body: unknown }[]) => calls.filter(c => c.method === 'PATCH')
+const owner = (extra: object[] = [PATCHED], item: object = { ...RICE, ...COST }) => fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, page([item])), ...(extra as never[])])
+const editRice = async () => userEvent.click(await screen.findByRole('button', { name: 'Edit Basmati Rice' }))
+const fieldNamed = (name: string) => screen.getByRole('textbox', { name })
+
+test('each row has an edit icon, and nothing in the table can be typed into until it is clicked', async () => {
+  owner()
+  renderApp('/products')
+  const edit = await screen.findByRole('button', { name: 'Edit Basmati Rice' })
+  expect(edit).toHaveTextContent('')            // an icon, not the word Edit
+  expect(edit.querySelector('svg')).not.toBeNull()
+  expect(screen.queryByRole('textbox', { name: /Basmati Rice/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: /Basmati Rice/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Save|Confirm/ })).not.toBeInTheDocument()
+})
+
+test('clicking the icon makes this row editable and the same button becomes Save', async () => {
+  owner()
+  renderApp('/products')
+  await editRice()
+  expect(fieldNamed('Name of Basmati Rice')).toHaveFocus()
+  expect(fieldNamed('Price of Basmati Rice')).toHaveValue('25.5')
+  expect(fieldNamed('Reorder level of Basmati Rice')).toHaveValue('10')
+  expect(screen.getByRole('combobox', { name: 'Category of Basmati Rice' })).toHaveValue('c1')
+  expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Edit Basmati Rice' })).not.toBeInTheDocument()
+  // Stock is never a field.
+  expect(screen.queryByRole('textbox', { name: /stock|quantity/i })).not.toBeInTheDocument()
+})
+
+test('a price change shows its effect first, then saves only what changed, and says Saved', async () => {
+  const calls = owner()
+  renderApp('/products')
+  await editRice()
+  const price = fieldNamed('Price of Basmati Rice')
+  await userEvent.clear(price)
+  await userEvent.type(price, '30{Enter}')
+  expect(patches(calls)).toHaveLength(0)   // not sent until the effect is confirmed
+  expect(screen.getByRole('status')).toHaveTextContent('₹25.50 to ₹30.00')
+  expect(screen.getByRole('status')).toHaveTextContent('saved invoices keep theirs')
+  expect(screen.getByRole('button', { name: 'Confirm' })).toHaveFocus()
+  await userEvent.keyboard('{Enter}')
+  await waitFor(() => expect(patches(calls)).toHaveLength(1))
+  expect(patches(calls)[0]?.body).toEqual({ price_mode: 'fixed', selling_price: '30', expected_updated_at: RICE.updated_at })
+  expect(await screen.findByText('Saved')).toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Basmati Rice' })).toHaveFocus())
+})
+
+test('name, category and reorder level save together without a price review', async () => {
+  const calls = owner()
+  renderApp('/products')
+  await editRice()
+  const name = fieldNamed('Name of Basmati Rice')
+  await userEvent.clear(name)
+  await userEvent.type(name, 'Basmati Rice 5 kg')
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Category of Basmati Rice' }), 'No category')
+  const reorder = fieldNamed('Reorder level of Basmati Rice')
+  await userEvent.clear(reorder)
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(patches(calls)).toHaveLength(1))
+  expect(patches(calls)[0]?.body).toEqual({ name: 'Basmati Rice 5 kg', category_uuid: null, reorder_level: null, expected_updated_at: RICE.updated_at })
+})
+
+test('Escape and Cancel leave the row as it was and send nothing', async () => {
+  const calls = owner()
+  renderApp('/products')
+  await editRice()
+  await userEvent.type(fieldNamed('Price of Basmati Rice'), '99{Escape}')
+  expect(screen.queryByRole('textbox', { name: /Price of/ })).not.toBeInTheDocument()
+  expect(screen.getByText('₹25.50')).toBeInTheDocument()
+  await editRice()
+  await userEvent.type(fieldNamed('Name of Basmati Rice'), ' changed')
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel editing Basmati Rice' }))
+  expect(screen.getByRole('button', { name: 'Basmati Rice' })).toBeInTheDocument()
+  expect(patches(calls)).toHaveLength(0)
+})
+
+test('Save with nothing changed just closes the row', async () => {
+  const calls = owner()
+  renderApp('/products')
+  await editRice()
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(screen.getByRole('button', { name: 'Edit Basmati Rice' })).toBeInTheDocument()
+  expect(patches(calls)).toHaveLength(0)
+})
+
+test('a bad price or an empty name is explained and kept for fixing; a price under cost is called out', async () => {
+  const calls = owner()
+  renderApp('/products')
+  await editRice()
+  const price = fieldNamed('Price of Basmati Rice')
+  await userEvent.clear(price)
+  await userEvent.type(price, 'abc{Enter}')
+  expect(screen.getByRole('alert')).toHaveTextContent('Enter the price')
+  expect(price).toHaveValue('abc')
+  await userEvent.clear(price)
+  await userEvent.type(price, '10{Enter}')
+  expect(screen.getByRole('status')).toHaveTextContent('below your cost of ₹18.00')
+  await userEvent.click(screen.getByRole('button', { name: 'Go back and keep editing' }))
+  await userEvent.clear(fieldNamed('Name of Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+  expect(screen.getByRole('alert')).toHaveTextContent('needs a name')
+  expect(patches(calls)).toHaveLength(0)
+})
+
+test('a formula-priced product shows how it is priced and its price is never a field', async () => {
+  owner([PATCHED], { ...RICE, ...COST, price_mode: 'formula' })
+  renderApp('/products')
+  await editRice()
+  expect(screen.queryByRole('textbox', { name: 'Price of Basmati Rice' })).not.toBeInTheDocument()
+  expect(screen.getByText(/from cost \+ margin/)).toBeInTheDocument()
+})
+
+test('someone else changing the product first is explained, nothing typed is lost, and saving again is a choice', async () => {
+  const conflict = ok('PATCH', '/v1/shops/s1/products/p1', { error: { code: 'changed_elsewhere', message: 'Someone changed this product after you opened it. Check the current values and save again.' } }, 409)
+  const calls = owner([conflict])
+  renderApp('/products')
+  await editRice()
+  const reorder = fieldNamed('Reorder level of Basmati Rice')
+  await userEvent.clear(reorder)
+  await userEvent.type(reorder, '20{Enter}')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Someone changed this product')
+  expect(reorder).toHaveValue('20')
+  await waitFor(() => expect(calls.filter(c => c.path.startsWith('/v1/shops/s1/products?')).length).toBeGreaterThan(1))
+})
+
+test('staff have no edit icons', async () => {
+  setup('staff', [RICE])
+  renderApp('/products')
+  await screen.findByRole('button', { name: 'Basmati Rice' })
+  expect(screen.queryByRole('button', { name: /^Edit / })).not.toBeInTheDocument()
 })
