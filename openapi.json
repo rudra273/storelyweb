@@ -156,6 +156,21 @@
     "title": "AndroidWebClaimIn",
     "type": "object"
    },
+   "Archive": {
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "const": "archive",
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type"
+    ],
+    "title": "Archive",
+    "type": "object"
+   },
    "BillDetail": {
     "properties": {
      "bill": {
@@ -733,6 +748,324 @@
      "cancelled"
     ],
     "title": "BillSummary",
+    "type": "object"
+   },
+   "BulkExpected": {
+    "additionalProperties": false,
+    "description": "What the review showed. If the products have changed since, the apply is refused.",
+    "properties": {
+     "fingerprint": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fingerprint"
+     },
+     "matched": {
+      "title": "Matched",
+      "type": "integer"
+     },
+     "will_change": {
+      "title": "Will Change",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "matched",
+     "will_change"
+    ],
+    "title": "BulkExpected",
+    "type": "object"
+   },
+   "BulkFilter": {
+    "additionalProperties": false,
+    "description": "The catalogue filter a selection was made under; the server re-runs it.",
+    "properties": {
+     "category": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "expiring_days": {
+      "anyOf": [
+       {
+        "maximum": 3650.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiring Days"
+     },
+     "low_stock": {
+      "default": false,
+      "title": "Low Stock",
+      "type": "boolean"
+     },
+     "q": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Q"
+     }
+    },
+    "title": "BulkFilter",
+    "type": "object"
+   },
+   "BulkIn": {
+    "additionalProperties": false,
+    "properties": {
+     "action": {
+      "discriminator": {
+       "mapping": {
+        "archive": "#/components/schemas/Archive",
+        "price_change": "#/components/schemas/PriceChange",
+        "set_category": "#/components/schemas/SetCategory",
+        "set_reorder_level": "#/components/schemas/SetReorderLevel"
+       },
+       "propertyName": "type"
+      },
+      "oneOf": [
+       {
+        "$ref": "#/components/schemas/SetCategory"
+       },
+       {
+        "$ref": "#/components/schemas/SetReorderLevel"
+       },
+       {
+        "$ref": "#/components/schemas/PriceChange"
+       },
+       {
+        "$ref": "#/components/schemas/Archive"
+       }
+      ],
+      "title": "Action"
+     },
+     "dry_run": {
+      "default": true,
+      "title": "Dry Run",
+      "type": "boolean"
+     },
+     "expected": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BulkExpected"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "scope": {
+      "$ref": "#/components/schemas/BulkScope"
+     }
+    },
+    "required": [
+     "scope",
+     "action"
+    ],
+    "title": "BulkIn",
+    "type": "object"
+   },
+   "BulkOut": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "applied": {
+      "title": "Applied",
+      "type": "boolean"
+     },
+     "below_cost": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Below Cost"
+     },
+     "fingerprint": {
+      "title": "Fingerprint",
+      "type": "string"
+     },
+     "matched": {
+      "title": "Matched",
+      "type": "integer"
+     },
+     "missing": {
+      "title": "Missing",
+      "type": "integer"
+     },
+     "notes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "replayed": {
+      "default": false,
+      "title": "Replayed",
+      "type": "boolean"
+     },
+     "sample": {
+      "items": {
+       "$ref": "#/components/schemas/BulkSample"
+      },
+      "title": "Sample",
+      "type": "array"
+     },
+     "skipped": {
+      "items": {
+       "$ref": "#/components/schemas/BulkSkipped"
+      },
+      "title": "Skipped",
+      "type": "array"
+     },
+     "skipped_total": {
+      "title": "Skipped Total",
+      "type": "integer"
+     },
+     "unchanged": {
+      "title": "Unchanged",
+      "type": "integer"
+     },
+     "will_change": {
+      "title": "Will Change",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "applied",
+     "action",
+     "matched",
+     "will_change",
+     "unchanged",
+     "missing",
+     "skipped",
+     "skipped_total",
+     "sample",
+     "notes",
+     "below_cost",
+     "fingerprint"
+    ],
+    "title": "BulkOut",
+    "type": "object"
+   },
+   "BulkSample": {
+    "properties": {
+     "after": {
+      "title": "After",
+      "type": "string"
+     },
+     "before": {
+      "title": "Before",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "before",
+     "after"
+    ],
+    "title": "BulkSample",
+    "type": "object"
+   },
+   "BulkScope": {
+    "additionalProperties": false,
+    "description": "Exactly one of: the products picked (ids), or every product a filter matches.",
+    "properties": {
+     "filter": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BulkFilter"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "maxItems": 1000,
+        "minItems": 1,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ids"
+     }
+    },
+    "title": "BulkScope",
+    "type": "object"
+   },
+   "BulkSkipped": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "reason"
+    ],
+    "title": "BulkSkipped",
     "type": "object"
    },
    "CancelIn": {
@@ -3656,6 +3989,73 @@
     "title": "Kpis",
     "type": "object"
    },
+   "LabelProduct": {
+    "properties": {
+     "barcode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Barcode"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "product_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Code"
+     },
+     "selling_price": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selling Price"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "product_code",
+     "barcode",
+     "selling_price"
+    ],
+    "title": "LabelProduct",
+    "type": "object"
+   },
+   "LabelScopeIn": {
+    "additionalProperties": false,
+    "properties": {
+     "scope": {
+      "$ref": "#/components/schemas/BulkScope"
+     }
+    },
+    "required": [
+     "scope"
+    ],
+    "title": "LabelScopeIn",
+    "type": "object"
+   },
    "LoginIn": {
     "properties": {
      "client": {
@@ -5526,6 +5926,44 @@
      "amount"
     ],
     "title": "PreviewLine",
+    "type": "object"
+   },
+   "PriceChange": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Mode",
+      "type": "string"
+     },
+     "type": {
+      "const": "price_change",
+      "title": "Type",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "maximum": 1000000.0,
+        "minimum": -1000000.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "type",
+     "mode",
+     "value"
+    ],
+    "title": "PriceChange",
     "type": "object"
    },
    "PricePreviewIn": {
@@ -8281,6 +8719,66 @@
      "current"
     ],
     "title": "SessionOut",
+    "type": "object"
+   },
+   "SetCategory": {
+    "additionalProperties": false,
+    "properties": {
+     "category_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Uuid"
+     },
+     "type": {
+      "const": "set_category",
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type",
+     "category_uuid"
+    ],
+    "title": "SetCategory",
+    "type": "object"
+   },
+   "SetReorderLevel": {
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "const": "set_reorder_level",
+      "title": "Type",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "type",
+     "value"
+    ],
+    "title": "SetReorderLevel",
     "type": "object"
    },
    "SettleIn": {
@@ -13564,6 +14062,75 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/products/bulk": {
+   "post": {
+    "description": "Review (dry_run, the default) or apply one change to many products. The server decides\nwhich products the scope means, reports what would change and what is left alone and why,\nand applies all of it in one transaction or none. Applying with `expected` (the review's\ncounts) is refused if the products no longer match what was reviewed.",
+    "operationId": "change_many_products_v1_shops__shop_id__products_bulk_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BulkIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BulkOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Change Many Products",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/products/export": {
    "get": {
     "operationId": "export_products_v1_shops__shop_id__products_export_get",
@@ -13687,6 +14254,63 @@
      }
     },
     "summary": "Import Products",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/label-data": {
+   "post": {
+    "description": "What a printed label needs for the products in a scope, as they are now.",
+    "operationId": "label_data_v1_shops__shop_id__products_label_data_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LabelScopeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LabelProduct"
+         },
+         "title": "Response Label Data V1 Shops  Shop Id  Products Label Data Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Label Data",
     "tags": [
      "catalog"
     ]

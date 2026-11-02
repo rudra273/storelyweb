@@ -18,10 +18,12 @@ const sameNumber = (a: string, b: string | null | undefined) => (a.trim() === ''
  * category, a fixed price and the reorder level become fields and that same button turns into Save.
  * Stock is never a field: it changes only through the ledger. The full form is in the product's details.
  */
-export function ProductRow({ p, selected, picked, canEdit, seeCost, categories, onPick, onOpen }: {
+export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, categories, onPick, onOpen }: {
   p: Product
   selected: boolean
   picked: boolean
+  /** True while "all matching products" is selected: rows follow it until it is cleared. */
+  pickLocked: boolean
   canEdit: boolean
   seeCost: boolean
   categories: Category[]
@@ -119,7 +121,7 @@ export function ProductRow({ p, selected, picked, canEdit, seeCost, categories, 
   const price = Number(draft.price)
   return <>
     <tr className={selected || editing ? 'selected' : undefined} onKeyDown={keys}>
-      <td><input type="checkbox" aria-label={`Select ${p.name}`} checked={picked} onChange={onPick} /></td>
+      <td><input type="checkbox" aria-label={`Select ${p.name}`} checked={picked} disabled={pickLocked} title={pickLocked ? 'Clear the selection to choose products one by one' : undefined} onChange={onPick} /></td>
       <td>
         {editing
           ? <input ref={nameField} className="cell-input" aria-label={`Name of ${p.name}`} value={draft.name} maxLength={200} disabled={locked} onChange={e => set('name')(e.target.value)} aria-invalid={error && !draft.name.trim() ? true : undefined} />

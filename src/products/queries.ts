@@ -14,6 +14,10 @@ export type Supplier = S['SupplierOut']
 export type ImportReport = S['ImportReport']
 export type PriceInput = S['PricePreviewIn']
 export type PricePreview = S['PricePreviewOut']
+export type BulkResult = S['BulkOut']
+export type BulkScope = S['BulkScope']
+export type BulkAction = S['SetCategory'] | S['SetReorderLevel'] | S['PriceChange'] | S['Archive']
+export type LabelProduct = S['LabelProduct']
 
 /** GST slabs offered for products and categories. */
 export const GST_RATES = ['0', '0.25', '3', '5', '12', '18', '28', '40']
@@ -145,3 +149,17 @@ export function usePricePreview(input: PriceInput | null) {
     retry: false,
   })
 }
+
+/** What a bulk change would do, worked out by the server; nothing is written. */
+export const reviewBulk = (shop: string, input: { scope: BulkScope; action: BulkAction }) =>
+  api.post<BulkResult>(`/v1/shops/${shop}/products/bulk`, { ...input, dry_run: true })
+
+/** Applies the change that was reviewed. The server refuses it if the products changed since (`fingerprint`). */
+export const applyBulk = (shop: string, input: { scope: BulkScope; action: BulkAction; review: BulkResult; key: string }) =>
+  request<BulkResult>('POST', `/v1/shops/${shop}/products/bulk`, {
+    body: { scope: input.scope, action: input.action, dry_run: false, expected: { matched: input.review.matched, will_change: input.review.will_change, fingerprint: input.review.fingerprint } },
+    idempotencyKey: input.key,
+  })
+
+/** Name, code, barcode and price for each product in a selection, as they are now. */
+export const fetchLabelData = (shop: string, scope: BulkScope) => api.post<LabelProduct[]>(`/v1/shops/${shop}/products/label-data`, { scope })

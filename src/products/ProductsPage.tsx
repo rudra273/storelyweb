@@ -13,6 +13,9 @@ import { ListsManager } from './components/ListsManager'
 import { ProductDetailPanel } from './components/ProductDetailPanel'
 import { ProductForm } from './components/ProductForm'
 import { ProductRow } from './components/ProductRow'
+import { BulkDialog, type BulkKind } from './components/BulkDialog'
+import { TriCheckbox } from './components/TriCheckbox'
+import { BULK_LIMIT, NONE, liveSelection, pageState, scopeOf, selectAllMatching, selectedCount, toggleOne, togglePage, type Filters, type Selection } from './selection'
 import { downloadExport, PAGE_SIZE, useCategories, useProducts, type ProductQuery } from './queries'
 import { describeError } from '../components/useAction'
 
@@ -58,7 +61,8 @@ function ProductsWorkspace() {
     next.delete('new')
     setParams(next, { replace: true })
   }, [params, setParams])
-  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [selection, setSelection] = useState<Selection>(NONE)
+  const [bulk, setBulk] = useState<BulkKind | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
 
   const update = (changes: Record<string, string | null>, keepPage = false) => {
@@ -80,6 +84,13 @@ function ProductsWorkspace() {
   const categories = useCategories()
   const data = products.data
   const filtered = !!(query.q || query.category || query.low || query.expiring)
+  const filters: Filters = { q: query.q, category: query.category, low: query.low, expiring: query.expiring }
+  // A selection belongs to the filters it was made under: change them and it no longer applies.
+  const sel = liveSelection(selection, filters)
+  const lostCount = selection.kind !== 'none' && sel.kind === 'none' ? selectedCount(selection) : 0
+  const chosen = selectedCount(sel)
+  const visibleIds = data?.items.map(p => p.uuid) ?? []
+  const state = pageState(sel, visibleIds)
   const emptyCatalogue = !!data && data.items.length === 0 && !filtered
   const total = data?.total ?? 0
   const open = (id: string | null) => navigate({ pathname: id ? `/products/${id}` : '/products', search: params.toString() })
@@ -96,14 +107,6 @@ function ProductsWorkspace() {
     </th>
   )
 
-  const togglePick = (id: string) =>
-    setPicked((now) => {
-      const next = new Set(now)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-
   return (
     <div className="split catalogue">
       <div className="split-main">
@@ -111,7 +114,7 @@ function ProductsWorkspace() {
           {canEdit && <Button variant={emptyCatalogue ? undefined : 'primary'} onClick={() => setDialog('purchase')}>Record purchase</Button>}
           {canEdit && <Button variant={emptyCatalogue ? 'primary' : undefined} onClick={() => setDialog('new')}>Add product</Button>}
           {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
-          <Button disabled={picked.size === 0} onClick={() => setDialog('labels')}>Print labels{picked.size ? ` (${picked.size})` : ''}</Button>
+          <Button disabled={chosen === 0 || chosen > BULK_LIMIT} onClick={() => setDialog('labels')}>Print labels{chosen ? ` (${chosen.toLocaleString('en-IN')})` : ''}</Button>
           {(canEdit || canExport) && <ActionMenu>
             {canExport && <>
               <Button onClick={() => void downloadExport(current?.shop_id ?? '', 'csv').catch(e => setExportError(describeError(e)))}>Export CSV</Button>
@@ -122,7 +125,7 @@ function ProductsWorkspace() {
         </>} />
         {exportError && <Alert>{exportError}</Alert>}
 
-        <div className="catalogue-heading"><h2>All products {data && <span className="count-badge">{total}</span>}</h2><span className="muted">{picked.size ? `${picked.size} selected` : 'Select products to print labels'}</span></div>
+        <div className="catalogue-heading"><h2>All products {data && <span className="count-badge">{total}</span>}</h2><span className="muted">{chosen ? `${chosen.toLocaleString('en-IN')} selected` : canEdit ? 'Select products to print labels or change them together' : 'Select products to print labels'}</span></div>
         <Toolbar label="Filter products">
           <input type="search" aria-label="Search products" placeholder="Search name, code or barcode" value={search} onChange={(e) => setSearch(e.target.value)} />
           <select aria-label="Category" value={query.category} onChange={(e) => update({ cat: e.target.value })}>
@@ -156,6 +159,29 @@ function ProductsWorkspace() {
             {!filtered && canEdit && <div className="actions empty-actions"><Button variant="primary" onClick={() => setDialog('new')}>Add product</Button><Button onClick={() => setDialog('import')}>Import a file</Button></div>}
           </>
         )}
+        {lostCount > 0 && <Alert kind="info">Your selection of {lostCount.toLocaleString('en-IN')} product{lostCount === 1 ? '' : 's'} was cleared because the search or filters changed. <button className="link" onClick={() => setSelection(NONE)}>Dismiss</button></Alert>}
+        {chosen > 0 && <div className="bulk-bar" role="region" aria-label="Selected products">
+          <p className="bulk-count" role="status">
+            {sel.kind === 'matching'
+              ? <>All <strong>{chosen.toLocaleString('en-IN')}</strong> products matching your search and filters are selected.</>
+              : state === 'all' && total > chosen && data
+                ? <>{chosen === visibleIds.length
+                    ? <>All {visibleIds.length} product{visibleIds.length === 1 ? '' : 's'} on this page {visibleIds.length === 1 ? 'is' : 'are'} selected.</>
+                    : <><strong>{chosen.toLocaleString('en-IN')}</strong> selected, including all {visibleIds.length} on this page.</>} <button className="link" onClick={() => setSelection(selectAllMatching(filters, total))}>Select all {total.toLocaleString('en-IN')} matching products</button></>
+                : <><strong>{chosen.toLocaleString('en-IN')}</strong> selected</>}
+          </p>
+          <div className="bulk-actions">
+            <Button onClick={() => setDialog('labels')} disabled={chosen > BULK_LIMIT}>Print labels</Button>
+            {canEdit && <>
+              <Button onClick={() => setBulk('category')} disabled={chosen > BULK_LIMIT}>Change category</Button>
+              <Button onClick={() => setBulk('reorder')} disabled={chosen > BULK_LIMIT}>Set reorder level</Button>
+              <Button onClick={() => setBulk('price')} disabled={chosen > BULK_LIMIT}>Change prices</Button>
+              <Button variant="danger" onClick={() => setBulk('archive')} disabled={chosen > BULK_LIMIT}>Archive</Button>
+            </>}
+            <button className="link" onClick={() => setSelection(NONE)}>Clear selection</button>
+          </div>
+          {chosen > BULK_LIMIT && <p className="muted bulk-limit">Labels and bulk changes take up to {BULK_LIMIT.toLocaleString('en-IN')} products at a time. Narrow the search or filters.</p>}
+        </div>}
         {data && data.items.length > 0 && (
           <>
             <div className="table-wrap">
@@ -163,7 +189,7 @@ function ProductsWorkspace() {
                 <thead>
                   <tr>
                     <th>
-                      <span className="sr-only">Select</span>
+                      <TriCheckbox state={state} label="Select all products on this page" onChange={() => setSelection(sel.kind === 'matching' ? NONE : togglePage(sel, visibleIds, filters))} />
                     </th>
                     {head('name', 'Product')}
                     <th className="hide-sm">Category</th>
@@ -177,8 +203,8 @@ function ProductsWorkspace() {
                 </thead>
                 <tbody>
                   {data.items.map((p) => (
-                    <ProductRow key={p.uuid} p={p} selected={p.uuid === selectedId} picked={picked.has(p.uuid)} canEdit={canEdit} seeCost={seeCost}
-                      categories={categories.data ?? []} onPick={() => togglePick(p.uuid)} onOpen={() => open(p.uuid)} />
+                    <ProductRow key={p.uuid} p={p} selected={p.uuid === selectedId} picked={sel.kind === 'matching' || (sel.kind === 'picked' && sel.ids.includes(p.uuid))} pickLocked={sel.kind === 'matching'} canEdit={canEdit} seeCost={seeCost}
+                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} />
                   ))}
                 </tbody>
               </table>
@@ -203,7 +229,8 @@ function ProductsWorkspace() {
       {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}
-      {dialog === 'labels' && <Labels ids={[...picked]} onClose={() => setDialog(null)} />}
+      {dialog === 'labels' && <Labels scope={scopeOf(sel)} onClose={() => setDialog(null)} />}
+      {bulk && <BulkDialog kind={bulk} scope={scopeOf(sel)} count={chosen} categories={categories.data ?? []} onClose={() => setBulk(null)} onApplied={() => { if (bulk === 'archive') setSelection(NONE) }} />}
     </div>
   )
 }

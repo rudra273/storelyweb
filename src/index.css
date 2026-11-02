@@ -873,3 +873,18 @@ main:focus { outline: none; }
 .inline-error { color: var(--danger); }
 .inline-hint { margin: 0 0 .5rem; font-size: .8rem; }
 .row-actions { text-align: right; white-space: nowrap; }
+
+/* Selected products: what is chosen, and what can be done with all of it. */
+.bulk-bar { display: grid; gap: .5rem; padding: .75rem 1rem; margin-bottom: .75rem; border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: var(--radius); background: var(--surface); }
+.bulk-count { margin: 0; }
+.bulk-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.bulk-limit { margin: 0; font-size: .85rem; }
+.bulk-heading { margin: 0 0 .75rem; }
+.bulk-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 0 0 1rem; }
+.bulk-summary div { padding: .6rem .75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.bulk-summary dt { font-size: .8rem; color: var(--muted); }
+.bulk-summary dd { margin: 0; font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bulk-sample { margin: .5rem 0; }
+.bulk-sample caption { text-align: left; font-weight: 600; padding-bottom: .25rem; }
+.bulk-skipped li { padding: .25rem 0; }
+.radio-row { display: flex; gap: 1.25rem; margin-bottom: .75rem; }

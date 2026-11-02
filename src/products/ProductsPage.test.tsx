@@ -205,13 +205,13 @@ test('switching shops clears the previous catalogue, selection and dialogs while
 test('label loading failure is visible and cannot print a partial set', async () => {
   fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
     ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
-    ok('GET', '/v1/shops/s1/products/p1', { error: { message: 'Unavailable' } }, 403),
+    ok('POST', '/v1/shops/s1/products/label-data', { error: { message: 'Unavailable' } }, 403),
   ])
   renderApp('/products')
   await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
-  await userEvent.click(screen.getByRole('button', { name: 'Print labels (1)' }))
+  await userEvent.click(screen.getAllByRole('button', { name: /Print labels/ })[0]!)
   const dialog = screen.getByRole('dialog')
-  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Some labels could not be loaded')
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Labels could not be loaded')
   expect(within(dialog).getByRole('button', { name: 'Print' })).toBeDisabled()
   expect(within(dialog).getByRole('button', { name: 'Retry labels' })).toBeEnabled()
 })
@@ -573,4 +573,175 @@ test('staff have no edit icons', async () => {
   renderApp('/products')
   await screen.findByRole('button', { name: 'Basmati Rice' })
   expect(screen.queryByRole('button', { name: /^Edit / })).not.toBeInTheDocument()
+})
+
+
+// ── selecting products and changing many at once ──
+
+const MORE = Array.from({ length: 3 }, (_, i) => ({ ...RICE, uuid: `p${i + 2}`, name: `Item ${i + 2}`, product_code: `X${i}`, barcode: null }))
+const TWO_PAGES = ok('GET', /^\/v1\/shops\/s1\/products\?/, (path: string) => path.includes('cursor=25') ? { items: [{ ...RICE, uuid: 'p9', name: 'Page two item' }], total: 30, next_cursor: null } : { items: [{ ...RICE, ...COST }, ...MORE], total: 30, next_cursor: '25' })
+const REVIEW = { applied: false, replayed: false, action: 'price_change', matched: 1, will_change: 1, unchanged: 0, missing: 0, skipped: [], skipped_total: 0, sample: [{ uuid: 'p1', name: 'Basmati Rice', before: '25.50', after: '28.05' }], notes: ['New invoices use the new prices. Saved invoices keep the price they were sold at.'], below_cost: 0, fingerprint: 'abc123' }
+const bulkCalls = (calls: { method: string; path: string; body: unknown; headers: Headers }[]) => calls.filter(c => c.path.endsWith('/products/bulk'))
+
+test('the header checkbox selects this page and offers every matching product separately', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, TWO_PAGES])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select all products on this page'))
+  expect(screen.getByText(/All 4 products on this page are selected/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Select Basmati Rice')).toBeChecked()
+  await userEvent.click(screen.getByRole('button', { name: 'Select all 30 matching products' }))
+  expect(screen.getByText(/All/, { selector: 'p' })).toHaveTextContent('All 30 products matching your search and filters are selected')
+  // Rows follow the selection; they cannot be unticked one by one until it is cleared.
+  expect(screen.getByLabelText('Select Basmati Rice')).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Print labels (30)' })).toBeEnabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Clear selection' }))
+  expect(screen.queryByRole('region', { name: 'Selected products' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Select Basmati Rice')).not.toBeChecked()
+})
+
+test('the header shows some, then all, and unticking it takes the page off', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, TWO_PAGES])
+  renderApp('/products')
+  const header = await screen.findByLabelText('Select all products on this page') as HTMLInputElement
+  await userEvent.click(screen.getByLabelText('Select Basmati Rice'))
+  expect(header.indeterminate).toBe(true)
+  await userEvent.click(header)
+  expect(header.checked).toBe(true)
+  await userEvent.click(header)
+  expect(header.checked).toBe(false)
+  expect(screen.queryByRole('region', { name: 'Selected products' })).not.toBeInTheDocument()
+})
+
+test('a selection survives going to the next page, and says how many are chosen', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, TWO_PAGES])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select all products on this page'))
+  await userEvent.click(screen.getByRole('button', { name: 'Next' }))
+  await screen.findByRole('button', { name: 'Page two item' })
+  await userEvent.click(screen.getByLabelText('Select Page two item'))
+  expect(screen.getByRole('region', { name: 'Selected products' })).toHaveTextContent('5 selected')
+})
+
+test('changing the search clears the selection and says why', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, TWO_PAGES])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select all products on this page'))
+  await userEvent.click(screen.getByLabelText('Low stock'))
+  expect(await screen.findByText(/Your selection of 4 products was cleared because the search or filters changed/)).toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'Selected products' })).not.toBeInTheDocument()
+})
+
+test('a bulk price change is reviewed by the server first, then applied exactly as reviewed', async () => {
+  const seen: { body: Record<string, unknown>; key: string | null }[] = []
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }]))])
+  const base = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+    if (!path.endsWith('/products/bulk')) return base(path, init)
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>
+    seen.push({ body, key: new Headers(init.headers).get('Idempotency-Key') })
+    return Promise.resolve(new Response(JSON.stringify(body.dry_run ? REVIEW : { ...REVIEW, applied: true }), { status: 200 }))
+  })
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Change prices' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Change by (%)'), '10')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  await userEvent.click(await within(dialog).findByRole('button', { name: 'Change prices of 1 product' }))
+  await within(dialog).findByText('Done')
+  expect(seen).toHaveLength(2)
+  expect(seen[0]?.body).toEqual({ scope: { ids: ['p1'] }, action: { type: 'price_change', mode: 'percent', value: '10' }, dry_run: true })
+  expect(seen[1]?.body).toEqual({ scope: { ids: ['p1'] }, action: { type: 'price_change', mode: 'percent', value: '10' }, dry_run: false, expected: { matched: 1, will_change: 1, fingerprint: 'abc123' } })
+  expect(seen[1]?.key).toMatch(/[0-9a-f-]{20,}/)
+})
+
+test('products left alone are listed with the reason and can be downloaded', async () => {
+  const left = { ...REVIEW, matched: 3, will_change: 1, unchanged: 0, skipped_total: 2, skipped: [{ uuid: 'f1', name: 'Formula Tea', reason: 'Priced from cost and margin. Change its cost or margin instead.' }, { uuid: 'f2', name: 'Formula Oil', reason: 'Priced from cost and margin. Change its cost or margin instead.' }] }
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])), ok('POST', '/v1/shops/s1/products/bulk', left)])
+  const created = vi.fn(() => 'blob:x')
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: created, revokeObjectURL: vi.fn() }))
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Change prices' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Change by (%)'), '5')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  const list = await within(dialog).findByRole('region', { name: 'Left alone' })
+  expect(list).toHaveTextContent('Formula Tea')
+  expect(list).toHaveTextContent('Priced from cost and margin')
+  expect(within(dialog).getByRole('group', { name: 'Summary' })).toHaveTextContent('Left alone2')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Download the full list (CSV)' }))
+  expect(click).toHaveBeenCalledTimes(1)
+  click.mockRestore()
+})
+
+test('a review that has gone stale is refused with a way to review again', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }]))])
+  const base = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+    if (!path.endsWith('/products/bulk')) return base(path, init)
+    return Promise.resolve(JSON.parse(String(init.body)).dry_run
+      ? new Response(JSON.stringify(REVIEW), { status: 200 })
+      : new Response(JSON.stringify({ error: { code: 'scope_changed', message: 'The products changed since you reviewed this. Review the change again.' } }), { status: 409 }))
+  })
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Change prices' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Change by (%)'), '10')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  await userEvent.click(await within(dialog).findByRole('button', { name: 'Change prices of 1 product' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('changed since you reviewed')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review again' }))
+  expect(within(dialog).getByRole('button', { name: 'Review change' })).toBeInTheDocument()
+})
+
+test('a bad number is explained before anything is asked of the server', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }]))])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Change prices' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Change by (%)'), 'lots')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('Enter the change as a number')
+  await userEvent.clear(within(dialog).getByLabelText('Change by (%)'))
+  await userEvent.type(within(dialog).getByLabelText('Change by (%)'), '-100')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('cannot fall by 100%')
+  expect(bulkCalls(calls)).toHaveLength(0)
+})
+
+test('archiving is called archiving and uses the danger button', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])), ok('POST', '/v1/shops/s1/products/bulk', { ...REVIEW, action: 'archive', sample: [], notes: [] })])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Archive' }))
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toHaveTextContent('Past invoices keep them')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  expect(await within(dialog).findByRole('button', { name: 'Archive 1 product' })).toHaveClass('danger-button')
+})
+
+test('staff can select products for labels but have no way to change them', async () => {
+  setup('staff', [RICE])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  const bar = screen.getByRole('region', { name: 'Selected products' })
+  expect(within(bar).getByRole('button', { name: 'Print labels' })).toBeInTheDocument()
+  for (const name of ['Change category', 'Set reorder level', 'Change prices', 'Archive']) expect(within(bar).queryByRole('button', { name })).not.toBeInTheDocument()
+})
+
+test('labels for every matching product ask the server for the filter, not just the page', async () => {
+  // jsdom has no canvas; the barcode library only needs it to measure text.
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ measureText: () => ({ width: 10 }) } as unknown as CanvasRenderingContext2D)
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, TWO_PAGES, ok('POST', '/v1/shops/s1/products/label-data', [{ uuid: 'p1', name: 'Basmati Rice', product_code: 'R1', barcode: '8901', selling_price: '25.5' }])])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select all products on this page'))
+  await userEvent.click(screen.getByRole('button', { name: 'Select all 30 matching products' }))
+  await userEvent.click(screen.getAllByRole('button', { name: /Print labels/ })[0]!)
+  await screen.findByLabelText('Label preview')
+  const sent = calls.find(c => c.path.endsWith('/label-data'))
+  expect(sent?.body).toEqual({ scope: { filter: { q: null, category: null, low_stock: false, expiring_days: null } } })
 })

@@ -1187,6 +1187,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/products/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Many Products
+         * @description Review (dry_run, the default) or apply one change to many products. The server decides
+         *     which products the scope means, reports what would change and what is left alone and why,
+         *     and applies all of it in one transaction or none. Applying with `expected` (the review's
+         *     counts) is refused if the products no longer match what was reviewed.
+         */
+        post: operations["change_many_products_v1_shops__shop_id__products_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/products/export": {
         parameters: {
             query?: never;
@@ -1219,6 +1242,26 @@ export interface paths {
          *     and changes nothing; the real run adds each row's stock as a purchase.
          */
         post: operations["import_products_v1_shops__shop_id__products_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/label-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Label Data
+         * @description What a printed label needs for the products in a scope, as they are now.
+         */
+        post: operations["label_data_v1_shops__shop_id__products_label_data_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1809,6 +1852,14 @@ export interface components {
             /** Shop Id */
             shop_id: string;
         };
+        /** Archive */
+        Archive: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "archive";
+        };
         /** BillDetail */
         BillDetail: {
             bill: components["schemas"]["BillSummary"];
@@ -1970,6 +2021,108 @@ export interface components {
             taxable_amount: string;
             /** Total Amount */
             total_amount: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /**
+         * BulkExpected
+         * @description What the review showed. If the products have changed since, the apply is refused.
+         */
+        BulkExpected: {
+            /** Fingerprint */
+            fingerprint?: string | null;
+            /** Matched */
+            matched: number;
+            /** Will Change */
+            will_change: number;
+        };
+        /**
+         * BulkFilter
+         * @description The catalogue filter a selection was made under; the server re-runs it.
+         */
+        BulkFilter: {
+            /** Category */
+            category?: string | null;
+            /** Expiring Days */
+            expiring_days?: number | null;
+            /**
+             * Low Stock
+             * @default false
+             */
+            low_stock: boolean;
+            /** Q */
+            q?: string | null;
+        };
+        /** BulkIn */
+        BulkIn: {
+            /** Action */
+            action: components["schemas"]["SetCategory"] | components["schemas"]["SetReorderLevel"] | components["schemas"]["PriceChange"] | components["schemas"]["Archive"];
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            expected?: components["schemas"]["BulkExpected"] | null;
+            scope: components["schemas"]["BulkScope"];
+        };
+        /** BulkOut */
+        BulkOut: {
+            /** Action */
+            action: string;
+            /** Applied */
+            applied: boolean;
+            /** Below Cost */
+            below_cost: number | null;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Matched */
+            matched: number;
+            /** Missing */
+            missing: number;
+            /** Notes */
+            notes: string[];
+            /**
+             * Replayed
+             * @default false
+             */
+            replayed: boolean;
+            /** Sample */
+            sample: components["schemas"]["BulkSample"][];
+            /** Skipped */
+            skipped: components["schemas"]["BulkSkipped"][];
+            /** Skipped Total */
+            skipped_total: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Will Change */
+            will_change: number;
+        };
+        /** BulkSample */
+        BulkSample: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Name */
+            name: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /**
+         * BulkScope
+         * @description Exactly one of: the products picked (ids), or every product a filter matches.
+         */
+        BulkScope: {
+            filter?: components["schemas"]["BulkFilter"] | null;
+            /** Ids */
+            ids?: string[] | null;
+        };
+        /** BulkSkipped */
+        BulkSkipped: {
+            /** Name */
+            name: string | null;
+            /** Reason */
+            reason: string;
             /** Uuid */
             uuid: string;
         };
@@ -2845,6 +2998,23 @@ export interface components {
             /** Unpaid Total */
             unpaid_total: string;
         };
+        /** LabelProduct */
+        LabelProduct: {
+            /** Barcode */
+            barcode: string | null;
+            /** Name */
+            name: string;
+            /** Product Code */
+            product_code: string | null;
+            /** Selling Price */
+            selling_price: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** LabelScopeIn */
+        LabelScopeIn: {
+            scope: components["schemas"]["BulkScope"];
+        };
         /** LoginIn */
         LoginIn: {
             /**
@@ -3467,6 +3637,21 @@ export interface components {
             taxable_value: string;
             /** Unit Price */
             unit_price: string;
+        };
+        /** PriceChange */
+        PriceChange: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "percent" | "amount";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "price_change";
+            /** Value */
+            value: number | string;
         };
         /** PricePreviewIn */
         PricePreviewIn: {
@@ -4265,6 +4450,26 @@ export interface components {
              * Format: date-time
              */
             last_used_at: string;
+        };
+        /** SetCategory */
+        SetCategory: {
+            /** Category Uuid */
+            category_uuid: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set_category";
+        };
+        /** SetReorderLevel */
+        SetReorderLevel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set_reorder_level";
+            /** Value */
+            value: number | string | null;
         };
         /** SettleIn */
         SettleIn: {
@@ -7229,6 +7434,43 @@ export interface operations {
             };
         };
     };
+    change_many_products_v1_shops__shop_id__products_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_products_v1_shops__shop_id__products_export_get: {
         parameters: {
             query?: {
@@ -7284,6 +7526,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    label_data_v1_shops__shop_id__products_label_data_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelScopeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelProduct"][];
                 };
             };
             /** @description Validation Error */
