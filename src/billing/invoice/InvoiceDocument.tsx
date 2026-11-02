@@ -62,7 +62,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
         {show('show_invoice_title') && <h3 className="invoice-title">{documentTitle(s, b)}</h3>}
         {s.gst_scheme === 'composition' && b.document_type !== 'credit_note' && <p className="invoice-note">Composition taxable person, not eligible to collect tax on supplies.</p>}
       </header>
-      {b.cancelled && <p className="invoice-cancelled">CANCELLED{b.cancel_reason ? ` · ${b.cancel_reason}` : ''}</p>}
+      {b.cancelled && <p className="invoice-cancelled">VOID{b.cancel_reason ? ` · ${b.cancel_reason}` : ''}</p>}
 
       <section className="invoice-parties">
         <div>
@@ -103,7 +103,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
       </div>
 
       {hsn.length > 0 && <table className="table hsn-summary"><caption>Tax summary by HSN</caption><thead><tr><th>HSN/SAC</th><th className="num">Taxable value</th><th className="num">GST rate</th><th className="num">Tax</th></tr></thead><tbody>{hsn.map(h => <tr key={`${h.hsn}-${h.rate}`}><td>{h.hsn || '—'}</td><td className="num">{formatMoney(h.taxable.toFixed(2))}</td><td className="num">{h.rate}%</td><td className="num">{formatMoney(h.tax.toFixed(2))}</td></tr>)}</tbody></table>}
-      {show('show_payment_details') && detail.payments.length > 0 && <p className="invoice-payments">Received: {detail.payments.map(p => `${formatMoney(p.amount)} by ${paymentMethod(p.payment_method)}${p.payment_reference ? ` (${p.payment_reference})` : ''}`).join(', ')}</p>}
+      {show('show_payment_details') && detail.payments.length > 0 && <p className="invoice-payments">{b.document_type === 'credit_note' ? 'Refunded' : 'Received'}: {detail.payments.map(p => `${formatMoney(b.document_type === 'credit_note' ? String(Math.abs(Number(p.amount))) : p.amount)} ${p.payment_method === 'credit_note' ? 'applied to the invoice' : `by ${paymentMethod(p.payment_method)}`}${p.payment_reference && p.payment_method !== 'credit_note' ? ` (${p.payment_reference})` : ''}`).join(', ')}</p>}
       <section className="invoice-extras">
         {upi && <div className="invoice-upi"><QRCodeSVG value={upi} size={thermal ? 96 : 112} level="M" marginSize={2} role="img" aria-label={`UPI QR code to pay ${formatMoney(b.balance_due)}`} /><small>Scan to pay {formatMoney(b.balance_due)}<br />{s.upi_id}</small></div>}
         {s.bank_details && !thermal && <div><h4>Bank details</h4><p>{s.bank_details}</p></div>}

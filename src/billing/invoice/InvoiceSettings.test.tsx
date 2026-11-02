@@ -25,7 +25,7 @@ test('the preview follows the settings as they are edited, and only changes are 
   await userEvent.click(screen.getByLabelText('HSN / SAC'))
   expect(within(within(preview).getByRole('table', { name: '' })).queryByRole('columnheader', { name: 'HSN/SAC' })).not.toBeInTheDocument()
   await userEvent.click(screen.getByLabelText(/Not GST-registered/))
-  expect(within(preview).getByText('BILL')).toBeInTheDocument()
+  expect(within(preview).getByText('INVOICE')).toBeInTheDocument()
   expect(screen.getByText(/changes how new bills are taxed/)).toBeInTheDocument()
   await userEvent.click(screen.getByLabelText(/Regular GST/))
   const footer = screen.getByLabelText('Footer')

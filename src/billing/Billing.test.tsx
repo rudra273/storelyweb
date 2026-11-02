@@ -29,19 +29,19 @@ test('staff can browse bills and filters are sent to the API', async () => {
   renderApp('/billing')
   expect(await screen.findByRole('link', { name: bill.bill_number })).toBeInTheDocument()
   await userEvent.selectOptions(screen.getByLabelText('Payment status'), 'unpaid')
-  await userEvent.type(screen.getByLabelText('Search bills'), 'Ravi & Co')
+  await userEvent.type(screen.getByLabelText('Search invoices'), 'Ravi & Co')
   await waitFor(() => expect(calls.some(c => c.path.includes('q=Ravi+%26+Co') && c.path.includes('status=unpaid'))).toBe(true))
 })
 
-test('staff can record payments but cannot cancel or return items', async () => {
+test('staff can record payments but cannot void or return items', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', '/v1/shops/s1/bills/b1', detail)])
   renderApp('/billing/b1')
   expect(await screen.findByRole('button', { name: 'Record payment' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Return items' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Cancel bill' })).not.toBeInTheDocument()
-  const row = screen.getByRole('row', { name: /Rice/ })
-  expect(within(row).getByText('₹189.00')).toBeInTheDocument()
-  expect(within(row).getByText('₹9.00')).toBeInTheDocument()
+  expect(screen.queryByText('Void invoice')).not.toBeInTheDocument()
+  const figures = screen.getByRole('group', { name: 'Amounts' })
+  expect(within(figures).getAllByText('₹189.00')).toHaveLength(2) // total and balance due
+  expect(screen.getByText('Unpaid')).toBeInTheDocument()
 })
 
 test('a payment sends the entered decimal and reference to the correct bill', async () => {
@@ -70,15 +70,20 @@ test('owners can issue a return for selected quantities', async () => {
   await waitFor(() => expect(calls.some(c => c.path.endsWith('/credit-note/preview') && (c.body as { quantities: Record<string, string> }).quantities.i1 === '0.5')).toBe(true))
   await userEvent.selectOptions(within(dialog).getByLabelText('Settlement'), 'adjust')
   await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Return items' })).toBeEnabled())
+  // A return needs a reason, so the record explains itself later.
   await userEvent.click(within(dialog).getByRole('button', { name: 'Return items' }))
-  await waitFor(() => expect(calls.find(c => c.path.endsWith('/credit-note'))?.body).toMatchObject({ quantities: { i1: '0.5' }, settlement: 'adjust' }))
+  expect(await within(dialog).findByText(/reason/i, { selector: '.field-error' })).toBeInTheDocument()
+  expect(calls.some(c => c.path.endsWith('/credit-note') && c.method === 'POST')).toBe(false)
+  await userEvent.type(within(dialog).getByLabelText('Reason for the return'), 'Damaged in transit')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Return items' }))
+  await waitFor(() => expect(calls.find(c => c.path.endsWith('/credit-note'))?.body).toMatchObject({ quantities: { i1: '0.5' }, settlement: 'adjust', reason: 'Damaged in transit' }))
 })
 
-test('a cancelled bill has no payment, cancellation or return actions', async () => {
+test('a voided invoice has no payment, void or return actions', async () => {
   fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', { ...detail, bill: { ...bill, cancelled: true, cancel_reason: 'Mistake' } })])
   renderApp('/billing/b1')
-  await screen.findByText('Cancelled: Mistake')
-  for (const name of ['Record payment', 'Return items', 'Cancel bill']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+  await screen.findByText(/Voided: Mistake/)
+  for (const name of ['Record payment', 'Return items', 'Void invoice']) expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
 })
 
 test('a bill waits for server pricing and confirmation, then sends decimal input', async () => {
@@ -169,7 +174,7 @@ test('a bill whose save was not confirmed comes back locked with the same retry 
 test('empty and failed bill lists are explained', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', /^\/v1\/shops\/s1\/bills\?/, { items: [], total: 0, next_cursor: null })])
   const view = renderApp('/billing')
-  expect(await screen.findByText('No bills found')).toBeInTheDocument()
+  expect(await screen.findByText('No invoices found')).toBeInTheDocument()
   view.unmount()
   fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', /^\/v1\/shops\/s1\/bills\?/, { error: { message: 'Please try later' } }, 500)])
   renderApp('/billing')
@@ -197,6 +202,7 @@ for (const action of ['payment', 'return'] as const) {
     const dialog = screen.getByRole('dialog')
     if (action === 'return') {
       await userEvent.type(within(dialog).getByLabelText('Return Rice'), '0.5')
+      await userEvent.type(within(dialog).getByLabelText('Reason for the return'), 'Damaged')
       await waitFor(() => expect(within(dialog).getByRole('button', { name: label })).toBeEnabled())
     }
     await userEvent.click(within(dialog).getByRole('button', { name: label }))
@@ -378,4 +384,105 @@ test('a business invoice explains it needs the GSTIN instead of asking the serve
   expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeDisabled()
   await new Promise(r => setTimeout(r, 400))
   expect(calls.filter(c => c.path.endsWith('/bills/preview')).length).toBe(before)
+})
+
+
+/** Calls that could change something on the server (signing in aside). */
+const writes = (calls: { method: string; path: string }[]) => calls.filter(c => c.method !== 'GET' && !c.path.startsWith('/v1/auth/'))
+const withMore = (body: object = detail) => [...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', body), ok('GET', '/v1/shops/s1/invoice-settings', { paper_size: 'A4', show: {}, invoice_title: 'TAX INVOICE', gst_scheme: 'regular', shop_name: 'Asha Stores', shop_address: '', shop_phone: '', shop_email: '', upi_id: '', shop_logo: null, digital_signature: null })]
+
+test('voiding sits under More actions, shows its impact, and needs a reason', async () => {
+  const paid = { ...detail, bill: { ...bill, paid_amount: '100.00', balance_due: '89.00' } }
+  const calls = fakeApi([...withMore(paid), ok('POST', '/v1/shops/s1/bills/b1/cancel', { ...detail, bill: { ...bill, cancelled: true, cancel_reason: 'Wrong customer' } })])
+  renderApp('/billing/b1')
+  // Not in the routine row: it is behind the More actions menu.
+  expect(screen.queryByRole('button', { name: /Cancel/ })).not.toBeInTheDocument()
+  await userEvent.click(await screen.findByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Void invoice' }))
+  const dialog = screen.getByRole('dialog')
+  const impact = within(dialog).getByRole('region', { name: 'What voiding does' })
+  expect(impact).toHaveTextContent('stay on record as voided')
+  expect(impact).toHaveTextContent('Stock for 1 product goes back to the shelf')
+  expect(impact).toHaveTextContent('₹100.00 of recorded payments')
+  expect(impact).toHaveTextContent('Storely does not refund money')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Void invoice' }))
+  expect(await within(dialog).findByText(/reason/i, { selector: '.field-error' })).toBeInTheDocument()
+  expect(calls.some(c => c.path.endsWith('/cancel'))).toBe(false)
+  await userEvent.type(within(dialog).getByLabelText('Reason for voiding'), 'Wrong customer')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Void invoice' }))
+  await waitFor(() => expect(calls.find(c => c.path.endsWith('/cancel'))?.body).toEqual({ reason: 'Wrong customer' }))
+})
+
+test('an invoice with a credit note cannot be voided until the note is', async () => {
+  fakeApi(withMore({ ...detail, credit_notes: [{ uuid: 'c1', bill_number: 'CN/1', total_amount: '-10.00', created_at: '2026-10-27T10:00:00' }] }))
+  renderApp('/billing/b1')
+  await userEvent.click(await screen.findByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Void invoice' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByRole('alert')).toHaveTextContent('Void it first')
+  expect(within(dialog).getByRole('button', { name: 'Void invoice' })).toBeDisabled()
+})
+
+test('a credit note says what happened to the money instead of Paid', async () => {
+  const note = { ...detail, bill: { ...bill, document_type: 'credit_note', bill_number: 'CN/1', total_amount: '-105.00', payment_status: 'unpaid', original_bill_number: 'INV/2627/A0001', original_bill_uuid: 'b0' }, payments: [{ uuid: 'p1', amount: '-105.00', payment_method: 'cash', payment_reference: null, notes: 'Refund', received_at: '2026-10-27T10:00:00' }], history: [{ action: 'created', actor: 'Asha', details: 'Return against INV/2627/A0001', created_at: '2026-10-27T10:00:00' }] }
+  fakeApi(withMore(note))
+  renderApp('/billing/b1')
+  expect(await screen.findByText('Refunded')).toBeInTheDocument()
+  expect(screen.queryByText('Paid')).not.toBeInTheDocument()
+  expect(screen.getByText('by Asha', { exact: false })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Return items' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'INV/2627/A0001' })).toHaveAttribute('href', '/billing/b0')
+})
+
+test('sharing on WhatsApp is reviewed first, opens a chat only when asked, and cancelling does nothing', async () => {
+  const open = vi.fn()
+  vi.stubGlobal('open', open)
+  const calls = fakeApi(withMore({ ...detail, bill: { ...bill, customer_phone: '98765 43210' } }))
+  renderApp('/billing/b1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Share on WhatsApp' }))
+  let dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByLabelText('Send to')).toHaveValue('98765 43210')
+  expect((within(dialog).getByLabelText('Message') as HTMLTextAreaElement).value).toContain('INV/2627/A0001')
+  expect(within(dialog).getByText(/cannot attach the invoice/)).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+  expect(open).not.toHaveBeenCalled()
+  expect(writes(calls)).toHaveLength(0)
+  await userEvent.click(screen.getByRole('button', { name: 'Share on WhatsApp' }))
+  dialog = screen.getByRole('dialog')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Open WhatsApp' }))
+  expect(open).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/wa\.me\/919876543210\?text=/), '_blank', 'noopener,noreferrer')
+  expect(within(dialog).getByText(/cannot see whether you sent/)).toBeInTheDocument()
+  expect(writes(calls)).toHaveLength(0)
+})
+
+test('a missing or unusable phone number is asked for, not guessed', async () => {
+  const open = vi.fn()
+  vi.stubGlobal('open', open)
+  fakeApi(withMore())
+  renderApp('/billing/b1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Share on WhatsApp' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByText(/no phone number/)).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Open WhatsApp' }))
+  expect(await within(dialog).findByText(/with its country code/)).toBeInTheDocument()
+  expect(open).not.toHaveBeenCalled()
+})
+
+test('the paper chosen for one print does not change the saved paper', async () => {
+  const calls = fakeApi(withMore())
+  renderApp('/billing/b1')
+  await screen.findByText('This is your shop’s saved paper.')
+  await userEvent.selectOptions(screen.getByLabelText('Paper size'), '80mm')
+  expect(screen.getByText(/For this print only/)).toHaveTextContent('Your saved paper stays A4')
+  expect(writes(calls)).toHaveLength(0)
+})
+
+test('invoice list filters live in the address, so going back keeps them', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', /^\/v1\/shops\/s1\/bills\?/, { items: [bill], total: 1, next_cursor: null })])
+  renderApp('/billing?status=unpaid&voided=1')
+  await screen.findByRole('link', { name: bill.bill_number })
+  expect(screen.getByLabelText('Payment status')).toHaveValue('unpaid')
+  expect(screen.getByLabelText('Voided invoices')).toBeChecked()
+  expect(screen.getByRole('link', { name: bill.bill_number })).toHaveAttribute('href', '/billing/b1')
+  expect(calls.some(c => c.path.includes('status=unpaid') && c.path.includes('cancelled=true'))).toBe(true)
 })

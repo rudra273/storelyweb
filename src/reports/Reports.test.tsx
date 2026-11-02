@@ -25,7 +25,7 @@ test('the overview shows the numbers, a chart with a text alternative, and the m
   expect(await screen.findByText('₹205.90')).toBeInTheDocument()
   expect(screen.getByText('2 invoices, net of returns')).toBeInTheDocument()
   expect(screen.getByText('22.22% margin')).toBeInTheDocument()
-  expect(screen.getByText(/3 unpaid bills, all time/)).toBeInTheDocument()
+  expect(screen.getByText(/3 unpaid invoices, all time/)).toBeInTheDocument()
   const chart = screen.getByRole('img', { name: /Sales by day: 2026-10-01 ₹258.40, 2026-10-05 -₹52.50/ })
   expect(chart).toBeInTheDocument()
   expect(screen.getByText('upi')).toBeInTheDocument()

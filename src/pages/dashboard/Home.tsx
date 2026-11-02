@@ -39,7 +39,7 @@ function DailySummary() {
       <div className="kpis home-kpis">
         <Tile label="Today’s sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'} · net of returns`} />
         <Tile label="Money received today" value={formatMoney(k.collected)} />
-        <Tile label="Outstanding payments" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid bill${k.unpaid_count === 1 ? '' : 's'} · all time`} tone={k.unpaid_count ? 'bad' : undefined} />
+        <Tile label="Outstanding payments" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid invoice${k.unpaid_count === 1 ? '' : 's'} · all time`} tone={k.unpaid_count ? 'bad' : undefined} />
         <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={k.gst_registered ? 'Current inventory value' : 'Current inventory value, incl. GST paid on purchase'} />
       </div>
       <div className="attention-strip"><div><span className="attention-dot" aria-hidden="true" /><strong>Stock watch</strong><span>{k.low_stock_count} running low · {k.out_of_stock_count} out of stock</span></div><Link to="/products?low=1">Review stock →</Link></div>
@@ -53,11 +53,11 @@ function GettingStarted() {
   if (!products.data || products.data.items.length > 0) return null
   return <section className="card wide getting-started" aria-labelledby="start-heading">
     <h2 id="start-heading">Get your shop ready</h2>
-    <p className="muted">Three steps and you can bill your first customer.</p>
+    <p className="muted">Three steps and you can invoice your first customer.</p>
     <ol>
       <li><Link to="/settings"><strong>Check your shop details</strong><span>Address, phone and GST registration, as they print on invoices.</span></Link></li>
       <li><Link to="/products?new=1"><strong>Add your first product</strong><span>Name and price are enough to start; add stock now or later.</span></Link></li>
-      <li><Link to="/billing/new"><strong>Create your first bill</strong><span>Pick products, take payment and print or share the invoice.</span></Link></li>
+      <li><Link to="/billing/new"><strong>Create your first invoice</strong><span>Pick products, take payment and print or share the invoice.</span></Link></li>
     </ol>
   </section>
 }

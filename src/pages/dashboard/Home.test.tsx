@@ -12,7 +12,7 @@ test('owners see server figures for today and links to outstanding work', async 
   })])
   renderApp('/')
   expect(await screen.findByText('₹125.50')).toBeInTheDocument()
-  expect(screen.getByText('1 unpaid bill · all time')).toBeInTheDocument()
+  expect(screen.getByText('1 unpaid invoice · all time')).toBeInTheDocument()
   expect(screen.getByText('2 running low · 1 out of stock')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Review stock →' })).toHaveAttribute('href', '/products?low=1')
   const request = calls.find(c => c.path.includes('/reports/kpis'))!

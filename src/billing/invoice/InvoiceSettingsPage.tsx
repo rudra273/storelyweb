@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { api } from '../../api/client'
 import type { components } from '../../api/schema'
 import { Alert, Field, Loading } from '../../components/ui/ui'
@@ -10,6 +10,7 @@ import { imageSrc, prepareImage } from '../../lib/images'
 import { Button, PageHeader } from '../../components/ui/workspace'
 import { useShop } from '../../shops/context'
 import { InvoiceDocument, type Paper } from './InvoiceDocument'
+import { PaperSheet } from './PaperSheet'
 import { useBillingQuery, type BillDetail, type InvoiceSettings } from '../queries'
 
 type Change = components['schemas']['InvoiceSettingsIn']
@@ -24,28 +25,10 @@ const GROUPS: { title: string; keys: [ShowKey, string][] }[] = [
   { title: 'Extras', keys: [['show_amount_in_words', 'Amount in words'], ['show_hsn_summary', 'Tax summary by HSN'], ['show_payment_details', 'Payments and balance due'], ['show_upi_qr', 'UPI QR for the balance due'], ['show_footer_text', 'Footer text'], ['show_digital_signature', 'Signature']] },
 ]
 
-// Paper widths at 96 dpi: the preview lays the page out at its real width, then shrinks it.
-const PAPER_PX: Record<Paper, number> = { A4: 794, A5: 559, '80mm': 302, '58mm': 219 }
-
-function ScaledSheet({ paper, children }: { paper: Paper; children: ReactNode }) {
-  const box = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-  useEffect(() => {
-    const el = box.current
-    if (!el || typeof ResizeObserver === 'undefined') return
-    const fit = () => setScale(Math.min(1, (el.clientWidth - 32) / PAPER_PX[paper]))
-    fit()
-    const watch = new ResizeObserver(fit)
-    watch.observe(el)
-    return () => watch.disconnect()
-  }, [paper])
-  return <div ref={box} className="settings-preview-sheet"><div style={{ width: PAPER_PX[paper], zoom: scale }}>{children}</div></div>
-}
-
 const SCHEMES = [
-  { value: 'regular', label: 'Regular GST', note: 'GST is charged on bills; invoices are Tax Invoices.' },
-  { value: 'composition', label: 'Composition scheme', note: 'No GST on bills; invoices are Bills of Supply with the composition note.' },
-  { value: 'unregistered', label: 'Not GST-registered', note: 'No GST on bills; GST paid on purchases is part of your cost.' },
+  { value: 'regular', label: 'Regular GST', note: 'GST is charged on invoices; they print as Tax Invoices.' },
+  { value: 'composition', label: 'Composition scheme', note: 'No GST on invoices; they print as Bills of Supply with the composition note.' },
+  { value: 'unregistered', label: 'Not GST-registered', note: 'No GST on invoices; GST paid on purchases is part of your cost.' },
 ] as const
 
 /** A sample bill for the preview, so the layout can be judged before any real sale.
@@ -212,7 +195,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
         <div className="settings-preview-head"><strong>Preview</strong><span className="muted">Sample bill</span>
           <select aria-label="Preview paper" value={paper} onChange={e => setPaper(e.target.value as Paper)}><option value="A4">A4</option><option value="A5">A5</option><option value="80mm">Receipt 80 mm</option><option value="58mm">Receipt 58 mm</option></select>
         </div>
-        <ScaledSheet paper={paper}><InvoiceDocument detail={sample(draft.gst_scheme === 'regular')} settings={preview} paper={paper} /></ScaledSheet>
+        <PaperSheet paper={paper}><InvoiceDocument detail={sample(draft.gst_scheme === 'regular')} settings={preview} paper={paper} /></PaperSheet>
       </aside>
     </div>
   </div>

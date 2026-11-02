@@ -32,5 +32,5 @@ export const roleLabel = (code: string) => ROLES[code] ?? words(code)
 const REASONS: Record<string, string> = { damage: 'Damaged', expired: 'Expired', theft: 'Lost / theft', return: 'Customer return', own_use: 'Own use', count: 'Stock count corrected', other: 'Other' }
 export const stockReason = (code: string | null | undefined) => (code ? REASONS[code] ?? words(code) : '')
 
-const ACTIONS: Record<string, string> = { created: 'Bill created', payment: 'Payment recorded', cancelled: 'Bill cancelled', credit_note: 'Items returned', refund: 'Refund' }
+const ACTIONS: Record<string, string> = { created: 'Created', payment: 'Payment recorded', cancelled: 'Voided', credit_note: 'Items returned', refund: 'Refund' }
 export const billAction = (code: string) => ACTIONS[code] ?? words(code)
