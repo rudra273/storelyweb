@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -1197,6 +1197,26 @@ export interface paths {
          *     and changes nothing; the real run adds each row's stock as a purchase.
          */
         post: operations["import_products_v1_shops__shop_id__products_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup Product
+         * @description The one product whose barcode or code is exactly `code`: what a scanner sends.
+         */
+        get: operations["lookup_product_v1_shops__shop_id__products_lookup_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4612,7 +4632,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4634,7 +4654,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7206,6 +7226,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_product_v1_shops__shop_id__products_lookup_get: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductOut"];
                 };
             };
             /** @description Validation Error */

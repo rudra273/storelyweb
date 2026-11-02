@@ -391,43 +391,96 @@ input[type=checkbox] { accent-color: var(--primary-bg); width: 16px; height: 16p
 .payment-badge.partial { background: var(--warn-bg); color: var(--warn-text); }
 .billing-page td:first-child a { font-weight: 600; text-decoration: none; }
 .billing-page td small { display: inline-block; color: var(--muted); padding-top: .35rem; }
-.checkout-grid { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 1.5rem; align-items: start; }
+.checkout-grid { display: grid; grid-template-columns: minmax(0, 65fr) minmax(20rem, 35fr); gap: 1.25rem; align-items: start; }
 .checkout-main { min-width: 0; }
-.checkout-main > .card:first-child, .checkout-summary > .card:first-child { margin-top: 0; }
-.checkout-section-title { display: flex; gap: .75rem; align-items: center; margin-bottom: 1rem; }
-.checkout-section-title > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--surface-2); color: var(--muted); font-size: .7rem; font-weight: 600; }
-.checkout-section-title h2 { margin: 0; }
-.checkout-section-title small { color: var(--muted); font-size: .85rem; }
-.checkout-main .card > p { font-size: .85rem; }
-.tax-details { border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 1rem; }
-.tax-details summary { cursor: pointer; font-weight: 600; color: var(--heading); font-size: .85rem; }
-.tax-details[open] summary { margin-bottom: 1.25rem; }
-.checkout-page .product-picker { border: 1px solid var(--line); border-radius: 8px; padding: .25rem .75rem; }
-.checkout-page .product-picker li:last-child { border-bottom: 0; }
-.checkout-page .product-picker button { text-align: left; text-decoration: none; padding: .5rem 0; width: 100%; }
-.checkout-page .product-picker button:not(:disabled):hover { color: var(--gold-text); }
-.cart-empty { text-align: center; padding: 2rem 1rem; color: var(--muted); background: var(--bg); border-radius: 8px; margin-bottom: 1.25rem; }
+.checkout-items { padding: 1rem; margin-top: 0; }
+.checkout-summary { position: sticky; top: .75rem; min-width: 0; display: grid; gap: .75rem; }
+.checkout-summary .card { padding: 1rem; margin: 0; max-width: none; }
+.checkout-summary .check { font-size: .85rem; }
+.scan-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .3rem .75rem; align-items: center; }
+.scan-entry label { grid-column: 1 / -1; font-weight: 600; color: var(--heading); }
+.scan-entry input { font-size: 1.05rem; padding: .65rem .8rem; min-width: 0; }
+.scan-mode { display: inline-flex; gap: .4rem; align-items: center; color: var(--muted); font-size: .8rem; white-space: nowrap; }
+.scan-dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--ok); }
+.scan-status { min-height: 1.3rem; margin: .35rem 0 0; font-size: .85rem; color: var(--muted); }
+.scan-ok { color: var(--ok); }
+.scan-warn { color: var(--warn-text); }
+.scan-error { color: var(--danger); }
+.scan-help { font-size: .8rem; color: var(--muted); }
+.scan-help summary { cursor: pointer; width: fit-content; }
+.scan-help p { margin: .35rem 0 0; }
+kbd { font: inherit; font-size: .75rem; border: 1px solid var(--control-border); border-radius: 4px; padding: 0 .3rem; background: var(--surface-2); }
+.chip-row { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0 .25rem; }
+.chip { border-radius: 99px; padding: .2rem .75rem; font-size: .8rem; background: var(--surface-2); border: 1px solid var(--line); color: var(--text); }
+.chip[aria-pressed='true'] { background: var(--gold-soft); border-color: var(--gold-dark); color: var(--heading); }
+.picker { border: 1px solid var(--line); border-radius: 8px; margin: .5rem 0; max-height: 13rem; overflow-y: auto; }
+.picker > p { margin: 0; padding: .6rem .75rem; font-size: .85rem; }
+.picker li { border-bottom: 1px solid var(--line); }
+.picker li:last-child { border-bottom: 0; }
+.picker button { display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%; text-align: left; border: 0; border-radius: 0; background: transparent; padding: .45rem .75rem; }
+.picker button:not(:disabled):hover { background: var(--hover); }
+.picker button:disabled { opacity: 1; color: var(--muted); cursor: not-allowed; }
+.picker button:disabled .picker-name small { font-weight: 600; }
+.picker-name { display: grid; min-width: 0; overflow-wrap: anywhere; }
+.picker-name small { font-size: .75rem; }
+.picker-price { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.unknown-code { border: 1px solid var(--warn-line); background: var(--warn-bg); color: var(--warn-text); border-radius: 8px; padding: .65rem .85rem; margin: .5rem 0; }
+.unknown-code p { margin: 0 0 .5rem; }
+.unknown-code .actions { margin: 0; }
+.cart-head { display: flex; justify-content: space-between; align-items: center; margin-top: .85rem; }
+.cart-head h2 { margin: 0; font-size: 1rem; }
+.cart-empty { text-align: center; padding: 1.5rem 1rem; color: var(--muted); background: var(--bg); border-radius: 8px; margin-top: .5rem; }
 .cart-empty strong { color: var(--heading); }
-.cart-empty p { font-size: .85rem; }
-.cart-table { margin: 1rem 0; }
-.cart-table:has(tbody:empty) { display: none; }
-.cart-table input { width: 7rem; }
-.checkout-summary { position: sticky; top: 1rem; min-width: 0; }
-.checkout-summary .card { padding: 1.4rem; }
-.checkout-summary .card > p, .checkout-summary .check { font-size: .85rem; }
-.checkout-summary .bill-totals { font-size: .85rem; }
-.checkout-summary .bill-totals .row { padding: .65rem 0; }
-.grand-total { font-size: 1.2rem; font-weight: 700; color: var(--heading); border-bottom: 0; }
-.payment-heading { font-size: .95rem; border-top: 1px solid var(--line); padding-top: 1.25rem; margin-top: 1.25rem; }
-.checkout-summary .form-grid { grid-template-columns: minmax(0, 1fr); }
-.checkout-submit .primary { width: 100%; padding: .85rem; }
-.checkout-note { text-align: center; color: var(--muted); font-size: .75rem; }
+.cart-empty p { font-size: .85rem; margin: .25rem 0 0; }
+.cart-table { margin: .5rem 0 0; }
+.cart-table td { vertical-align: top; }
+.cart-item { display: grid; gap: .1rem; min-width: 0; }
+.cart-name { font-weight: 600; overflow-wrap: anywhere; }
+.cart-item small { font-size: .75rem; }
+.cart-table input.qty { width: 5.5rem; }
+.cart-table .unit { font-size: .8rem; }
+.cart-table .remove { text-decoration: none; padding: .3rem .5rem; min-width: 2rem; min-height: 2rem; }
+.checkout-customer { padding: .6rem .85rem; }
+.customer-row { display: flex; justify-content: space-between; align-items: center; gap: .75rem; min-width: 0; }
+.customer-name { min-width: 0; overflow-wrap: anywhere; }
+.customer-actions { display: flex; gap: .75rem; white-space: nowrap; }
+.customer-hint { font-size: .8rem; margin: .25rem 0; }
+.customer-results { margin: .25rem 0 .5rem; }
+.bill-type { margin: .5rem 0; }
+.bill-type legend { font-size: .85rem; font-weight: 600; }
+.checkout-customer .form-grid, .checkout-totals .form-grid { grid-template-columns: minmax(0, 1fr); }
+.checkout-totals .bill-totals { margin: 0 0 .25rem; max-width: none; font-size: .9rem; transition: opacity .15s; }
+.checkout-totals .bill-totals .row { padding: .3rem 0; }
+.checkout-totals .bill-totals.pending { opacity: .55; }
+.grand-total { font-size: 1.3rem; font-weight: 700; color: var(--heading); border-bottom: 0; }
+.pricing-note { min-height: 1.1rem; margin: 0 0 .25rem; font-size: .8rem; }
+.discount { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: .85rem; margin: 0 0 .75rem; }
+.discount input { width: 6rem; }
+.payment-choice { border-top: 1px solid var(--line); padding-top: .75rem; }
+.pay-options { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.pay-option { margin: .25rem 0; }
+.pay-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 .75rem; align-items: start; }
+.pay-detail .field, .pay-detail label { margin: .25rem 0; }
+.checkout-summary :focus { scroll-margin-bottom: 5.5rem; }
+.change-due { margin: .25rem 0 0; font-size: 1.05rem; }
+.checkout-submit { position: sticky; bottom: 0; margin: 0; padding: .6rem 0 .25rem; background: var(--bg); }
+.checkout-submit .primary { width: 100%; padding: .85rem; font-size: 1rem; }
+.completion { max-width: 30rem; margin: 2rem auto; text-align: center; padding: 2rem 1.5rem; }
+.completion-mark { display: grid; place-items: center; width: 3rem; height: 3rem; margin: 0 auto .5rem; border-radius: 50%; background: var(--ok-bg); color: var(--ok); font-size: 1.5rem; }
+.completion h2 { margin: 0; outline: none; }
+.completion-number { font-size: 1.1rem; font-weight: 600; margin: .25rem 0 1rem; }
+.completion-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin: 0 0 1.25rem; }
+.completion-figures dt { color: var(--muted); font-size: .8rem; }
+.completion-figures dd { margin: 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.completion-figures .due dd { color: var(--danger); }
+.completion .actions { justify-content: center; flex-wrap: wrap; }
 .bill-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.25rem; align-items: start; }
 .bill-detail-grid > .card { max-width: none; margin: 0; }
 .bill-detail-grid > .table-wrap { grid-column: 1 / -1; }
 .bill-detail-totals { grid-column: 2; grid-row: 2 / span 3; }
-@media (max-width: 1150px) { .checkout-grid { grid-template-columns: minmax(0, 1fr); } .checkout-summary { position: static; } .checkout-summary .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .bill-detail-grid { grid-template-columns: minmax(0, 1fr); } .bill-detail-totals { grid-column: auto; grid-row: auto; } .checkout-summary .form-grid { grid-template-columns: minmax(0, 1fr); } .bill-filters > label { max-width: 100%; } }
+@media (max-width: 640px) { .scan-entry { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .checkout-grid { grid-template-columns: minmax(0, 1fr); } .checkout-summary { position: static; } .checkout-page :focus { scroll-margin-bottom: 6rem; } }
+@media (max-width: 640px) { .bill-detail-grid { grid-template-columns: minmax(0, 1fr); } .bill-detail-totals { grid-column: auto; grid-row: auto; } .bill-filters > label { max-width: 100%; } }
 @media print { .bill-detail-grid { display: block; } .bill-detail-grid > .card { margin: 1rem 0; } }
 
 /* Account and workspace settings */

@@ -9,8 +9,8 @@ export interface CustomLine { key: string; name: string; unit_price: string; gst
 
 /** An item that is not in the product list (a service, a one-off). No stock moves for it.
  * The GST rate is always chosen here: nothing is applied without the owner seeing it. */
-export function CustomItemEditor({ onClose, onAdd }: { onClose: () => void; onAdd: (line: CustomLine) => void }) {
-  const [form, setForm] = useState({ name: '', unit_price: '', gst_percent: '', quantity: '1', cost: '', hsn_code: '', unit: '' })
+export function CustomItemEditor({ onClose, onAdd, initialName = '' }: { onClose: () => void; onAdd: (line: CustomLine) => void; initialName?: string }) {
+  const [form, setForm] = useState({ name: initialName, unit_price: '', gst_percent: '', quantity: '1', cost: '', hsn_code: '', unit: '' })
   const [problems, setProblems] = useState<Record<string, string>>({})
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value })
   function submit(event: FormEvent) {
@@ -46,7 +46,7 @@ export function CustomItemEditor({ onClose, onAdd }: { onClose: () => void; onAd
         <Field label="HSN / SAC code (optional)" maxLength={20} value={form.hsn_code} onChange={set('hsn_code')} />
       </div>
       {Object.keys(problems).length > 0 && <Alert>Some details need fixing. Check the highlighted fields.</Alert>}
-      <div className="actions"><Button onClick={onClose}>Cancel</Button><Button type="submit" variant="primary">Add to bill</Button></div>
+      <div className="actions"><Button onClick={onClose}>Cancel</Button><Button type="submit" variant="primary">Add to invoice</Button></div>
     </form>
   </Modal>
 }

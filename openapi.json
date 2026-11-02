@@ -9490,7 +9490,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -9499,7 +9499,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -9514,7 +9514,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -9523,7 +9523,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -13605,6 +13605,60 @@
      }
     },
     "summary": "Import Products",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/lookup": {
+   "get": {
+    "description": "The one product whose barcode or code is exactly `code`: what a scanner sends.",
+    "operationId": "lookup_product_v1_shops__shop_id__products_lookup_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "maxLength": 64,
+       "minLength": 1,
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Lookup Product",
     "tags": [
      "catalog"
     ]

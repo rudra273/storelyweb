@@ -17,10 +17,12 @@ import { useDirtyClose } from '../../lib/dirty'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
-export function ProductForm({ product, onClose, onSaved }: { product?: Product; onClose: () => void; onSaved: (id: string) => void }) {
+export function ProductForm({ product, startingBarcode, onClose, onSaved }: { product?: Product; startingBarcode?: string; onClose: () => void; onSaved: (id: string) => void }) {
   const sending = useRef(false)
   const close = () => { if (!sending.current) onClose() }
   const editing = !!product
+  // A form opened for one scanned code is its own small task: it neither restores nor overwrites the saved new-product draft.
+  const keepsDraft = !editing && !startingBarcode
   const save = useProductMutation(saveProduct)
   const retryKey = useRetryKey()
   const categories = useCategories()
@@ -39,7 +41,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     name: product?.name ?? '',
     supplier: product?.supplier_uuid ?? '',
     code: product?.product_code ?? '',
-    barcode: product?.barcode ?? '',
+    barcode: product?.barcode ?? startingBarcode ?? '',
     category: product?.category_uuid ?? '',
     unit: product?.unit_uuid ?? '',
     hsn: product?.hsn_code ?? '',
@@ -58,19 +60,19 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
   // A new product is kept per person and shop, so a reload or an accidental close does not lose it.
   const userId = useAuth().user?.id ?? ''
   const shopId = useShop().current?.shop_id ?? ''
-  const [restored, setRestored] = useState(() => editing ? null : loadDraft<Fields>('product', userId, shopId))
+  const [restored, setRestored] = useState(() => !keepsDraft ? null : loadDraft<Fields>('product', userId, shopId))
   const [f, setF] = useState<Fields>(restored?.data ?? blank)
   const dirtyText = JSON.stringify(f)
   useEffect(() => {
-    if (editing || !userId || !shopId) return
+    if (!keepsDraft || !userId || !shopId) return
     if (dirtyText === JSON.stringify(blank)) clearDraft('product', userId, shopId)
     else saveDraft('product', userId, shopId, JSON.parse(dirtyText) as Fields)
   // `blank` is rebuilt from the same props each render; the saved text is what changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirtyText, editing, userId, shopId])
+  }, [dirtyText, keepsDraft, userId, shopId])
   const forget = () => { clearDraft('product', userId, shopId); setRestored(null) }
   // Dirty means different from a fresh form, so a restored draft counts and "Start again" does not.
-  const leave = useDirtyClose(dirtyText !== JSON.stringify(blank), () => { if (!editing) clearDraft('product', userId, shopId); close() })
+  const leave = useDirtyClose(dirtyText !== JSON.stringify(blank), () => { if (keepsDraft) clearDraft('product', userId, shopId); close() })
   const formula = f.mode === 'formula'
   // The breakdown comes from the server, so what the owner sees is what billing charges.
   const priceInput: PriceInput | null = (formula ? isAmount(f.purchase) : isAmount(f.selling)) && [f.purchase, f.margin, f.overhead].every(v => !v.trim() || isAmount(v))
@@ -133,7 +135,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
     sending.current = true
     try {
       const saved = await run(() => save.mutateAsync({ id: product?.uuid, body, retryKey: product ? undefined : retryKey(body) }))
-      if (saved) { if (!editing) clearDraft('product', userId, shopId); onSaved(saved.product.uuid) }
+      if (saved) { if (keepsDraft) clearDraft('product', userId, shopId); onSaved(saved.product.uuid) }
       else setFocusTick(t => t + 1)
     } finally { sending.current = false }
   }
@@ -198,7 +200,7 @@ export function ProductForm({ product, onClose, onSaved }: { product?: Product; 
             <label className="check wide-row"><input type="checkbox" checked={f.track} onChange={e => setF({ ...f, track: e.target.checked })} />Track stock for this product</label>
             {!editing && <Field label="Opening stock" inputMode="decimal" value={f.opening} onChange={set('opening')} hint="What is on the shelf today." error={errors.opening_quantity} />}<Field label="Reorder level" inputMode="decimal" value={f.reorder} onChange={set('reorder')} error={errors.reorder_level} />
           </FormSection>
-          <details className="optional-fields" open={editing || ['product_code', 'barcode', 'hsn_code'].some(k => errors[k]) ? true : undefined}>
+          <details className="optional-fields" open={editing || !!startingBarcode || ['product_code', 'barcode', 'hsn_code'].some(k => errors[k]) ? true : undefined}>
             <summary>Codes and HSN (optional)</summary><div className="form-grid">
               <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} error={errors.product_code} />
             <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} error={errors.barcode} />
