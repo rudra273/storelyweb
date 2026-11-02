@@ -872,6 +872,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/{bill_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bill Pdf
+         * @description The invoice or credit note as a PDF, drawn now from the saved figures and the shop's
+         *     invoice settings. `paper` overrides the shop's saved paper for this file only. Nothing is
+         *     stored: the file exists only in this response.
+         */
+        get: operations["bill_pdf_v1_shops__shop_id__bills__bill_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/categories": {
         parameters: {
             query?: never;
@@ -6309,6 +6331,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bill_pdf_v1_shops__shop_id__bills__bill_id__pdf_get: {
+        parameters: {
+            query?: {
+                paper?: ("A4" | "A5" | "80mm" | "58mm") | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice as a PDF. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
                 };
             };
             /** @description Validation Error */

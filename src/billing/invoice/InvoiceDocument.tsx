@@ -23,7 +23,8 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
   const thermal = paper === '80mm' || paper === '58mm'
   const inter = Number(b.igst_amount) !== 0
   const hasGst = Number(b.cgst_amount) !== 0 || Number(b.sgst_amount) !== 0 || inter
-  const due = Number(b.balance_due) > 0
+  // A voided invoice is owed nothing, so it shows no balance and asks for no payment.
+  const due = Number(b.balance_due) > 0 && !b.cancelled
   const logo = show('show_shop_logo') ? imageSrc(s.shop_logo) : null
   const signature = s.show.show_digital_signature ? imageSrc(s.digital_signature) : null
   const upi = show('show_upi_qr') && s.upi_id && due && b.document_type !== 'credit_note'
@@ -95,7 +96,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
         <dl className="bill-totals">
           {totals.map(([, label, value]) => <div className="row" key={label}><dt>{label}</dt><dd>{formatMoney(value)}</dd></div>)}
           {show('show_grand_total') && <div className="row grand-total"><dt>Total</dt><dd>{formatMoney(b.total_amount)}</dd></div>}
-          {show('show_payment_details') && b.document_type !== 'credit_note' && <>
+          {show('show_payment_details') && b.document_type !== 'credit_note' && !b.cancelled && <>
             <div className="row"><dt>Paid</dt><dd>{formatMoney(b.paid_amount)}</dd></div>
             {due && <div className="row due"><dt>Balance due</dt><dd>{formatMoney(b.balance_due)}</dd></div>}
           </>}

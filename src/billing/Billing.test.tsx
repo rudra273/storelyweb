@@ -473,8 +473,50 @@ test('the paper chosen for one print does not change the saved paper', async () 
   renderApp('/billing/b1')
   await screen.findByText('This is your shop’s saved paper.')
   await userEvent.selectOptions(screen.getByLabelText('Paper size'), '80mm')
-  expect(screen.getByText(/For this print only/)).toHaveTextContent('Your saved paper stays A4')
+  expect(screen.getByText(/For this print or PDF only/)).toHaveTextContent('Your saved paper stays A4')
   expect(writes(calls)).toHaveLength(0)
+})
+
+test('the PDF is asked for with the chosen paper, saved under the invoice number, and changes nothing', async () => {
+  const created = vi.fn(() => 'blob:pdf')
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: created, revokeObjectURL: vi.fn() }))
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { expect(this.download).toBe('INV-2627-A0001.pdf') })
+  const calls = fakeApi([...withMore(), ok('GET', /\/bills\/b1\/pdf\?paper=80mm$/, '%PDF-1.7')])
+  renderApp('/billing/b1')
+  await screen.findByText('This is your shop’s saved paper.')
+  await userEvent.selectOptions(screen.getByLabelText('Paper size'), '80mm')
+  await userEvent.click(screen.getByRole('button', { name: 'Download PDF' }))
+  await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+  expect(created).toHaveBeenCalledTimes(1)
+  expect(calls.filter(c => c.path.includes('/pdf')).map(c => c.path)).toEqual(['/v1/shops/s1/bills/b1/pdf?paper=80mm'])
+  expect(writes(calls)).toHaveLength(0)
+  click.mockRestore()
+})
+
+test('a PDF that cannot be made says so and can be tried again', async () => {
+  fakeApi([...withMore(), ok('GET', /\/pdf\?paper=A4$/, { error: { code: 'rate_limited', message: 'Too many requests. Please wait and try again.' } }, 429)])
+  renderApp('/billing/b1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Download PDF' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Too many requests')
+  expect(screen.getByRole('button', { name: 'Download PDF' })).toBeEnabled()
+})
+
+test('a voided invoice shows no balance and asks for no payment', async () => {
+  const voided = { ...detail, bill: { ...bill, cancelled: true, cancel_reason: 'Wrong customer', paid_amount: '0.00', balance_due: '189.00' } }
+  fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', voided), ok('GET', '/v1/shops/s1/invoice-settings', { paper_size: 'A4', show: { show_upi_qr: true }, invoice_title: 'TAX INVOICE', gst_scheme: 'regular', shop_name: 'Asha Stores', shop_address: '', shop_phone: '', shop_email: '', upi_id: 'asha@okaxis', shop_logo: null, digital_signature: null })])
+  renderApp('/billing/b1')
+  const sheet = await screen.findByLabelText('Invoice')
+  expect(within(sheet).getByText(/VOID/)).toBeInTheDocument()
+  expect(within(sheet).queryByText('Balance due')).not.toBeInTheDocument()
+  expect(within(sheet).queryByRole('img', { name: /UPI QR/ })).not.toBeInTheDocument()
+})
+
+test('an unpaid invoice that is still live does ask for payment by UPI', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', detail), ok('GET', '/v1/shops/s1/invoice-settings', { paper_size: 'A4', show: { show_upi_qr: true }, invoice_title: 'TAX INVOICE', gst_scheme: 'regular', shop_name: 'Asha Stores', shop_address: '', shop_phone: '', shop_email: '', upi_id: 'asha@okaxis', shop_logo: null, digital_signature: null })])
+  renderApp('/billing/b1')
+  const sheet = await screen.findByLabelText('Invoice')
+  expect(await within(sheet).findByRole('img', { name: /UPI QR/ })).toBeInTheDocument()
+  expect(within(sheet).getByText('Balance due')).toBeInTheDocument()
 })
 
 test('invoice list filters live in the address, so going back keeps them', async () => {

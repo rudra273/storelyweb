@@ -11972,6 +11972,76 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/bills/{bill_id}/pdf": {
+   "get": {
+    "description": "The invoice or credit note as a PDF, drawn now from the saved figures and the shop's\ninvoice settings. `paper` overrides the shop's saved paper for this file only. Nothing is\nstored: the file exists only in this response.",
+    "operationId": "bill_pdf_v1_shops__shop_id__bills__bill_id__pdf_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "paper",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "A4",
+          "A5",
+          "80mm",
+          "58mm"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Paper"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/pdf": {}
+      },
+      "description": "The invoice as a PDF."
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bill Pdf",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/categories": {
    "get": {
     "operationId": "list_categories_v1_shops__shop_id__categories_get",

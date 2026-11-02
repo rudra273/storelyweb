@@ -4,7 +4,7 @@ import { when } from '../components/format'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Alert, Loading } from '../components/ui/ui'
-import { describeError } from '../components/useAction'
+import { describeError, useAction } from '../components/useAction'
 import { formatMoney } from '../lib/money'
 import { SALES } from '../lib/vocabulary'
 import { can } from '../permissions'
@@ -13,6 +13,7 @@ import { BillAction, type BillActionKind } from './BillActions'
 import { documentKind, documentStatus } from './documentStatus'
 import { InvoiceSheet } from './invoice/Invoice'
 import { PAPERS, useInvoicePaper } from './invoice/paper'
+import { downloadInvoicePdf } from './invoice/pdf'
 import { type Paper } from './invoice/InvoiceDocument'
 import { useBillingQuery, type BillDetail } from './queries'
 import { ShareDialog } from './ShareDialog'
@@ -30,7 +31,8 @@ export function BillDetailPage() {
 
 /** One invoice: its numbers and state on top, the paper on the left, what can be done on the right. */
 function Detail({ detail }: { detail: BillDetail }) {
-  const { role } = useShop()
+  const { role, current } = useShop()
+  const pdf = useAction()
   const location = useLocation()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -83,9 +85,11 @@ function Detail({ detail }: { detail: BillDetail }) {
         <section className="card rail-card">
           <div className="rail-primary">
             <button type="button" className="primary" onClick={() => window.print()}>Print</button>
+            <button type="button" disabled={pdf.busy} onClick={() => void pdf.run(() => downloadInvoicePdf(current?.shop_id ?? '', b.uuid, b.bill_number, paper))}>{pdf.busy ? 'Preparing PDF…' : 'Download PDF'}</button>
             <button type="button" onClick={() => setSharing(true)}>Share on WhatsApp</button>
           </div>
-          <p className="muted rail-note">To keep a PDF, choose “Save as PDF” in the print window.</p>
+          {pdf.error && <Alert>{pdf.error}</Alert>}
+          <p className="muted rail-note">The PDF is made when you ask and uses the paper chosen below. Nothing is stored.</p>
           {live && !isNote && <div className="rail-secondary">
             {Number(b.balance_due) > 0 && <button type="button" className="primary" onClick={() => setAction('payment')}>Record payment</button>}
             {can(role, 'billing.cancel') && <button type="button" onClick={() => setAction('return')}>Return items</button>}
@@ -94,7 +98,7 @@ function Detail({ detail }: { detail: BillDetail }) {
         </section>
         <section className="card rail-card" aria-label="Print options">
           <label>Paper size<select value={paper} onChange={e => setPaper(e.target.value as Paper)}>{PAPERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></label>
-          <p className="muted rail-note">{paper === saved ? 'This is your shop’s saved paper.' : <>For this print only. Your saved paper stays <strong>{saved}</strong>.</>}</p>
+          <p className="muted rail-note">{paper === saved ? 'This is your shop’s saved paper.' : <>For this print or PDF only. Your saved paper stays <strong>{saved}</strong>.</>}</p>
           {can(role, 'shop.settings') && <Link to="/settings" className="rail-link">Change the saved paper and layout</Link>}
         </section>
       </aside>
