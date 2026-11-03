@@ -28,13 +28,15 @@ const value = (kind: BulkKind, v: string) => (kind === 'price' ? formatMoney(v) 
  * would happen (what changes, what stays, and what is left alone and why), then confirm.
  * Nothing is written until the last step, and what is written is exactly what was reviewed.
  */
-export function BulkDialog({ kind, scope, count, categories, onClose, onApplied }: {
+export function BulkDialog({ kind, scope, count, categories, onClose, onApplied, onPrintLabels }: {
   kind: BulkKind
   scope: BulkScope
   count: number
   categories: Category[]
   onClose: () => void
   onApplied: () => void
+  /** Opens label printing for the same selection (offered after prices change, as printed labels carry the old price). */
+  onPrintLabels?: () => void
 }) {
   const shop = useShop().current?.shop_id ?? ''
   const retryKey = useRetryKey()
@@ -125,6 +127,7 @@ export function BulkDialog({ kind, scope, count, categories, onClose, onApplied 
         <tbody>{result.sample.map(r => <tr key={r.uuid}><td>{r.name}</td><td className="num">{value(kind, r.before)}</td><td className="num">{value(kind, r.after)}</td></tr>)}</tbody></table>}
       {result.notes.map(n => <p key={n} className="muted">{n}</p>)}
       {result.below_cost ? <Alert kind="info">{result.below_cost} of the new prices are below cost. You can still go ahead.</Alert> : null}
+      {done && kind === 'price' && done.will_change > 0 && onPrintLabels && <Alert kind="info">Labels printed earlier still show the old prices. Scanning them uses the new prices, but the printed ones are out of date. <button type="button" className="link" onClick={onPrintLabels}>Print new labels</button></Alert>}
       {result.skipped_total > 0 && <section aria-label="Left alone">
         <h4>Left alone, and why</h4>
         <ul className="plain bulk-skipped">{result.skipped.slice(0, SHOWN).map(s => <li key={s.uuid}><strong>{s.name}</strong> <span className="muted">{s.reason}</span></li>)}</ul>

@@ -18,7 +18,7 @@ const sameNumber = (a: string, b: string | null | undefined) => (a.trim() === ''
  * category, a fixed price and the reorder level become fields and that same button turns into Save.
  * Stock is never a field: it changes only through the ledger. The full form is in the product's details.
  */
-export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, categories, onPick, onOpen, onRestock }: {
+export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, categories, onPick, onOpen, onRestock, onPrintLabel }: {
   p: Product
   selected: boolean
   picked: boolean
@@ -31,6 +31,8 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
   onOpen: () => void
   /** Opens the purchase composer with this product filled in (low and out-of-stock rows). */
   onRestock: () => void
+  /** Opens label printing for this product (offered after its price changes). */
+  onPrintLabel: () => void
 }) {
   const shop = useShop().current?.shop_id ?? ''
   const client = useQueryClient()
@@ -39,6 +41,8 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
   const [draft, setDraft] = useState<Draft>({ name: '', category: '', price: '', reorder: '' })
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  // After a price change, printed price labels are out of date: offer the reprint until the row is edited again.
+  const [priceChanged, setPriceChanged] = useState(false)
   const nameField = useRef<HTMLInputElement>(null)
   const saveButton = useRef<HTMLButtonElement>(null)
   const editButton = useRef<HTMLButtonElement>(null)
@@ -59,6 +63,7 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
     setDraft({ name: p.name, category: p.category_uuid ?? '', price: p.selling_price ?? '', reorder: p.reorder_level ?? '' })
     setError(null)
     setSaved(false)
+    setPriceChanged(false)
     setMode('edit')
   }
   function stop() {
@@ -91,6 +96,7 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
       await save.mutateAsync({ id: p.uuid, body: { ...body, expected_updated_at: p.updated_at } })
       setMode('view')
       setSaved(true)
+      setPriceChanged('selling_price' in body)
       clearTimeout(timer.current)
       timer.current = setTimeout(() => setSaved(false), 2500)
       setTimeout(() => editButton.current?.focus(), 0)
@@ -154,6 +160,7 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
             </span>
           : <>
               {saved && <span className="inline-saved" role="status">Saved</span>}
+              {priceChanged && (p.barcode || p.product_code) && <button type="button" className="link reprint-link" aria-label={`Reprint the label for ${p.name}, its price changed`} title="Labels printed before show the old price" onClick={onPrintLabel}>Reprint label</button>}
               <button ref={editButton} type="button" className="ui-button icon-button" aria-label={`Edit ${p.name}`} title="Edit" onClick={start}><NavIcon name="edit" className="button-icon" /></button>
             </>}
       </td>}

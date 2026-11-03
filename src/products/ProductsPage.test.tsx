@@ -932,3 +932,58 @@ test('adjusting stock shows what is on the shelf now and after, and takes nothin
   await userEvent.type(within(dialog).getByLabelText('Quantity'), '12.5')
   expect(within(dialog).getByRole('status')).toHaveTextContent('50 now, 62.5 after this comes in')
 })
+
+// ── reprint prompts after a price change ──
+
+test('after a price is changed in a row, the label can be reprinted from there', async () => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ measureText: () => ({ width: 10 }) } as unknown as CanvasRenderingContext2D)
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])), PATCHED,
+    ok('POST', '/v1/shops/s1/products/label-data', [{ uuid: 'p1', name: 'Basmati Rice', product_code: 'R1', barcode: '8901', selling_price: '30' }])])
+  renderApp('/products')
+  expect(screen.queryByRole('button', { name: /Reprint the label/ })).not.toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('button', { name: 'Edit Basmati Rice' }))
+  const price = screen.getByRole('textbox', { name: 'Price of Basmati Rice' })
+  await userEvent.clear(price)
+  await userEvent.type(price, '30{Enter}')
+  await userEvent.keyboard('{Enter}')
+  const reprint = await screen.findByRole('button', { name: /Reprint the label for Basmati Rice/ })
+  await userEvent.click(reprint)
+  await screen.findByLabelText('Label preview')
+  expect(calls.find(c => c.path.endsWith('/label-data'))?.body).toEqual({ scope: { ids: ['p1'] } })
+})
+
+test('a name-only change does not offer a reprint, because nothing printed changed', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])), PATCHED])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Edit Basmati Rice' }))
+  const reorder = screen.getByRole('textbox', { name: 'Reorder level of Basmati Rice' })
+  await userEvent.clear(reorder)
+  await userEvent.type(reorder, '12{Enter}')
+  await waitFor(() => expect(patches(calls)).toHaveLength(1))
+  await screen.findByText('Saved')
+  expect(screen.queryByRole('button', { name: /Reprint the label/ })).not.toBeInTheDocument()
+})
+
+test('after a bulk price change, new labels are offered for the same selection', async () => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ measureText: () => ({ width: 10 }) } as unknown as CanvasRenderingContext2D)
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+    ok('POST', '/v1/shops/s1/products/label-data', [{ uuid: 'p1', name: 'Basmati Rice', product_code: 'R1', barcode: '8901', selling_price: '28.05' }])])
+  const base = globalThis.fetch
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => path.endsWith('/products/bulk')
+    ? Promise.resolve(new Response(JSON.stringify(JSON.parse(String(init.body)).dry_run ? REVIEW : { ...REVIEW, applied: true }), { status: 200 }))
+    : base(path, init))
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Change prices' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.type(within(dialog).getByLabelText('Change by (%)'), '10')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  // The offer comes only once the prices have actually changed, not at the review.
+  await within(dialog).findByRole('group', { name: 'Summary' })
+  expect(within(dialog).queryByText(/Labels printed earlier/)).not.toBeInTheDocument()
+  await userEvent.click(await within(dialog).findByRole('button', { name: 'Change prices of 1 product' }))
+  expect(await within(dialog).findByText(/Labels printed earlier still show the old prices/)).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Print new labels' }))
+  await screen.findByLabelText('Label preview')
+  expect(calls.find(c => c.path.endsWith('/label-data'))?.body).toEqual({ scope: { ids: ['p1'] } })
+})

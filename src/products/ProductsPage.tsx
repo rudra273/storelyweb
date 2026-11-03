@@ -69,6 +69,8 @@ function ProductsWorkspace() {
   const [added, setAdded] = useState<string | null>(null)
   // A product being restocked from its row: the same purchase composer, with the product filled in.
   const [restock, setRestock] = useState<Product | null>(null)
+  // One product's label, opened from its row after its price changed.
+  const [labelFor, setLabelFor] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
 
   const update = (changes: Record<string, string | null>, keepPage = false) => {
@@ -225,7 +227,7 @@ function ProductsWorkspace() {
                 <tbody>
                   {data.items.map((p) => (
                     <ProductRow key={p.uuid} p={p} selected={p.uuid === selectedId} picked={sel.kind === 'matching' || (sel.kind === 'picked' && sel.ids.includes(p.uuid))} pickLocked={sel.kind === 'matching'} canEdit={canEdit} seeCost={seeCost}
-                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} onRestock={() => setRestock(p)} />
+                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} onRestock={() => setRestock(p)} onPrintLabel={() => setLabelFor(p.uuid)} />
                   ))}
                 </tbody>
               </table>
@@ -248,11 +250,12 @@ function ProductsWorkspace() {
       {selectedId && <ProductDetailPanel key={selectedId} id={selectedId} canEdit={canEdit} justAdded={added === selectedId} onClose={() => open(null)} />}
       {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
       {restock && <PurchaseComposer initialProduct={restock} onClose={() => setRestock(null)} />}
+      {labelFor && <Labels scope={{ ids: [labelFor] }} onClose={() => setLabelFor(null)} />}
       {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); setAdded(id); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}
       {dialog === 'labels' && <Labels scope={scopeOf(sel)} onClose={() => setDialog(null)} />}
-      {bulk && <BulkDialog kind={bulk} scope={scopeOf(sel)} count={chosen} categories={categories.data ?? []} onClose={() => setBulk(null)} onApplied={() => { if (bulk === 'archive') setSelection(NONE) }} />}
+      {bulk && <BulkDialog kind={bulk} scope={scopeOf(sel)} count={chosen} categories={categories.data ?? []} onClose={() => setBulk(null)} onApplied={() => { if (bulk === 'archive') setSelection(NONE) }} onPrintLabels={() => { setBulk(null); setDialog('labels') }} />}
     </div>
   )
 }
