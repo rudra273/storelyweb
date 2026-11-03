@@ -1,10 +1,14 @@
+import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { day, paymentMethod, paymentStatus } from '../components/labels'
 import { Kpi } from '../components/ui/Kpi'
 import { Alert, Loading } from '../components/ui/ui'
 import { ErrorState } from '../components/ui/states'
-import { PageHeader } from '../components/ui/workspace'
+import { Button, PageHeader } from '../components/ui/workspace'
 import { formatQty } from '../lib/money'
+import { can } from '../permissions'
+import { SupplierPayment } from '../products/suppliers/SupplierPayment'
+import { useShop } from '../shops/context'
 import { todayInShop } from './composer/draft'
 import { receiptMoney } from './composer/money'
 import { useReceipt } from './queries'
@@ -16,6 +20,8 @@ export function PurchaseDetailPage() {
   const location = useLocation()
   const back = (location.state as { from?: string } | null)?.from ?? '/purchases'
   const query = useReceipt(id)
+  const { role } = useShop()
+  const [paying, setPaying] = useState(false)
   const r = query.data
   const late = !!r?.due_date && r.due_date < todayInShop() && Number(r.balance_due ?? '0') > 0
   return <div className="purchase-detail">
@@ -23,7 +29,10 @@ export function PurchaseDetailPage() {
     {query.isPending && <Loading label="Loading purchase…" />}
     {query.error && <ErrorState error={query.error} onRetry={() => void query.refetch()} />}
     {r && <>
-      <PageHeader eyebrow="PURCHASE" title={r.supplier_name ? `Purchase from ${r.supplier_name}` : 'Purchase with no supplier'} description={`Received ${day(r.purchase_date)}${r.invoice_number ? ` · Supplier invoice ${r.invoice_number}` : ''}`} actions={r.supplier_uuid ? <Link className="button secondary" to={`/suppliers/${r.supplier_uuid}`}>Supplier account</Link> : undefined} />
+      <PageHeader eyebrow="PURCHASE" title={r.supplier_name ? `Purchase from ${r.supplier_name}` : 'Purchase with no supplier'} description={`Received ${day(r.purchase_date)}${r.invoice_number ? ` · Supplier invoice ${r.invoice_number}` : ''}`} actions={<>
+        {r.supplier_uuid && can(role, 'products.edit') && Number(r.balance_due ?? '0') > 0 && <Button variant="primary" onClick={() => setPaying(true)}>Pay supplier</Button>}
+        {r.supplier_uuid && <Link className="button secondary" to={`/suppliers/${r.supplier_uuid}`}>Supplier account</Link>}
+      </>} />
       <div className="kpis purchase-kpis">
         <Kpi label="Total" value={r.total == null ? null : receiptMoney(r.total)} note={r.total == null ? 'Payment terms were not recorded' : undefined} />
         <Kpi label="Paid" value={r.total == null ? null : receiptMoney(r.paid_amount ?? '0')} />
@@ -61,6 +70,7 @@ export function PurchaseDetailPage() {
         <h2>Payments</h2>
         {r.payments?.length ? <ul className="plain">{r.payments.map(p => <li key={p.uuid}>{day(p.payment_date)} · <strong>{receiptMoney(p.amount)}</strong> · {paymentMethod(p.payment_method)}{p.reference ? ` · ${p.reference}` : ''}</li>)}</ul> : <p className="muted">No payments recorded against this purchase.</p>}
       </section>
+      {paying && r.supplier_uuid && <SupplierPayment supplier={{ uuid: r.supplier_uuid, name: r.supplier_name ?? 'supplier' }} owed={r.balance_due ?? '0'} purchase={{ uuid: r.uuid, label: r.invoice_number ? `Invoice ${r.invoice_number}` : `Purchase of ${day(r.purchase_date)}` }} onClose={() => setPaying(false)} />}
     </>}
   </div>
 }

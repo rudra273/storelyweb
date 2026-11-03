@@ -43,17 +43,24 @@ export function PurchaseWorkspacePage() {
   const productId = params.get('product') ?? ''
   const product = useProduct(productId || undefined)
   if (productId && product.isPending) return <Loading label="Opening purchase…" />
-  return <PurchaseWorkspace key={location.key} initialProduct={product.data?.product} productMissing={!!productId && !product.data} />
+  return <PurchaseWorkspace key={location.key} initialProduct={product.data?.product} productMissing={!!productId && !product.data} initialSupplier={params.get('supplier') ?? ''} />
 }
 
-function PurchaseWorkspace({ initialProduct, productMissing }: { initialProduct?: Product; productMissing: boolean }) {
+function PurchaseWorkspace({ initialProduct, productMissing, initialSupplier }: { initialProduct?: Product; productMissing: boolean; initialSupplier: string }) {
   const { user } = useAuth()
   const { current } = useShop()
   const navigate = useNavigate()
   const key = draftKey(user?.id ?? '', current?.shop_id ?? '')
   const [loaded] = useState(() => readDraft(key))
   const resumed = !initialProduct && !loaded.error && loaded.draft.items.length > 0
-  const [draft, setDraft] = useState<PurchaseDraft>(() => initialProduct && !loaded.error && !loaded.draft.items.length && !loaded.draft.submitted && initialProduct.track_stock ? { ...loaded.draft, items: [productLine(initialProduct)] } : loaded.draft)
+  const [draft, setDraft] = useState<PurchaseDraft>(() => {
+    const fresh = !loaded.error && !loaded.draft.items.length && !loaded.draft.submitted
+    let start = loaded.draft
+    if (fresh && initialProduct?.track_stock) start = { ...start, items: [productLine(initialProduct)] }
+    // Arriving from a supplier's page: the supplier is chosen, unless there is already a draft for someone else.
+    if (initialSupplier && !loaded.error && !loaded.draft.submitted && !loaded.draft.supplier_uuid) start = { ...start, supplier_uuid: initialSupplier }
+    return start
+  })
   const draftRef = useRef(draft)
   const lastStored = useRef(loaded.serialized)
   const [storageError, setStorageError] = useState(loaded.error)

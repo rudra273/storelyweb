@@ -4278,6 +4278,73 @@
     "title": "LedgerEntry",
     "type": "object"
    },
+   "LedgerEntryOut": {
+    "properties": {
+     "balance": {
+      "title": "Balance",
+      "type": "string"
+     },
+     "credit": {
+      "title": "Credit",
+      "type": "string"
+     },
+     "date": {
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+     },
+     "debit": {
+      "title": "Debit",
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "purchase",
+       "payment"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "method": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Method"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "uuid",
+     "date",
+     "reference",
+     "method",
+     "debit",
+     "credit",
+     "balance"
+    ],
+    "title": "LedgerEntryOut",
+    "type": "object"
+   },
    "LedgerPage": {
     "properties": {
      "items": {
@@ -5491,6 +5558,42 @@
      }
     },
     "title": "Payment",
+    "type": "object"
+   },
+   "PaymentAllocationOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "invoice_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "purchase_uuid": {
+      "title": "Purchase Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "purchase_uuid",
+     "invoice_number",
+     "purchase_date",
+     "amount"
+    ],
+    "title": "PaymentAllocationOut",
     "type": "object"
    },
    "PaymentIn": {
@@ -9696,6 +9799,11 @@
       ],
       "title": "Notes"
      },
+     "overdue_due": {
+      "default": "0",
+      "title": "Overdue Due",
+      "type": "string"
+     },
      "phone": {
       "anyOf": [
        {
@@ -9847,6 +9955,18 @@
       "title": "Payment Method",
       "type": "string"
      },
+     "purchase_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Purchase Uuid"
+     },
      "reference": {
       "anyOf": [
        {
@@ -9876,6 +9996,14 @@
    },
    "SupplierPaymentOut": {
     "properties": {
+     "allocations": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/PaymentAllocationOut"
+      },
+      "title": "Allocations",
+      "type": "array"
+     },
      "amount": {
       "title": "Amount",
       "type": "string"
@@ -10011,6 +10139,21 @@
       "title": "Balance Due",
       "type": "string"
      },
+     "ledger": {
+      "items": {
+       "$ref": "#/components/schemas/LedgerEntryOut"
+      },
+      "title": "Ledger",
+      "type": "array"
+     },
+     "overdue": {
+      "title": "Overdue",
+      "type": "string"
+     },
+     "paid_total": {
+      "title": "Paid Total",
+      "type": "string"
+     },
      "payments": {
       "items": {
        "$ref": "#/components/schemas/SupplierPaymentOut"
@@ -10018,18 +10161,31 @@
       "title": "Payments",
       "type": "array"
      },
+     "purchased_total": {
+      "title": "Purchased Total",
+      "type": "string"
+     },
      "purchases": {
       "items": {
        "$ref": "#/components/schemas/SupplierPurchaseOut"
       },
       "title": "Purchases",
       "type": "array"
+     },
+     "unrecorded_purchases": {
+      "title": "Unrecorded Purchases",
+      "type": "integer"
      }
     },
     "required": [
      "purchases",
      "payments",
-     "balance_due"
+     "ledger",
+     "balance_due",
+     "overdue",
+     "purchased_total",
+     "paid_total",
+     "unrecorded_purchases"
     ],
     "title": "SupplierStatementOut",
     "type": "object"
@@ -10383,7 +10539,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -10392,7 +10548,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -10407,7 +10563,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -10416,7 +10572,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }

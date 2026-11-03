@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -3167,6 +3167,31 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /** LedgerEntryOut */
+        LedgerEntryOut: {
+            /** Balance */
+            balance: string;
+            /** Credit */
+            credit: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Debit */
+            debit: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "purchase" | "payment";
+            /** Method */
+            method: string | null;
+            /** Reference */
+            reference: string | null;
+            /** Uuid */
+            uuid: string;
+        };
         /** LedgerPage */
         LedgerPage: {
             /** Items */
@@ -3565,6 +3590,20 @@ export interface components {
             method: "cash" | "upi" | "card" | "bank" | "online";
             /** Reference */
             reference?: string | null;
+        };
+        /** PaymentAllocationOut */
+        PaymentAllocationOut: {
+            /** Amount */
+            amount: string;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Purchase Uuid */
+            purchase_uuid: string;
         };
         /** PaymentIn */
         PaymentIn: {
@@ -4840,6 +4879,11 @@ export interface components {
             name: string;
             /** Notes */
             notes: string | null;
+            /**
+             * Overdue Due
+             * @default 0
+             */
+            overdue_due: string;
             /** Phone */
             phone: string | null;
             /** Uuid */
@@ -4876,6 +4920,8 @@ export interface components {
              * @enum {string}
              */
             payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /** Purchase Uuid */
+            purchase_uuid?: string | null;
             /** Reference */
             reference?: string | null;
             /** Request Key */
@@ -4883,6 +4929,11 @@ export interface components {
         };
         /** SupplierPaymentOut */
         SupplierPaymentOut: {
+            /**
+             * Allocations
+             * @default []
+             */
+            allocations: components["schemas"]["PaymentAllocationOut"][];
             /** Amount */
             amount: string;
             /** Notes */
@@ -4925,10 +4976,20 @@ export interface components {
         SupplierStatementOut: {
             /** Balance Due */
             balance_due: string;
+            /** Ledger */
+            ledger: components["schemas"]["LedgerEntryOut"][];
+            /** Overdue */
+            overdue: string;
+            /** Paid Total */
+            paid_total: string;
             /** Payments */
             payments: components["schemas"]["SupplierPaymentOut"][];
+            /** Purchased Total */
+            purchased_total: string;
             /** Purchases */
             purchases: components["schemas"]["SupplierPurchaseOut"][];
+            /** Unrecorded Purchases */
+            unrecorded_purchases: number;
         };
         /** TaxRate */
         TaxRate: {
@@ -5073,7 +5134,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -5095,7 +5156,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;

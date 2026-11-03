@@ -41,6 +41,7 @@ import { PurchaseInvoicesPage } from './purchases/PurchaseInvoicesPage'
 import { PurchaseDetailPage } from './purchases/PurchaseDetailPage'
 import { PurchaseWorkspacePage } from './purchases/PurchaseWorkspace'
 import { SuppliersPage } from './products/suppliers/SuppliersPage'
+import { SupplierDetailPage } from './products/suppliers/SupplierDetailPage'
 
 function NotFound() {
   return (
@@ -102,6 +103,7 @@ export default function App() {
                 <Route path="purchases/new" element={<PurchaseWorkspacePage />} />
                 <Route path="purchases/:id" element={<PurchaseDetailPage />} />
                 <Route path="suppliers" element={<SuppliersPage />} />
+                <Route path="suppliers/:id" element={<SupplierDetailPage />} />
               </Route>
               <Route element={<RequireCapability needs="reports.view" />}>
                 <Route path="reports" element={<ReportsLayout />}>

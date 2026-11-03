@@ -87,7 +87,7 @@ export function PurchaseInvoicesPage() {
           <td className="num">{r.total == null ? <span className="muted" title="Stock cost; payment terms were not recorded">{receiptMoney(r.subtotal)}<small className="stacked-note">stock cost</small></span> : receiptMoney(r.total)}</td>
           <td className="hide-sm"><span className={`payment-badge ${r.payment_status}`}>{paymentStatus(r.payment_status)}</span></td>
           <td className="hide-sm nowrap">{r.due_date ? <>{day(r.due_date)}{late && <span className="payment-badge unpaid overdue-flag">Overdue</span>}</> : <span className="muted">—</span>}</td>
-          <td className="num">{r.balance_due == null ? <span className="muted">—</span> : receiptMoney(r.balance_due)}</td>
+          <td className="num">{r.balance_due == null ? <span className="muted">—</span> : receiptMoney(r.balance_due)}{late && <small className="show-sm bad stacked-note">Overdue</small>}</td>
         </tr>
       })}</tbody>
     </table></div>}

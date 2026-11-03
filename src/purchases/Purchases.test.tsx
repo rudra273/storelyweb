@@ -417,3 +417,28 @@ test('Enter in the product search adds the product when the text names exactly o
   expect(calls.some(c => /products\?.*q=R1.*limit=5/.test(c.path))).toBe(true)
   expect(screen.getByLabelText('Find product')).toHaveValue('')
 })
+
+test('Pay supplier on an unpaid purchase pays that purchase, and is absent when nothing is owed', async () => {
+  const owed = { ...RECEIPT, supplier_uuid: 'sup1', supplier_name: 'Alpha', invoice_number: 'INV-1', total: '36.00', payment_status: 'unpaid', balance_due: '36.00', paid_amount: '0', due_date: null, payments: [] }
+  const calls = fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('POST', `${BASE}/suppliers/sup1/payments`, { uuid: 'pay1' }, 201),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, owed),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay supplier' }))
+  const dialog = screen.getByRole('dialog', { name: 'Pay Alpha' })
+  expect(within(dialog).getByText(/Paying/)).toHaveTextContent('Invoice INV-1')
+  await userEvent.type(within(dialog).getByLabelText('Amount (₹)'), '10')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Record payment' }))
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/payments'))?.body).toMatchObject({ amount: '10', purchase_uuid: 'receipt1' }))
+})
+
+test('a purchase with nothing owed offers no payment', async () => {
+  const settled = { ...RECEIPT, supplier_uuid: 'sup1', supplier_name: 'Alpha', total: '36.00', payment_status: 'paid', balance_due: '0.00', paid_amount: '36.00', payments: [] }
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]), ok('GET', `${BASE}/purchase-receipts/receipt1`, settled)])
+  renderApp('/purchases/receipt1')
+  expect(await screen.findByRole('heading', { name: 'Purchase from Alpha' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Pay supplier' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Supplier account' })).toHaveAttribute('href', '/suppliers/sup1')
+})
