@@ -19,6 +19,7 @@ import { PurchaseImport } from './composer/PurchaseImport'
 import { SupplierPicker } from './composer/SupplierPicker'
 import { amountInCents, centsText, draftError, draftKey, newDraft, readDraft, subtotal, todayInShop, toInput, toPreview, validDate, type DraftLine, type PurchaseDraft } from './composer/draft'
 import { receiptMoney } from './composer/money'
+import { PURCHASE } from '../lib/vocabulary'
 import type { Receipt } from './composer/contracts'
 import { useConfirmReceipt } from './queries'
 import './purchases.css'
@@ -287,7 +288,7 @@ function PurchaseWorkspace({ initialProduct, productMissing, initialSupplier }: 
 
           <section className="card pw-card" aria-labelledby="pw-charges">
             <h2 id="pw-charges">Tax, charges and discount</h2>
-            <p className="muted">From the supplier's bill. They change what you owe; the cost of each product stays the item cost above.</p>
+            <p className="muted">From the supplier's bill. {PURCHASE.costRule}</p>
             <div className="pw-fields">
               {(['tax_amount', 'charges_amount', 'discount_amount'] as const).map(field => <Field key={field} label={{ tax_amount: 'GST amount (₹)', charges_amount: 'Other charges (₹)', discount_amount: 'Discount (₹)' }[field]} inputMode="decimal" value={draft[field] ?? ''} onChange={e => change({ ...draftRef.current, [field]: e.target.value })} />)}
             </div>
@@ -319,14 +320,15 @@ function PurchaseWorkspace({ initialProduct, productMissing, initialSupplier }: 
             : review.error ? <Alert>{describeError(review.error)}</Alert>
             : !reviewCurrent ? <p className="muted">{previewBody === null ? (total === null ? 'Complete quantities and costs to see the total.' : 'Fix the highlighted details to see the total.') : 'Calculating the total…'}</p>
             : <dl className="pw-totals">
-              <dt>Items</dt><dd>{receiptMoney(review.data!.subtotal)}</dd>
-              {Number(review.data!.tax_amount) > 0 && <><dt>GST</dt><dd>{receiptMoney(review.data!.tax_amount)}</dd></>}
-              {Number(review.data!.charges_amount) > 0 && <><dt>Other charges</dt><dd>{receiptMoney(review.data!.charges_amount)}</dd></>}
-              {Number(review.data!.discount_amount) > 0 && <><dt>Discount</dt><dd>−{receiptMoney(review.data!.discount_amount)}</dd></>}
-              <dt className="pw-grand">Total</dt><dd className="pw-grand"><strong>{receiptMoney(review.data!.total)}</strong></dd>
-              {review.data!.payment_recorded ? <><dt>Paid now</dt><dd>{receiptMoney(review.data!.paid_now)}</dd><dt className="pw-grand">Balance due</dt><dd className="pw-grand"><strong>{receiptMoney(review.data!.balance_due)}</strong></dd></>
+              <dt>{PURCHASE.items}</dt><dd>{receiptMoney(review.data!.subtotal)}</dd>
+              {Number(review.data!.tax_amount) > 0 && <><dt>{PURCHASE.gst}</dt><dd>{receiptMoney(review.data!.tax_amount)}</dd></>}
+              {Number(review.data!.charges_amount) > 0 && <><dt>{PURCHASE.charges}</dt><dd>{receiptMoney(review.data!.charges_amount)}</dd></>}
+              {Number(review.data!.discount_amount) > 0 && <><dt>{PURCHASE.discount}</dt><dd>−{receiptMoney(review.data!.discount_amount)}</dd></>}
+              <dt className="pw-grand">{PURCHASE.total}</dt><dd className="pw-grand"><strong>{receiptMoney(review.data!.total)}</strong></dd>
+              {review.data!.payment_recorded ? <><dt>Paid now</dt><dd>{receiptMoney(review.data!.paid_now)}</dd><dt className="pw-grand">{PURCHASE.balance}</dt><dd className="pw-grand"><strong>{receiptMoney(review.data!.balance_due)}</strong></dd></>
                 : <><dt className="pw-unresolved">Payment</dt><dd className="pw-unresolved">Not recorded</dd></>}
             </dl>}
+          {reviewCurrent && !draft.submitted && (Number(review.data!.tax_amount) > 0 || Number(review.data!.charges_amount) > 0 || Number(review.data!.discount_amount) > 0) && <p className="muted pw-note">{PURCHASE.costRule}</p>}
           {reviewCurrent && !draft.submitted && !review.data!.payment_recorded && <p className="muted pw-note">Left out of supplier dues until payment is recorded. Choose an option under Payment to the supplier.</p>}
           {error && <Alert>{error}</Alert>}
           <div className="pw-actions">

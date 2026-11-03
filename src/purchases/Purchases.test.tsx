@@ -510,3 +510,60 @@ test('staff cannot reverse a purchase and the list marks reversed purchases', as
   expect(screen.getByRole('option', { name: 'Reversed purchases' })).toBeInTheDocument()
   expect(screen.queryByText('Overdue', { selector: '.payment-badge' })).not.toBeInTheDocument()
 })
+
+const UNRECORDED = { ...RECEIPT, supplier_uuid: 'sup1', supplier_name: 'Alpha', items: [{ ...RECEIPT.items[0]!, quantity: '2.0000', unit_cost: '18.0000' }] }
+
+test('payment terms are recorded after the fact, with the server total shown before posting', async () => {
+  const preview = { subtotal: '36.00', tax_amount: '5.00', charges_amount: '0.00', discount_amount: '0.00', total: '41.00', paid_now: '0.00', balance_due: '41.00', payment_recorded: true }
+  const calls = fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('POST', `${BASE}/purchase-receipts/preview`, preview),
+    ok('POST', `${BASE}/purchase-receipts/receipt1/payment-terms`, { ...UNRECORDED, total: '41.00', payment_status: 'unpaid', balance_due: '41.00' }),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, UNRECORDED),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment terms' }))
+  const dialog = screen.getByRole('dialog', { name: 'Record payment terms' })
+  const save = within(dialog).getByRole('button', { name: 'Record payment terms' })
+  expect(within(dialog).getByText(/Only the items are added to what each product costs/)).toBeInTheDocument()
+  await userEvent.type(within(dialog).getByLabelText('GST amount (₹)'), '5')
+  expect((await within(dialog).findAllByText('₹41.00', { selector: 'strong' })).length).toBe(2) // total payable and balance due
+  expect(calls.filter(c => c.path.endsWith('/preview')).at(-1)?.body).toMatchObject({ items: [{ quantity: '2.0000', unit_cost: '18.0000' }], tax_amount: '5', record_payment_terms: true })
+  await waitFor(() => expect(save).toBeEnabled())
+  await userEvent.click(within(dialog).getByRole('radio', { name: /Paid part now/ }))
+  await userEvent.type(within(dialog).getByLabelText('Paid now (₹)'), '10')
+  await waitFor(() => expect(calls.filter(c => c.path.endsWith('/preview')).at(-1)?.body).toMatchObject({ paid_now: '10' }))
+  await waitFor(() => expect(save).toBeEnabled())
+  await userEvent.click(save)
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/payment-terms'))?.body).toMatchObject({ tax_amount: '5', paid_now: '10', payment_method: 'cash' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Record payment terms' })).not.toBeInTheDocument())
+})
+
+test('bad terms amounts block saving, and a purchase with no supplier cannot be given terms', async () => {
+  fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, UNRECORDED),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment terms' }))
+  const dialog = screen.getByRole('dialog', { name: 'Record payment terms' })
+  await userEvent.type(within(dialog).getByLabelText('GST amount (₹)'), '5.123')
+  expect(within(dialog).getByText(/Check the amounts/)).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: 'Record payment terms' })).toBeDisabled()
+})
+
+test('a purchase with no supplier explains why terms cannot be recorded', async () => {
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]), ok('GET', `${BASE}/purchase-receipts/receipt1`, RECEIPT)])
+  renderApp('/purchases/receipt1')
+  expect(await screen.findByText(/It has no supplier, so what you owe cannot be recorded here/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Record payment terms' })).not.toBeInTheDocument()
+})
+
+test('the workspace and the purchase use the same words, and say what goes into stock cost', async () => {
+  const calls = withSuppliers(); renderApp('/purchases/new')
+  await openPurchase(); await addRice()
+  fireEvent.change(screen.getByLabelText('GST amount (₹)'), { target: { value: '4' } })
+  expect(await screen.findByText('Items (stock cost)')).toBeInTheDocument()
+  expect(screen.getAllByText(/Only the items are added to what each product costs/).length).toBeGreaterThan(0)
+  expect(calls.some(c => c.path.endsWith('/preview'))).toBe(true)
+})

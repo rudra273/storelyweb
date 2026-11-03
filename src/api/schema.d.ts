@@ -1530,6 +1530,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/payment-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Payment Terms
+         * @description Record what is owed on a purchase saved without payment terms.
+         */
+        post: operations["record_payment_terms_v1_shops__shop_id__purchase_receipts__receipt_id__payment_terms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
         parameters: {
             query?: never;
@@ -5081,6 +5101,44 @@ export interface components {
             /** Total Taxable */
             total_taxable: string;
         };
+        /**
+         * TermsIn
+         * @description Payment terms for a purchase that was saved without them.
+         */
+        TermsIn: {
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: number | string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Paid In Full
+             * @default false
+             */
+            paid_in_full: boolean;
+            /** Paid Now */
+            paid_now?: number | string | null;
+            /** Payment Date */
+            payment_date?: string | null;
+            /**
+             * Payment Method
+             * @default cash
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
+        };
         /** TokenOut */
         TokenOut: {
             /** Access Token */
@@ -8473,6 +8531,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_payment_terms_v1_shops__shop_id__purchase_receipts__receipt_id__payment_terms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermsIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

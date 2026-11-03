@@ -7,11 +7,13 @@ import { ErrorState } from '../components/ui/states'
 import { ActionMenu, Button, PageHeader } from '../components/ui/workspace'
 import { useToast } from '../components/ui/toastContext'
 import { formatQty } from '../lib/money'
+import { PURCHASE } from '../lib/vocabulary'
 import { can } from '../permissions'
 import { SupplierPayment } from '../products/suppliers/SupplierPayment'
 import { useShop } from '../shops/context'
 import { todayInShop } from './composer/draft'
 import { receiptMoney } from './composer/money'
+import { PaymentTermsDialog } from './PaymentTermsDialog'
 import { ReasonDialog } from './ReasonDialog'
 import { useReceipt, useReversePurchase } from './queries'
 import './purchases.css'
@@ -25,6 +27,7 @@ export function PurchaseDetailPage() {
   const { role } = useShop()
   const [paying, setPaying] = useState(false)
   const [reversing, setReversing] = useState(false)
+  const [terms, setTerms] = useState(false)
   const toast = useToast()
   const reverse = useReversePurchase(id ?? '')
   const r = query.data
@@ -41,12 +44,12 @@ export function PurchaseDetailPage() {
       </>} />
       {r.reversed_at && <Alert kind="info"><strong>This purchase was reversed on {day(r.reversed_at)}.</strong> Reason: {r.reversal_reason}. Its stock was taken back out and it is not counted in what you owe. {can(role, 'products.edit') && <Link to={`/purchases/new${r.supplier_uuid ? `?supplier=${r.supplier_uuid}` : ''}`}>Record the corrected purchase</Link>}</Alert>}
       <div className="kpis purchase-kpis">
-        <Kpi label="Total" value={r.total == null ? null : receiptMoney(r.total)} note={r.total == null ? 'Payment terms were not recorded' : undefined} />
-        <Kpi label="Paid" value={r.total == null ? null : receiptMoney(r.paid_amount ?? '0')} />
-        <Kpi label="Balance due" value={r.balance_due == null ? null : receiptMoney(r.balance_due)} tone={late ? 'bad' : undefined} note={r.due_date ? `${late ? 'Overdue since' : 'Due'} ${day(r.due_date)}` : undefined} />
+        <Kpi label={PURCHASE.total} value={r.total == null ? null : receiptMoney(r.total)} note={r.total == null ? 'Payment terms were not recorded' : undefined} />
+        <Kpi label={PURCHASE.paid} value={r.total == null ? null : receiptMoney(r.paid_amount ?? '0')} />
+        <Kpi label={PURCHASE.balance} value={r.balance_due == null ? null : receiptMoney(r.balance_due)} tone={late ? 'bad' : undefined} note={r.due_date ? `${late ? 'Overdue since' : 'Due'} ${day(r.due_date)}` : undefined} />
         <Kpi label="Payment" value={r.reversed_at ? 'Reversed' : paymentStatus(r.payment_status)} />
       </div>
-      {r.payment_status === 'not_recorded' && <Alert kind="info">Payment is not recorded for this purchase, so it is not counted in what you owe the supplier.</Alert>}
+      {r.payment_status === 'not_recorded' && !r.reversed_at && <Alert kind="info">Payment is not recorded for this purchase, so it is not counted in what you owe the supplier. {!r.supplier_uuid ? 'It has no supplier, so what you owe cannot be recorded here. If you owe money for it, reverse it and record it again with the supplier.' : can(role, 'products.edit') && <button className="link" onClick={() => setTerms(true)}>Record payment terms</button>}</Alert>}
       <section className="card" aria-label="Items received">
         <h2>Items received</h2>
         <div className="table-wrap"><table className="table">
@@ -63,20 +66,22 @@ export function PurchaseDetailPage() {
       <section className="card purchase-totals" aria-label="Totals">
         <h2>Totals</h2>
         <dl className="facts">
-          <dt>Stock cost (items)</dt><dd>{receiptMoney(r.subtotal)}</dd>
+          <dt>{PURCHASE.items}</dt><dd>{receiptMoney(r.subtotal)}</dd>
           {r.total != null && <>
-            <dt>GST</dt><dd>{receiptMoney(r.tax_amount ?? '0')}</dd>
-            <dt>Other charges</dt><dd>{receiptMoney(r.charges_amount ?? '0')}</dd>
-            <dt>Discount</dt><dd>−{receiptMoney(r.discount_amount ?? '0')}</dd>
-            <dt><strong>Total payable</strong></dt><dd><strong>{receiptMoney(r.total)}</strong></dd>
+            <dt>{PURCHASE.gst}</dt><dd>{receiptMoney(r.tax_amount ?? '0')}</dd>
+            <dt>{PURCHASE.charges}</dt><dd>{receiptMoney(r.charges_amount ?? '0')}</dd>
+            <dt>{PURCHASE.discount}</dt><dd>−{receiptMoney(r.discount_amount ?? '0')}</dd>
+            <dt><strong>{PURCHASE.total}</strong></dt><dd><strong>{receiptMoney(r.total)}</strong></dd>
           </>}
         </dl>
+        {r.total != null && Number(r.subtotal) !== Number(r.total) && <p className="muted">{PURCHASE.costRule}</p>}
         {r.notes && <p><span className="muted">Notes:</span> {r.notes}</p>}
       </section>
       <section className="card" aria-label="Payments">
         <h2>Payments</h2>
         {r.payments?.length ? <ul className="plain">{r.payments.map(p => <li key={p.uuid}>{day(p.payment_date)} · <strong>{receiptMoney(p.amount)}</strong> · {paymentMethod(p.payment_method)}{p.reference ? ` · ${p.reference}` : ''}</li>)}</ul> : <p className="muted">No payments recorded against this purchase.</p>}
       </section>
+      {terms && <PaymentTermsDialog receipt={r} onClose={() => setTerms(false)} />}
       {reversing && <ReasonDialog title="Reverse purchase" confirmLabel="Reverse purchase" onClose={() => setReversing(false)}
         onConfirm={async reason => { await reverse.mutateAsync(reason); toast('Purchase reversed') }}
         help={r.payments?.length ? <p className="muted">Payments were made against this purchase. <Link to={`/suppliers/${r.supplier_uuid}`}>Open the supplier account</Link> to reverse them first.</p> : undefined}

@@ -25,3 +25,19 @@ export const PAYMENT_STATUS: Record<string, string> = {
   not_recorded: 'Not recorded',
   refunded: 'Refunded',
 }
+
+/**
+ * The money words of a purchase, the same in the workspace, the receipt, the supplier statement and the list.
+ * Decision: what goes into a product's cost (and so stock value and profit) is the items only. GST, other
+ * charges and discount change what is owed to the supplier ("total payable"), not what each product cost.
+ */
+export const PURCHASE = {
+  items: 'Items (stock cost)',
+  gst: 'GST',
+  charges: 'Other charges',
+  discount: 'Discount',
+  total: 'Total payable',
+  paid: 'Paid',
+  balance: 'Balance due',
+  costRule: 'Only the items are added to what each product costs. GST, charges and discount change what you owe the supplier, not the cost of the stock.',
+} as const
