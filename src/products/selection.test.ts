@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { NONE, filterKey, liveSelection, pageState, scopeOf, selectAllMatching, selectedCount, toggleOne, togglePage, type Filters } from './selection'
 
-const F: Filters = { q: '', category: '', low: false, expiring: false }
+const F: Filters = { q: '', category: '', low: false, expiring: false, noCode: false }
 const rows = ['a', 'b', 'c']
 
 test('the header checkbox is none, some or all of the visible rows', () => {
@@ -29,8 +29,8 @@ test('a selection only counts under the filters it was made with', () => {
 
 test('the scope sent to the server is the picked products, or the frozen filter', () => {
   expect(scopeOf(toggleOne(NONE, 'a', F))).toEqual({ ids: ['a'] })
-  const all = selectAllMatching({ q: 'soap', category: 'c1', low: true, expiring: true }, 12)
+  const all = selectAllMatching({ q: 'soap', category: 'c1', low: true, expiring: true, noCode: true }, 12)
   expect(selectedCount(all)).toBe(12)
-  expect(scopeOf(all)).toEqual({ filter: { q: 'soap', category: 'c1', low_stock: true, expiring_days: 30 } })
-  expect(scopeOf(selectAllMatching(F, 3))).toEqual({ filter: { q: null, category: null, low_stock: false, expiring_days: null } })
+  expect(scopeOf(all)).toEqual({ filter: { q: 'soap', category: 'c1', low_stock: true, expiring_days: 30, no_code: true } })
+  expect(scopeOf(selectAllMatching(F, 3))).toEqual({ filter: { q: null, category: null, low_stock: false, expiring_days: null, no_code: false } })
 })

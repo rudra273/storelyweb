@@ -16,7 +16,7 @@ export type PriceInput = S['PricePreviewIn']
 export type PricePreview = S['PricePreviewOut']
 export type BulkResult = S['BulkOut']
 export type BulkScope = S['BulkScope']
-export type BulkAction = S['SetCategory'] | S['SetReorderLevel'] | S['PriceChange'] | S['Archive']
+export type BulkAction = S['SetCategory'] | S['SetReorderLevel'] | S['PriceChange'] | S['Archive'] | S['AssignCodes']
 export type LabelProduct = S['LabelProduct']
 
 /** GST slabs offered for products and categories. */
@@ -37,6 +37,8 @@ export interface ProductQuery {
   category: string
   low: boolean
   expiring: boolean
+  /** Products with neither a barcode nor a code of their own. */
+  noCode: boolean
   sort: 'name' | 'price' | 'quantity' | 'updated' | 'code'
   dir: 'asc' | 'desc'
   page: number
@@ -54,6 +56,7 @@ export function useProducts(query: ProductQuery) {
   if (query.category) params.set('category', query.category)
   if (query.low) params.set('low_stock', 'true')
   if (query.expiring) params.set('expiring_days', '30')
+  if (query.noCode) params.set('no_code', 'true')
   if (query.page > 0) params.set('cursor', String(query.page * PAGE_SIZE))
   return useQuery({
     queryKey: ['products', shop, params.toString()],

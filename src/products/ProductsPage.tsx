@@ -28,6 +28,7 @@ function readQuery(params: URLSearchParams): ProductQuery {
     category: params.get('cat') ?? '',
     low: params.get('low') === '1',
     expiring: params.get('exp') === '1',
+    noCode: params.get('nocode') === '1',
     sort: sort && ['name', 'price', 'quantity', 'updated', 'code'].includes(sort) ? sort : 'name',
     dir: params.get('dir') === 'desc' ? 'desc' : 'asc',
     page: Math.max(0, Number(params.get('page')) || 0),
@@ -63,6 +64,8 @@ function ProductsWorkspace() {
   }, [params, setParams])
   const [selection, setSelection] = useState<Selection>(NONE)
   const [bulk, setBulk] = useState<BulkKind | null>(null)
+  // The product just added: its details open with the label offered straight away.
+  const [added, setAdded] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
 
   const update = (changes: Record<string, string | null>, keepPage = false) => {
@@ -83,8 +86,8 @@ function ProductsWorkspace() {
   const products = useProducts(query)
   const categories = useCategories()
   const data = products.data
-  const filtered = !!(query.q || query.category || query.low || query.expiring)
-  const filters: Filters = { q: query.q, category: query.category, low: query.low, expiring: query.expiring }
+  const filtered = !!(query.q || query.category || query.low || query.expiring || query.noCode)
+  const filters: Filters = { q: query.q, category: query.category, low: query.low, expiring: query.expiring, noCode: query.noCode }
   // A selection belongs to the filters it was made under: change them and it no longer applies.
   const sel = liveSelection(selection, filters)
   const lostCount = selection.kind !== 'none' && sel.kind === 'none' ? selectedCount(selection) : 0
@@ -144,7 +147,11 @@ function ProductsWorkspace() {
             <input type="checkbox" checked={query.expiring} onChange={(e) => update({ exp: e.target.checked ? '1' : null })} />
             Expiring in 30 days
           </label>
-          {(query.q || query.category || query.low || query.expiring) && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null }) }}>Clear filters</button>}
+          {canEdit && <label className="check inline">
+            <input type="checkbox" checked={query.noCode} onChange={(e) => update({ nocode: e.target.checked ? '1' : null })} />
+            No barcode or code
+          </label>}
+          {filtered && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null, nocode: null }) }}>Clear filters</button>}
         </Toolbar>
         {canEdit && data && data.items.length > 0 && <p className="muted inline-hint">Use the pencil on a row to change its name, category, price or reorder level. Open a product for everything else. Stock changes from its details, so the history stays complete.</p>}
         {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
@@ -176,6 +183,7 @@ function ProductsWorkspace() {
               <Button onClick={() => setBulk('category')} disabled={chosen > BULK_LIMIT}>Change category</Button>
               <Button onClick={() => setBulk('reorder')} disabled={chosen > BULK_LIMIT}>Set reorder level</Button>
               <Button onClick={() => setBulk('price')} disabled={chosen > BULK_LIMIT}>Change prices</Button>
+              <Button onClick={() => setBulk('codes')} disabled={chosen > BULK_LIMIT}>Assign codes</Button>
               <Button variant="danger" onClick={() => setBulk('archive')} disabled={chosen > BULK_LIMIT}>Archive</Button>
             </>}
             <button className="link" onClick={() => setSelection(NONE)}>Clear selection</button>
@@ -224,9 +232,9 @@ function ProductsWorkspace() {
         )}
       </div>
 
-      {selectedId && <ProductDetailPanel id={selectedId} canEdit={canEdit} onClose={() => open(null)} />}
+      {selectedId && <ProductDetailPanel key={selectedId} id={selectedId} canEdit={canEdit} justAdded={added === selectedId} onClose={() => open(null)} />}
       {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
-      {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); open(id); toast('Product added') }} />}
+      {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); setAdded(id); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}
       {dialog === 'labels' && <Labels scope={scopeOf(sel)} onClose={() => setDialog(null)} />}

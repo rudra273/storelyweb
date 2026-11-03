@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -1860,6 +1860,14 @@ export interface components {
              */
             type: "archive";
         };
+        /** AssignCodes */
+        AssignCodes: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "assign_codes";
+        };
         /** BillDetail */
         BillDetail: {
             bill: components["schemas"]["BillSummary"];
@@ -2050,13 +2058,18 @@ export interface components {
              * @default false
              */
             low_stock: boolean;
+            /**
+             * No Code
+             * @default false
+             */
+            no_code: boolean;
             /** Q */
             q?: string | null;
         };
         /** BulkIn */
         BulkIn: {
             /** Action */
-            action: components["schemas"]["SetCategory"] | components["schemas"]["SetReorderLevel"] | components["schemas"]["PriceChange"] | components["schemas"]["Archive"];
+            action: components["schemas"]["SetCategory"] | components["schemas"]["SetReorderLevel"] | components["schemas"]["PriceChange"] | components["schemas"]["Archive"] | components["schemas"]["AssignCodes"];
             /**
              * Dry Run
              * @default true
@@ -4861,7 +4874,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -4883,7 +4896,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7364,6 +7377,7 @@ export interface operations {
                 category?: string | null;
                 low_stock?: boolean;
                 expiring_days?: number | null;
+                no_code?: boolean;
                 sort?: "name" | "price" | "quantity" | "updated" | "code";
                 direction?: "asc" | "desc";
                 limit?: number;

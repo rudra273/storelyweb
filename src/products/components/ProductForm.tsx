@@ -204,8 +204,8 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
           </FormSection>
           <details className="optional-fields" open={editing || !!startingBarcode || ['product_code', 'barcode', 'hsn_code'].some(k => errors[k]) ? true : undefined}>
             <summary>Codes and HSN (optional)</summary><div className="form-grid">
-              <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} error={errors.product_code} />
-            <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} error={errors.barcode} />
+              <Field label="Product code" value={f.code} onChange={set('code')} maxLength={64} error={errors.product_code} hint={editing ? undefined : 'Leave the code and barcode empty and Storely gives this product a code of its own.'} />
+            <Field label="Barcode" value={f.barcode} onChange={set('barcode')} maxLength={64} error={errors.barcode} hint={editing ? undefined : 'Scan or type the one printed on the package, if it has one.'} />
             <Field label="HSN / SAC code" value={f.hsn} onChange={set('hsn')} maxLength={20} error={errors.hsn_code} />
             </div>
           </details>

@@ -8,9 +8,9 @@ import { useRetryKey } from '../../lib/retryKey'
 import { useShop } from '../../shops/context'
 import { applyBulk, reviewBulk, useProductMutation, type BulkAction, type BulkResult, type BulkScope, type Category } from '../queries'
 
-export type BulkKind = 'category' | 'reorder' | 'price' | 'archive'
+export type BulkKind = 'category' | 'reorder' | 'price' | 'archive' | 'codes'
 
-const TITLE: Record<BulkKind, string> = { category: 'Change category', reorder: 'Set reorder level', price: 'Change prices', archive: 'Archive products' }
+const TITLE: Record<BulkKind, string> = { category: 'Change category', reorder: 'Set reorder level', price: 'Change prices', archive: 'Archive products', codes: 'Assign codes' }
 const SHOWN = 8
 
 const products = (n: number) => `${n.toLocaleString('en-IN')} product${n === 1 ? '' : 's'}`
@@ -50,6 +50,7 @@ export function BulkDialog({ kind, scope, count, categories, onClose, onApplied 
   function action(): BulkAction | string {
     if (kind === 'category') return { type: 'set_category', category_uuid: category || null }
     if (kind === 'archive') return { type: 'archive' }
+    if (kind === 'codes') return { type: 'assign_codes' }
     if (kind === 'reorder') {
       if (reorder.trim() !== '' && !/^\d{1,9}(\.\d{1,4})?$/.test(reorder.trim())) return 'Enter the reorder level as a quantity, like 5 or 2.5, or leave it empty to remove it.'
       return { type: 'set_reorder_level', value: reorder.trim() === '' ? null : reorder.trim() }
@@ -89,6 +90,7 @@ export function BulkDialog({ kind, scope, count, categories, onClose, onApplied 
     reorder: n => `Set reorder level of ${products(n)}`,
     price: n => `Change prices of ${products(n)}`,
     archive: n => `Archive ${products(n)}`,
+    codes: n => `Give codes to ${products(n)}`,
   }
   return <Modal title={`${TITLE[kind]} · ${products(count)}`} onClose={onClose} canClose={!busy} wide>
     {!result && <form onSubmit={check} noValidate aria-busy={busy}>
@@ -105,6 +107,7 @@ export function BulkDialog({ kind, scope, count, categories, onClose, onApplied 
             <label className="check inline"><input type="radio" name="mode" checked={mode === 'amount'} onChange={() => setMode('amount')} />Rupees</label>
           </div>
         </>}
+        {kind === 'codes' && <p>Each chosen product that has no barcode and no code gets a code of its own, so it can be scanned and its label printed. Products that already have either are left as they are.</p>}
         {kind === 'archive' && <p>Archived products leave the catalogue and the phone's product list. Past invoices keep them. Products that still have stock are left alone.</p>}
       </fieldset>
       {error && <Alert>{error}</Alert>}

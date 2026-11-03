@@ -49,7 +49,7 @@ function DailySummary() {
 
 /** For a shop with nothing in it yet: the three things to do first, in order. */
 function GettingStarted() {
-  const products = useProducts({ q: '', category: '', low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
+  const products = useProducts({ q: '', category: '', low: false, expiring: false, noCode: false, sort: 'name', dir: 'asc', page: 0 })
   if (!products.data || products.data.items.length > 0) return null
   return <section className="card wide getting-started" aria-labelledby="start-heading">
     <h2 id="start-heading">Get your shop ready</h2>

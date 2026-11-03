@@ -743,5 +743,70 @@ test('labels for every matching product ask the server for the filter, not just 
   await userEvent.click(screen.getAllByRole('button', { name: /Print labels/ })[0]!)
   await screen.findByLabelText('Label preview')
   const sent = calls.find(c => c.path.endsWith('/label-data'))
-  expect(sent?.body).toEqual({ scope: { filter: { q: null, category: null, low_stock: false, expiring_days: null } } })
+  expect(sent?.body).toEqual({ scope: { filter: { q: null, category: null, low_stock: false, expiring_days: null, no_code: false } } })
+})
+
+// ── codes and labels ──
+
+const TEA = { ...RICE, uuid: 'p7', name: 'Tea', product_code: 'ST-000007', barcode: null }
+
+test('a product added without a code is shown its generated code, with the label offered at once', async () => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ measureText: () => ({ width: 10 }) } as unknown as CanvasRenderingContext2D)
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+    ok('POST', '/v1/shops/s1/products', { product: TEA, movements: [] }, 201),
+    ok('GET', '/v1/shops/s1/products/p7', { product: TEA, movements: [] }),
+    ok('POST', '/v1/shops/s1/products/label-data', [{ uuid: 'p7', name: 'Tea', product_code: 'ST-000007', barcode: null, selling_price: '12' }])])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add product' }))
+  const form = await screen.findByRole('dialog', { hidden: true })
+  expect(within(form).getByText(/Leave the code and barcode empty and Storely gives this product a code of its own/)).toBeInTheDocument()
+  await userEvent.type(within(form).getByLabelText('Product name'), 'Tea')
+  await userEvent.type(within(form).getByLabelText('Selling price (₹)'), '12')
+  await userEvent.click(within(form).getByRole('button', { name: 'Add product' }))
+  const panel = await screen.findByRole('complementary', { name: 'Product details' })
+  const banner = await within(panel).findByText(/Product added\./)
+  expect(banner.closest('[role]') ?? banner.parentElement).toHaveTextContent('ST-000007')
+  await userEvent.click(within(panel).getAllByRole('button', { name: 'Print label' })[0]!)
+  await screen.findByLabelText('Label preview')
+  expect(calls.find(c => c.path.endsWith('/label-data'))?.body).toEqual({ scope: { ids: ['p7'] } })
+  // The create request sent no code of its own: the server makes it.
+  const created = calls.find(c => c.method === 'POST' && c.path === '/v1/shops/s1/products')?.body as Record<string, unknown>
+  expect(created.product_code).toBeNull()
+  expect(created.barcode).toBeNull()
+})
+
+test('a product with no code says so and points at Assign codes; one with a code offers its label', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, product_code: null, barcode: null }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST, product_code: null, barcode: null }, movements: [] })])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
+  const panel = await screen.findByRole('complementary', { name: 'Product details' })
+  expect(await within(panel).findByText(/no barcode or code, so it cannot be scanned or labelled/)).toBeInTheDocument()
+  expect(within(panel).queryByRole('button', { name: 'Print label' })).not.toBeInTheDocument()
+})
+
+test('products without a code can be listed and given one, reviewed first', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, product_code: null, barcode: null }])),
+    ok('POST', '/v1/shops/s1/products/bulk', { ...REVIEW, action: 'assign_codes', sample: [{ uuid: 'p1', name: 'Basmati Rice', before: 'No code', after: 'ST-000001' }], notes: ['Codes are internal to your shop (they are not retail barcodes). A code is never reused, even if its product is deleted.'], below_cost: null })])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('No barcode or code'))
+  await waitFor(() => expect(calls.some(c => c.path.includes('no_code=true'))).toBe(true))
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  await userEvent.click(screen.getByRole('button', { name: 'Assign codes' }))
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toHaveTextContent('already have either are left as they are')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review change' }))
+  expect(await within(dialog).findByText('ST-000001')).toBeInTheDocument()
+  expect(within(dialog).getByText(/not retail barcodes/)).toBeInTheDocument()
+  expect(within(dialog).getByRole('button', { name: 'Give codes to 1 product' })).toBeInTheDocument()
+  expect(calls.find(c => c.path.endsWith('/products/bulk'))?.body).toEqual({ scope: { ids: ['p1'] }, action: { type: 'assign_codes' }, dry_run: true })
+})
+
+test('staff do not get the missing-code filter or the Assign codes action', async () => {
+  setup('staff', [RICE])
+  renderApp('/products')
+  await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
+  expect(screen.queryByLabelText('No barcode or code')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Assign codes' })).not.toBeInTheDocument()
 })

@@ -9,14 +9,16 @@ import { describeError, useAction } from '../../components/useAction'
 import { formatMoney, formatQty } from '../../lib/money'
 import { AdjustStock } from './AdjustStock'
 import { PriceBreakdown } from './PriceBreakdown'
+import { Labels } from './Labels'
 import { ProductForm } from './ProductForm'
 import { removeProduct, useProduct, useProductMutation } from '../queries'
 
 const KIND: Record<string, string> = { purchase: 'Stock in', sale: 'Sold', adjustment: 'Adjusted', return: 'Returned', void: 'Cancelled sale', stocktake: 'Stock count' }
 
-export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEdit: boolean; onClose: () => void }) {
+export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: { id: string; canEdit: boolean; /** Opened straight after Add product: offers the label first. */ justAdded?: boolean; onClose: () => void }) {
   const detail = useProduct(id)
-  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase'>(null)
+  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase' | 'labels'>(null)
+  const [bannerGone, setBannerGone] = useState(false)
   const remove = useProductMutation(removeProduct)
   const { error, run, busy } = useAction()
   const toast = useToast()
@@ -45,6 +47,12 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
       {detail.isPending && <Loading />}
       {detail.error && <Alert>{describeError(detail.error)} <button className="link" onClick={() => void detail.refetch()}>Retry product</button></Alert>}
       {error && <Alert>{error}</Alert>}
+      {p && justAdded && !bannerGone && (p.barcode || p.product_code) && (
+        <Alert kind="info">
+          Product added. {p.barcode ? 'It uses its barcode' : 'Its code is'} <strong>{p.barcode || p.product_code}</strong>{p.barcode ? '' : ', made by Storely for your shop'}. {' '}
+          <button className="link" onClick={() => setMode('labels')}>Print label</button> · <button className="link" onClick={() => setBannerGone(true)}>Not now</button>
+        </Alert>
+      )}
       {p && (
         <>
           <div className="product-overview"><span>Selling price</span><strong>{formatMoney(p.selling_price)}</strong><div className="product-stock-summary">{p.track_stock ? `${formatQty(p.quantity)} ${p.unit_name ?? ''} in stock` : 'Stock is not tracked'}{out ? <span className="badge warn">Out of stock</span> : p.low_stock && <span className="badge warn">Low stock</span>}</div></div>
@@ -89,6 +97,8 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
             <dd>{when(p.updated_at)}</dd>
           </dl>
           {pricing && <section className="detail-pricing" aria-label="How the price is made up"><h3>How the price is made up</h3><PriceBreakdown preview={pricing} pending={false} error={null} /></section>}
+          {(p.barcode || p.product_code) && <div className="actions"><Button disabled={busy} onClick={() => setMode('labels')}>Print label</Button></div>}
+          {canEdit && !p.barcode && !p.product_code && <Alert kind="info">This product has no barcode or code, so it cannot be scanned or labelled. Select it in the table and choose Assign codes.</Alert>}
           {canEdit && (
             <div className="actions">
               <Button variant="primary" disabled={busy} onClick={() => setMode('edit')}>
@@ -124,6 +134,7 @@ export function ProductDetailPanel({ id, canEdit, onClose }: { id: string; canEd
               </li>
             ))}
           </ul>
+          {mode === 'labels' && <Labels scope={{ ids: [p.uuid] }} onClose={() => setMode(null)} />}
           {mode === 'purchase' && <PurchaseComposer initialProduct={p} onClose={() => setMode(null)} />}
           {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => { setMode(null); toast('Changes saved') }} />}
           {mode === 'adjust' && <AdjustStock key={p.uuid} product={p} onClose={() => setMode(null)} />}

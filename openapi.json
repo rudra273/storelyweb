@@ -171,6 +171,21 @@
     "title": "Archive",
     "type": "object"
    },
+   "AssignCodes": {
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "const": "assign_codes",
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type"
+    ],
+    "title": "AssignCodes",
+    "type": "object"
+   },
    "BillDetail": {
     "properties": {
      "bill": {
@@ -816,6 +831,11 @@
       "title": "Low Stock",
       "type": "boolean"
      },
+     "no_code": {
+      "default": false,
+      "title": "No Code",
+      "type": "boolean"
+     },
      "q": {
       "anyOf": [
        {
@@ -839,6 +859,7 @@
       "discriminator": {
        "mapping": {
         "archive": "#/components/schemas/Archive",
+        "assign_codes": "#/components/schemas/AssignCodes",
         "price_change": "#/components/schemas/PriceChange",
         "set_category": "#/components/schemas/SetCategory",
         "set_reorder_level": "#/components/schemas/SetReorderLevel"
@@ -857,6 +878,9 @@
        },
        {
         "$ref": "#/components/schemas/Archive"
+       },
+       {
+        "$ref": "#/components/schemas/AssignCodes"
        }
       ],
       "title": "Action"
@@ -10000,7 +10024,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -10009,7 +10033,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -10024,7 +10048,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -10033,7 +10057,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -13905,6 +13929,16 @@
         }
        ],
        "title": "Expiring Days"
+      }
+     },
+     {
+      "in": "query",
+      "name": "no_code",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "No Code",
+       "type": "boolean"
       }
      },
      {

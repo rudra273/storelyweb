@@ -35,7 +35,7 @@ export function ScanBox({ status, onStatus, onProduct, onUnknown, onDone, disabl
   const search = useDebounced(text, 200)
   const categories = useCategories()
   const searching = search.trim() !== '' || category !== ''
-  const results = useProducts({ q: search.trim(), category, low: false, expiring: false, sort: 'name', dir: 'asc', page: 0 })
+  const results = useProducts({ q: search.trim(), category, low: false, expiring: false, noCode: false, sort: 'name', dir: 'asc', page: 0 })
 
   async function resolve(code: string) {
     const base = `/v1/shops/${shop}/products`
