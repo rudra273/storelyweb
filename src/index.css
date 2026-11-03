@@ -883,8 +883,6 @@ h1, h2, h3 { overflow-wrap: anywhere; }
 /* A focused field must never sit under a dialog's sticky action row (about 4.5rem tall). */
 dialog.modal { scroll-padding-bottom: 6rem; scroll-padding-top: 1rem; }
 dialog.modal :is(input, select, textarea, button, summary, a[href]) { scroll-margin-bottom: 6rem; }
-dialog.modal:has(.purchase-footer) { scroll-padding-bottom: 11rem; }
-dialog.modal:has(.purchase-footer) :is(input, select, textarea, button, summary, a[href]) { scroll-margin-bottom: 11rem; }
 main:focus { outline: none; }
 
 /* Row edit (catalogue): the edit icon turns the row's values into fields, and the same button becomes Save. */

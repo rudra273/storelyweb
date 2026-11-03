@@ -9,7 +9,6 @@ import { useDebounced } from '../lib/useDebounced'
 import { can } from '../permissions'
 import { useSuppliers } from '../products/queries'
 import { useShop } from '../shops/context'
-import { PurchaseComposer } from './composer/PurchaseComposer'
 import { todayInShop } from './composer/draft'
 import { receiptMoney } from './composer/money'
 import { RECEIPT_PAGE_SIZE, useReceipts, usePurchaseSummary, type ReceiptFilters } from './queries'
@@ -27,7 +26,6 @@ export function PurchaseInvoicesPage() {
   const q = useDebounced(search, 250)
   const filters: ReceiptFilters = { supplier: params.get('supplier') ?? '', q, status: params.get('status') ?? '', overdue: params.get('overdue') === '1', from: params.get('from') ?? '', to: params.get('to') ?? '' }
   const page = Math.max(0, Number(params.get('page')) || 0)
-  const [recording, setRecording] = useState(false)
   const change = (patch: Record<string, string>) => setParams(previous => {
     const next = new URLSearchParams(previous)
     for (const [key, value] of Object.entries(patch)) if (value) next.set(key, value); else next.delete(key)
@@ -48,7 +46,7 @@ export function PurchaseInvoicesPage() {
 
   return <div className="purchases-page">
     <PageHeader eyebrow="PURCHASES" title="Purchase invoices" description={`Stock received from suppliers at ${current?.name ?? 'your shop'}, and what is still owed.`} actions={<>
-      {canRecord && <Button variant="primary" onClick={() => setRecording(true)}>Record purchase</Button>}
+      {canRecord && <Link className="button primary" to="/purchases/new">Record purchase</Link>}
       <Link className="button secondary" to="/suppliers">Suppliers</Link>
     </>} />
     {summary.isPending && <KpiSkeletons count={4} label="Loading purchase figures…" />}
@@ -77,7 +75,7 @@ export function PurchaseInvoicesPage() {
       ? <Empty title="No purchases on this page"><Button onClick={() => change({ page: page > 1 ? String(page - 1) : '' })}>Previous page</Button></Empty>
       : filtered
         ? <Empty title="No purchases match">Change or clear the filters.</Empty>
-        : <Empty title="No purchases recorded yet">Record stock you receive from a supplier to keep stock and what you owe accurate.{canRecord && <div className="actions empty-actions"><Button variant="primary" onClick={() => setRecording(true)}>Record purchase</Button></div>}</Empty>)}
+        : <Empty title="No purchases recorded yet">Record stock you receive from a supplier to keep stock and what you owe accurate.{canRecord && <div className="actions empty-actions"><Link className="button primary" to="/purchases/new">Record purchase</Link></div>}</Empty>)}
     {rows.length > 0 && <div className="table-wrap"><table className="table">
       <thead><tr><th>Date</th><th>Supplier</th><th className="hide-sm">Supplier invoice</th><th className="num">Total</th><th className="hide-sm">Payment</th><th className="hide-sm">Due date</th><th className="num">Balance due</th></tr></thead>
       <tbody>{rows.map(r => {
@@ -99,6 +97,5 @@ export function PurchaseInvoicesPage() {
       <Button disabled={rows.length !== RECEIPT_PAGE_SIZE || receipts.isFetching} onClick={() => change({ page: String(page + 1) })}>Next</Button>
     </div>}
     <p className="muted report-note">Purchases recorded before this screen existed remain in Reports → Purchases.</p>
-    {recording && <PurchaseComposer onClose={() => setRecording(false)} />}
   </div>
 }

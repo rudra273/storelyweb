@@ -1436,6 +1436,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/invoice-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice Check
+         * @description Whether this supplier invoice number is already recorded, before the purchase is saved.
+         */
+        get: operations["invoice_check_v1_shops__shop_id__purchase_receipts_invoice_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/purchase-receipts/native": {
         parameters: {
             query?: never;
@@ -2944,6 +2964,34 @@ export interface components {
             id: string;
             /** Role */
             role: string;
+        };
+        /** InvoiceCheck */
+        InvoiceCheck: {
+            existing: components["schemas"]["InvoiceMatch"] | null;
+        };
+        /**
+         * InvoiceMatch
+         * @description A purchase already recorded under the same supplier invoice number.
+         */
+        InvoiceMatch: {
+            /** Invoice Number */
+            invoice_number: string | null;
+            /**
+             * Payment Status
+             * @enum {string}
+             */
+            payment_status: "not_recorded" | "unpaid" | "partial" | "paid";
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Total */
+            total: string | null;
+            /** Uuid */
+            uuid: string;
         };
         /** InvoiceSettings */
         InvoiceSettings: {
@@ -8143,6 +8191,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invoice_check_v1_shops__shop_id__purchase_receipts_invoice_check_get: {
+        parameters: {
+            query: {
+                supplier: string;
+                invoice_number: string;
+                purchase_date: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceCheck"];
                 };
             };
             /** @description Validation Error */

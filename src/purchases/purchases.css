@@ -1,4 +1,4 @@
-.purchase-header, .purchase-line-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.purchase-line-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .purchase-picker { margin: 20px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
 .purchase-results { max-height: 240px; overflow: auto; }
 .purchase-results .row { gap: 16px; }
@@ -7,23 +7,14 @@
 .purchase-line .row { gap: 12px; align-items: start; }
 .purchase-line .row strong { overflow-wrap: anywhere; min-width: 0; }
 .purchase-line-fields { margin-top: 12px; }
-.purchase-footer { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 16px 0; }
-.purchase-footer .actions { margin-top: 12px; flex-wrap: wrap; }
-@media (max-width: 600px) { .purchase-header, .purchase-line-fields { grid-template-columns: 1fr; gap: 8px; } .purchase-picker, .purchase-line { padding: 12px; } }
+@media (max-width: 600px) { .purchase-line-fields { grid-template-columns: 1fr; gap: 8px; } .purchase-picker, .purchase-line { padding: 12px; } }
 
-@media (max-width: 600px) { .purchase-footer .actions > .primary { order: -1; flex-basis: 100%; } .purchase-footer .actions > button { flex-grow: 1; } }
 .purchase-results button { flex-shrink: 0; white-space: nowrap; }
 
 .purchase-line { overflow-wrap: anywhere; }
 .purchase-line select { max-width: 100%; }
 
-.purchase-footer { padding: 10px 0; }
-/* The dialog scrolls and has 1.25rem of padding: stick through it so lines never show beneath the footer. */
-.modal .purchase-footer { bottom: -1.25rem; margin-bottom: -1.25rem; padding-bottom: calc(10px + 1.25rem); }
-.purchase-footer-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
-.purchase-footer-row p { margin: 0; }
-.purchase-footer .actions { margin-top: 0; }
-.purchase-line { scroll-margin-bottom: 96px; }
+.modal .purchase-line { scroll-margin-bottom: 96px; }
 
 /* Purchases workspace */
 .purchase-kpis .kpi-link { color: inherit; text-decoration: none; display: block; border-radius: 12px; }
@@ -36,3 +27,58 @@
 .purchase-detail .crumbs { margin: 0 0 .5rem; }
 .purchase-totals .facts { max-width: 28rem; }
 .stacked-note { display: block; }
+
+/* Record purchase workspace: sections on the left, the running total on the right. Nothing is fixed to the viewport, so nothing can sit over a field. */
+.purchase-workspace .crumbs { margin: 0 0 .5rem; }
+.purchase-workspace .card { max-width: none; margin: 0 0 1rem; }
+.pw-grid { display: grid; grid-template-columns: minmax(0, 1fr) 20rem; gap: 1rem; align-items: start; }
+.pw-main, .pw-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.pw-card h2, .pw-review h2 { font-size: 1rem; margin: 0 0 .75rem; }
+.pw-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem 1rem; align-items: start; }
+.pw-side { position: sticky; top: 1rem; }
+.pw-review { margin: 0; }
+.pw-totals { display: grid; grid-template-columns: 1fr auto; gap: .35rem 1rem; margin: 0 0 .75rem; }
+.pw-totals dt { color: var(--muted); }
+.pw-totals dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.pw-totals .pw-grand { color: inherit; font-size: 1.05rem; padding-top: .35rem; border-top: 1px solid var(--line); }
+.pw-totals .pw-unresolved { color: var(--warn-text); }
+.pw-note { font-size: .85rem; }
+.pw-actions { display: grid; gap: .5rem; margin-top: .75rem; }
+.pw-actions > * { width: 100%; }
+.pw-lines input { width: 100%; min-width: 0; padding: .4rem .5rem; }
+.pw-lines td { vertical-align: top; }
+.pw-lines td.pw-product { min-width: 9rem; overflow-wrap: anywhere; }
+.pw-lines td.num input { text-align: right; min-width: 3.75rem; }
+.pw-lines td:nth-child(5) input { min-width: 4.5rem; }
+.pw-lines td.pw-amount { padding-top: .85rem; white-space: nowrap; }
+.pw-lines input[type=date] { min-width: 7.75rem; padding-inline: .4rem; }
+.pw-product-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.pw-product-head > span { min-width: 0; }
+.pw-product-head .icon-button { flex-shrink: 0; }
+.pw-row-actions { display: flex; gap: .75rem; margin-top: .25rem; font-size: .85rem; }
+.pw-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .5rem; margin-bottom: .75rem; }
+.pw-choice { display: flex; gap: .6rem; align-items: flex-start; padding: .65rem .75rem; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.pw-choice.on { border-color: var(--primary-bg); background: var(--surface-2, transparent); box-shadow: inset 0 0 0 1px var(--primary-bg); }
+.pw-choice span { display: grid; gap: .15rem; }
+.pw-choice input { margin-top: .2rem; }
+.supplier-picker { position: relative; }
+.supplier-picker .field-label { font-weight: 600; font-size: .9rem; }
+.supplier-chosen > span { min-width: 0; overflow-wrap: anywhere; }
+.supplier-chosen button { flex-shrink: 0; white-space: nowrap; }
+.supplier-chosen { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .55rem .7rem; border: 1px solid var(--control-border); border-radius: 8px; }
+.supplier-options { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin: .15rem 0 0; padding: .25rem; list-style: none; background: var(--surface); border: 1px solid var(--control-border); border-radius: 8px; box-shadow: 0 8px 24px rgb(0 0 0 / .25); max-height: 16rem; overflow: auto; }
+.supplier-options li { padding: .5rem .6rem; border-radius: 6px; cursor: pointer; }
+.supplier-options li.active, .supplier-options li:hover { background: var(--hover-bg, rgb(127 127 127 / .18)); }
+.supplier-options li.add { font-weight: 600; }
+@media (max-width: 1280px) { .pw-grid { grid-template-columns: minmax(0, 1fr); } .pw-side { position: static; } }
+@media (max-width: 960px) {
+  .pw-lines thead { display: none; }
+  .pw-lines, .pw-lines tbody { display: block; }
+  .table.pw-lines tr { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem .75rem; padding: .75rem 0; border-bottom: 1px solid var(--line); position: relative; }
+  .table.pw-lines td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; }
+  .table.pw-lines td, .table.pw-lines td:last-child, .table.pw-lines td.num { text-align: left; }
+  .pw-lines td.pw-product { grid-column: 1 / -1; }
+  .pw-lines td[data-label]:not(.pw-product)::before { content: attr(data-label); display: block; font-size: .75rem; color: var(--muted); margin-bottom: .15rem; }
+  .pw-lines td.pw-amount { padding-top: 0; }
+  .pw-lines input[type=date] { min-width: 0; }
+}

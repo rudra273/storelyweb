@@ -1,7 +1,7 @@
-import { PurchaseComposer } from '../../purchases/composer/PurchaseComposer'
 import { useToast } from '../../components/ui/toastContext'
 import { day, stockReason } from '../../components/labels'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Button } from '../../components/ui/workspace'
 import { Alert, Loading } from '../../components/ui/ui'
 import { when } from '../../components/format'
@@ -19,7 +19,8 @@ const KIND = MOVEMENT_KIND
 
 export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: { id: string; canEdit: boolean; /** Opened straight after Add product: offers the label first. */ justAdded?: boolean; onClose: () => void }) {
   const detail = useProduct(id)
-  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase' | 'labels' | 'ledger'>(null)
+  const navigate = useNavigate()
+  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'labels' | 'ledger'>(null)
   const [bannerGone, setBannerGone] = useState(false)
   const remove = useProductMutation(removeProduct)
   const { error, run, busy } = useAction()
@@ -106,7 +107,7 @@ export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: 
               <Button variant="primary" disabled={busy} onClick={() => setMode('edit')}>
                 Edit
               </Button>
-              {p.track_stock && <Button disabled={busy} onClick={() => setMode('purchase')}>Restock</Button>}
+              {p.track_stock && <Button disabled={busy} onClick={() => navigate(`/purchases/new?product=${p.uuid}`)}>Restock</Button>}
               <Button disabled={busy} onClick={() => setMode('adjust')}>Adjust stock</Button>
               <Button variant="danger" disabled={busy} onClick={confirmDelete}>
                 {busy ? 'Deleting…' : 'Delete'}
@@ -138,7 +139,6 @@ export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: 
           </ul>
           {mode === 'labels' && <Labels scope={{ ids: [p.uuid] }} onClose={() => setMode(null)} />}
           {mode === 'ledger' && <StockLedger id={p.uuid} name={p.name} unit={p.unit_name ?? null} onClose={() => setMode(null)} />}
-          {mode === 'purchase' && <PurchaseComposer initialProduct={p} onClose={() => setMode(null)} />}
           {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => { setMode(null); toast('Changes saved') }} />}
           {mode === 'adjust' && <AdjustStock key={p.uuid} product={p} onClose={() => setMode(null)} />}
         </>

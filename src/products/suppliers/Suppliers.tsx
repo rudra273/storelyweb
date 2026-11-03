@@ -6,11 +6,11 @@ import { useAction } from '../../components/useAction'
 import { saveSupplier, useProductMutation, type Supplier } from '../queries'
 import { ACTION } from '../../lib/vocabulary'
 
-export function SupplierEditor({ supplier, onClose, onSaved }: { supplier?: Supplier; onClose: () => void; onSaved: (supplier: Supplier) => void }) {
+export function SupplierEditor({ supplier, initialName = '', onClose, onSaved }: { supplier?: Supplier; initialName?: string; onClose: () => void; onSaved: (supplier: Supplier) => void }) {
   const sending = useRef(false)
   const save = useProductMutation(saveSupplier)
   const { busy, error, run, setError } = useAction()
-  const [form, setForm] = useState({ name: supplier?.name ?? '', phone: supplier?.phone ?? '', email: supplier?.email ?? '', gstin: supplier?.gstin ?? '', address: supplier?.address ?? '', notes: supplier?.notes ?? '' })
+  const [form, setForm] = useState({ name: supplier?.name ?? initialName, phone: supplier?.phone ?? '', email: supplier?.email ?? '', gstin: supplier?.gstin ?? '', address: supplier?.address ?? '', notes: supplier?.notes ?? '' })
   const close = () => { if (!sending.current) onClose() }
   async function submit(event: FormEvent) {
     event.preventDefault()

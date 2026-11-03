@@ -849,7 +849,7 @@ test('the full history lists every entry with its source and the balance after i
   expect(await within(dialog).findByText('Adjusted · Damaged')).toBeInTheDocument()
   expect(within(dialog).getByText(/On the shelf now:/)).toHaveTextContent('47')
   expect(within(dialog).getByRole('link', { name: 'INV/2627/0001' })).toHaveAttribute('href', '/billing/b1')
-  expect(within(dialog).getByRole('link', { name: 'Asha Traders · 118' })).toHaveAttribute('href', '/purchases')
+  expect(within(dialog).getByRole('link', { name: 'Asha Traders · 118' })).toHaveAttribute('href', '/purchases/r1')
   const rows = within(dialog).getAllByRole('row').slice(1)
   expect(rows[0]).toHaveTextContent('-2')
   expect(rows[0]).toHaveTextContent('47')
@@ -905,12 +905,13 @@ test('stock views show how many products are in each, and Out of stock filters t
   expect(await screen.findByText(/running low or have run out/)).toBeInTheDocument()
 })
 
-test('a low product has a Restock shortcut that opens the purchase composer', async () => {
+test('a low product has a Restock shortcut that opens the purchase workspace with it filled in', async () => {
   fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []),
     ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, quantity: '2', low_stock: true }]))])
   renderApp('/products')
   await userEvent.click(await screen.findByRole('button', { name: 'Restock Basmati Rice' }))
-  expect(await screen.findByRole('dialog', { name: 'Record purchase' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Record purchase' })).toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test('staff can read the history but get no Restock shortcut', async () => {

@@ -19,6 +19,6 @@ export function movementTime(createdAt: string, type: string): string {
 export function sourceTarget(source: LedgerEntry['source']): { label: string; to: string | null } | null {
   if (!source) return null
   if (source.kind === 'bill' || source.kind === 'credit_note') return { label: source.label, to: `/billing/${source.uuid}` }
-  if (source.kind === 'purchase') return { label: source.label, to: '/purchases' }
+  if (source.kind === 'purchase') return { label: source.label, to: `/purchases/${source.uuid}` }
   return { label: source.label, to: null }
 }

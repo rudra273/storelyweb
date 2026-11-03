@@ -1,7 +1,6 @@
-import { PurchaseComposer } from '../purchases/composer/PurchaseComposer'
 import { useToast } from '../components/ui/toastContext'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useDebounced } from '../lib/useDebounced'
 import { Alert, Empty, Loading } from '../components/ui/ui'
 import { ActionMenu, Button, PageHeader, Toolbar } from '../components/ui/workspace'
@@ -16,7 +15,7 @@ import { ProductRow } from './components/ProductRow'
 import { BulkDialog, type BulkKind } from './components/BulkDialog'
 import { TriCheckbox } from './components/TriCheckbox'
 import { BULK_LIMIT, NONE, liveSelection, pageState, scopeOf, selectAllMatching, selectedCount, toggleOne, togglePage, type Filters, type Selection } from './selection'
-import { downloadExport, PAGE_SIZE, useCategories, useProducts, useStockSummary, type Product, type ProductQuery } from './queries'
+import { downloadExport, PAGE_SIZE, useCategories, useProducts, useStockSummary, type ProductQuery } from './queries'
 import { describeError } from '../components/useAction'
 
 type Sort = ProductQuery['sort']
@@ -53,7 +52,7 @@ function ProductsWorkspace() {
 
   const [search, setSearch] = useState(query.q)
   const settled = useDebounced(search, 300)
-  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'purchase'>(null)
+  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels'>(null)
   const toast = useToast()
   // A link from Home ("Add your first product") opens the form straight away.
   useEffect(() => {
@@ -67,8 +66,6 @@ function ProductsWorkspace() {
   const [bulk, setBulk] = useState<BulkKind | null>(null)
   // The product just added: its details open with the label offered straight away.
   const [added, setAdded] = useState<string | null>(null)
-  // A product being restocked from its row: the same purchase composer, with the product filled in.
-  const [restock, setRestock] = useState<Product | null>(null)
   // One product's label, opened from its row after its price changed.
   const [labelFor, setLabelFor] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -101,7 +98,6 @@ function ProductsWorkspace() {
   const chosen = selectedCount(sel)
   const visibleIds = data?.items.map(p => p.uuid) ?? []
   const state = pageState(sel, visibleIds)
-  const emptyCatalogue = !!data && data.items.length === 0 && !filtered
   const total = data?.total ?? 0
   const open = (id: string | null) => navigate({ pathname: id ? `/products/${id}` : '/products', search: params.toString() })
 
@@ -121,8 +117,7 @@ function ProductsWorkspace() {
     <div className="split catalogue">
       <div className="split-main">
         <PageHeader eyebrow="INVENTORY" title="Products" description="Your catalogue, stock and pricing in one place." actions={<>
-          {canEdit && <Button variant={emptyCatalogue ? undefined : 'primary'} onClick={() => setDialog('purchase')}>Record purchase</Button>}
-          {canEdit && <Button variant={emptyCatalogue ? 'primary' : undefined} onClick={() => setDialog('new')}>Add product</Button>}
+          {canEdit && <Button variant="primary" onClick={() => setDialog('new')}>Add product</Button>}
           {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
           <Button disabled={chosen === 0 || chosen > BULK_LIMIT} onClick={() => setDialog('labels')}>Print labels{chosen ? ` (${chosen.toLocaleString('en-IN')})` : ''}</Button>
           {(canEdit || canExport) && <ActionMenu>
@@ -166,7 +161,7 @@ function ProductsWorkspace() {
         </Toolbar>
         {canEdit && (query.low || query.out || query.expiring) && data && data.items.length > 0 && <Alert kind="info">
           {query.expiring && !query.low && !query.out ? 'These products have stock that expires within 30 days.' : 'These products are running low or have run out.'}{' '}
-          Use Restock on a row, or <button className="link" onClick={() => setDialog('purchase')}>record a purchase</button> for several at once.
+          Use Restock on a row, or <Link to="/purchases/new">record a purchase</Link> for several at once.
         </Alert>}
         {canEdit && data && data.items.length > 0 && <p className="muted inline-hint">Use the pencil on a row to change its name, category, price or reorder level. Open a product for everything else. Stock changes from its details, so the history stays complete.</p>}
         {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
@@ -227,7 +222,7 @@ function ProductsWorkspace() {
                 <tbody>
                   {data.items.map((p) => (
                     <ProductRow key={p.uuid} p={p} selected={p.uuid === selectedId} picked={sel.kind === 'matching' || (sel.kind === 'picked' && sel.ids.includes(p.uuid))} pickLocked={sel.kind === 'matching'} canEdit={canEdit} seeCost={seeCost}
-                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} onRestock={() => setRestock(p)} onPrintLabel={() => setLabelFor(p.uuid)} />
+                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} onRestock={() => navigate(`/purchases/new?product=${p.uuid}`)} onPrintLabel={() => setLabelFor(p.uuid)} />
                   ))}
                 </tbody>
               </table>
@@ -248,8 +243,6 @@ function ProductsWorkspace() {
       </div>
 
       {selectedId && <ProductDetailPanel key={selectedId} id={selectedId} canEdit={canEdit} justAdded={added === selectedId} onClose={() => open(null)} />}
-      {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
-      {restock && <PurchaseComposer initialProduct={restock} onClose={() => setRestock(null)} />}
       {labelFor && <Labels scope={{ ids: [labelFor] }} onClose={() => setLabelFor(null)} />}
       {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); setAdded(id); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}

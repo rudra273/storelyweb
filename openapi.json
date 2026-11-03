@@ -3487,6 +3487,85 @@
     "title": "InviteOut",
     "type": "object"
    },
+   "InvoiceCheck": {
+    "properties": {
+     "existing": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/InvoiceMatch"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "existing"
+    ],
+    "title": "InvoiceCheck",
+    "type": "object"
+   },
+   "InvoiceMatch": {
+    "description": "A purchase already recorded under the same supplier invoice number.",
+    "properties": {
+     "invoice_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "payment_status": {
+      "enum": [
+       "not_recorded",
+       "unpaid",
+       "partial",
+       "paid"
+      ],
+      "title": "Payment Status",
+      "type": "string"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "total": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "purchase_date",
+     "invoice_number",
+     "total",
+     "subtotal",
+     "payment_status"
+    ],
+    "title": "InvoiceMatch",
+    "type": "object"
+   },
    "InvoiceSettings": {
     "properties": {
      "bank_details": {
@@ -15503,6 +15582,82 @@
      }
     },
     "summary": "Preview Purchase Import",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/invoice-check": {
+   "get": {
+    "description": "Whether this supplier invoice number is already recorded, before the purchase is saved.",
+    "operationId": "invoice_check_v1_shops__shop_id__purchase_receipts_invoice_check_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "supplier",
+      "required": true,
+      "schema": {
+       "maxLength": 64,
+       "minLength": 1,
+       "title": "Supplier",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "invoice_number",
+      "required": true,
+      "schema": {
+       "maxLength": 100,
+       "minLength": 1,
+       "title": "Invoice Number",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "purchase_date",
+      "required": true,
+      "schema": {
+       "format": "date",
+       "title": "Purchase Date",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvoiceCheck"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Invoice Check",
     "tags": [
      "catalog",
      "purchases"
