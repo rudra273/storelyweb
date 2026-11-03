@@ -11,6 +11,7 @@ import { describeError } from '../../components/useAction'
 import { day, paymentStatus } from '../../components/labels'
 import { receiptMoney } from '../../purchases/composer/money'
 import { todayInShop } from '../../purchases/composer/draft'
+import { PURCHASE_VIEWS } from '../../purchases/queries'
 import type { Supplier } from '../queries'
 
 type Statement = components['schemas']['SupplierStatementOut']
@@ -47,7 +48,7 @@ export function SupplierStatement({ supplier, onClose }: { supplier: Supplier; o
       localStorage.removeItem(storageKey)
       setPending(null)
       setAmount('')
-      for (const key of ['supplier-statement', 'purchase-receipts', 'suppliers']) await client.invalidateQueries({ queryKey: [key, shop] })
+      for (const key of PURCHASE_VIEWS) await client.invalidateQueries({ queryKey: [key, shop] })
     } catch (e) {
       if (e instanceof ApiError && e.status === 422) {
         localStorage.removeItem(storageKey)

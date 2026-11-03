@@ -24,3 +24,15 @@
 .purchase-footer-row p { margin: 0; }
 .purchase-footer .actions { margin-top: 0; }
 .purchase-line { scroll-margin-bottom: 96px; }
+
+/* Purchases workspace */
+.purchase-kpis .kpi-link { color: inherit; text-decoration: none; display: block; border-radius: 12px; }
+.purchase-kpis .kpi-link:hover .kpi, .purchase-kpis .kpi-link:focus-visible .kpi { border-color: var(--accent, currentColor); }
+.purchase-kpis .kpi-link:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 2px; }
+.purchase-filters { align-items: end; }
+.overdue-flag { margin-left: .5rem; }
+.purchase-detail .card { margin-top: 1rem; max-width: none; }
+.purchase-detail .card h2 { font-size: 1rem; margin: 0 0 .75rem; }
+.purchase-detail .crumbs { margin: 0 0 .5rem; }
+.purchase-totals .facts { max-width: 28rem; }
+.stacked-note { display: block; }

@@ -7400,6 +7400,60 @@
     "title": "PurchaseRow",
     "type": "object"
    },
+   "PurchaseSummary": {
+    "description": "Purchase flows for the chosen dates, and balances owed today.",
+    "properties": {
+     "overdue": {
+      "title": "Overdue",
+      "type": "string"
+     },
+     "overdue_purchases": {
+      "title": "Overdue Purchases",
+      "type": "integer"
+     },
+     "payable": {
+      "title": "Payable",
+      "type": "string"
+     },
+     "payments_made": {
+      "title": "Payments Made",
+      "type": "string"
+     },
+     "purchase_value": {
+      "title": "Purchase Value",
+      "type": "string"
+     },
+     "purchases": {
+      "title": "Purchases",
+      "type": "integer"
+     },
+     "suppliers_owed": {
+      "title": "Suppliers Owed",
+      "type": "integer"
+     },
+     "unrecorded_purchases": {
+      "title": "Unrecorded Purchases",
+      "type": "integer"
+     },
+     "unrecorded_stock_cost": {
+      "title": "Unrecorded Stock Cost",
+      "type": "string"
+     }
+    },
+    "required": [
+     "purchases",
+     "purchase_value",
+     "payments_made",
+     "unrecorded_purchases",
+     "unrecorded_stock_cost",
+     "payable",
+     "overdue",
+     "overdue_purchases",
+     "suppliers_owed"
+    ],
+    "title": "PurchaseSummary",
+    "type": "object"
+   },
    "Purchases": {
     "properties": {
      "from": {
@@ -10250,7 +10304,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -10259,7 +10313,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -10274,7 +10328,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -10283,7 +10337,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -15143,6 +15197,107 @@
        "title": "Offset",
        "type": "integer"
       }
+     },
+     {
+      "in": "query",
+      "name": "supplier",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 64,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 100,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "not_recorded",
+          "unpaid",
+          "partial",
+          "paid",
+          "open"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "in": "query",
+      "name": "overdue",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Overdue",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
      }
     ],
     "responses": {
@@ -15455,6 +15610,101 @@
      }
     },
     "summary": "Preview Receipt",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/summary": {
+   "get": {
+    "description": "Purchases and payments in the dates chosen, plus what is owed and overdue today.",
+    "operationId": "purchase_summary_v1_shops__shop_id__purchase_receipts_summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "supplier",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 64,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseSummary"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Purchase Summary",
     "tags": [
      "catalog",
      "purchases"

@@ -7,6 +7,7 @@ import { draftKey } from './composer/draft'
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); localStorage.clear() })
 const PRODUCT = { uuid: 'p1', name: 'Rice', product_code: 'R1', barcode: null, unit_uuid: null, unit_name: 'kg', category_uuid: null, category_name: null, hsn_code: null, gst_percent: null, selling_price: '30', purchase_price: '18', quantity: '10', track_stock: true, low_stock: false, next_expiry: null, reorder_level: null, mrp_price: null, updated_at: '2026-10-01' }
 const RECEIPT = { uuid: 'receipt1', supplier_uuid: null, supplier_name: null, purchase_date: '2026-10-01', invoice_number: null, notes: null, subtotal: '36.00', payment_status: 'not_recorded', created_at: '2026-10-29T00:00:00Z', items: [{ uuid: 'l1', product_uuid: 'p1', product_name: 'Rice', unit_name: 'kg', quantity: '2', unit_cost: '18', amount: '36.00', batch_no: null, expiry_date: null, line_number: 1, movement_uuid: 'm1' }] }
+const SUMMARY = { purchases: 3, purchase_value: '240.00', payments_made: '80.00', unrecorded_purchases: 1, unrecorded_stock_cost: '36.00', payable: '160.00', overdue: '80.00', overdue_purchases: 1, suppliers_owed: 2 }
 const BASE = '/v1/shops/s1'
 function setup({ role = 'owner', fail = false } = {}) {
   return fakeApi([
@@ -18,6 +19,8 @@ function setup({ role = 'owner', fail = false } = {}) {
     ok('POST', `${BASE}/suppliers`, { uuid: 'supply1', name: 'Wholesale', phone: null, email: null, gstin: null, address: null, notes: null }, 201),
     ok('POST', `${BASE}/purchase-receipts/preview`, { subtotal: '36.00', tax_amount: '0.00', charges_amount: '0.00', discount_amount: '0.00', total: '36.00', paid_now: '0.00', balance_due: '36.00', payment_recorded: false }),
     ok('POST', `${BASE}/purchase-receipts`, fail ? { error: { code: 'internal_error', message: 'Response interrupted.' } } : RECEIPT, fail ? 500 : 201),
+    ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\/summary/, SUMMARY),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, RECEIPT),
     ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\?/, [RECEIPT]),
   ])
 }
@@ -105,8 +108,48 @@ test('purchase invoices has its own address and opens saved document snapshots',
   expect(await screen.findByRole('heading', { name: 'Purchase invoices' })).toBeInTheDocument()
   expect(document.title).toBe('Purchase invoices · Storely')
   expect(screen.getByRole('link', { name: 'Purchase invoices' })).toHaveAttribute('href', '/purchases')
-  await userEvent.click(await screen.findByRole('button', { name: 'View purchase 2026-10-01' }))
-  expect(within(screen.getByRole('dialog', { name: 'Purchase receipt' })).getByText('Rice')).toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('link', { name: 'View purchase 1 Oct 2026' }))
+  expect(await screen.findByRole('heading', { name: 'Purchase with no supplier' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Rice' })).toHaveAttribute('href', '/products/p1')
+  expect(screen.getByText(/not counted in what you owe/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '← Purchase invoices' })).toHaveAttribute('href', '/purchases')
+})
+
+test('the summary separates the dates chosen from what is owed today, and each figure opens its list', async () => {
+  const calls = setup(); renderApp('/purchases?from=2026-10-01')
+  const owe = (await screen.findByText('You owe suppliers')).closest('.kpi') as HTMLElement
+  expect(within(owe).getByText('₹160.00')).toBeInTheDocument()
+  expect(within(owe).getByText(/Today · 2 suppliers/)).toBeInTheDocument()
+  expect(within(screen.getByText('Purchased').closest('.kpi') as HTMLElement).getByText(/In the dates chosen · 3 purchases/)).toBeInTheDocument()
+  expect(screen.getByText(/1 purchase has no payment terms recorded \(₹36\.00 of stock\)/)).toBeInTheDocument()
+  // The summary is narrowed by dates and supplier only, never by the payment filters.
+  await userEvent.click(owe)
+  await waitFor(() => expect(calls.some(c => /purchase-receipts\?.*status=open/.test(c.path))).toBe(true))
+  expect(calls.filter(c => /summary/.test(c.path)).every(c => !/status=/.test(c.path))).toBe(true)
+  await userEvent.click(screen.getByText('Overdue').closest('.kpi') as HTMLElement)
+  await waitFor(() => expect(calls.some(c => /purchase-receipts\?.*overdue=true/.test(c.path))).toBe(true))
+})
+
+test('purchase filters live in the address and can be cleared', async () => {
+  const calls = setup(); renderApp('/purchases?status=paid&supplier=sup1')
+  await waitFor(() => expect(calls.some(c => /purchase-receipts\?.*status=paid/.test(c.path) && /supplier=sup1/.test(c.path))).toBe(true))
+  expect(screen.getByLabelText('Payment')).toHaveValue('paid')
+  await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+  expect(screen.getByLabelText('Payment')).toHaveValue('')
+})
+
+test('a purchase past its due date is flagged, and a failed summary can be retried', async () => {
+  const late = { ...RECEIPT, supplier_name: 'Alpha', total: '36.00', payment_status: 'unpaid', due_date: '2020-01-01', balance_due: '36.00', paid_amount: '0' }
+  fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', `${BASE}/suppliers`, []),
+    ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\/summary/, { error: { code: 'internal_error', message: 'Down.' } }, 500),
+    ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\?/, [late]),
+  ])
+  renderApp('/purchases')
+  expect(await screen.findByText('Overdue', { selector: '.payment-badge' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  expect(screen.queryByText('₹0.00')).not.toBeInTheDocument()
 })
 
 test('recording a purchase from the Purchases page refreshes the list', async () => {

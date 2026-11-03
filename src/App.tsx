@@ -38,6 +38,7 @@ import { RequirePaid, SubscriptionStatus } from './subscriptions/Status'
 import { PremiumRequestPage } from './subscriptions/PremiumRequestPage'
 import { AccountLayout } from './components/layout/AccountLayout'
 import { PurchaseInvoicesPage } from './purchases/PurchaseInvoicesPage'
+import { PurchaseDetailPage } from './purchases/PurchaseDetailPage'
 import { SuppliersPage } from './products/suppliers/SuppliersPage'
 
 function NotFound() {
@@ -97,6 +98,7 @@ export default function App() {
               </Route>
               <Route element={<RequireCapability needs="products.edit" />}>
                 <Route path="purchases" element={<PurchaseInvoicesPage />} />
+                <Route path="purchases/:id" element={<PurchaseDetailPage />} />
                 <Route path="suppliers" element={<SuppliersPage />} />
               </Route>
               <Route element={<RequireCapability needs="reports.view" />}>

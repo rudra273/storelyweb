@@ -1,0 +1,66 @@
+import { Link, useLocation, useParams } from 'react-router'
+import { day, paymentMethod, paymentStatus } from '../components/labels'
+import { Kpi } from '../components/ui/Kpi'
+import { Alert, Loading } from '../components/ui/ui'
+import { ErrorState } from '../components/ui/states'
+import { PageHeader } from '../components/ui/workspace'
+import { formatQty } from '../lib/money'
+import { todayInShop } from './composer/draft'
+import { receiptMoney } from './composer/money'
+import { useReceipt } from './queries'
+import './purchases.css'
+
+/** One purchase: what came in, what it cost, what was paid, what is still owed. */
+export function PurchaseDetailPage() {
+  const { id } = useParams()
+  const location = useLocation()
+  const back = (location.state as { from?: string } | null)?.from ?? '/purchases'
+  const query = useReceipt(id)
+  const r = query.data
+  const late = !!r?.due_date && r.due_date < todayInShop() && Number(r.balance_due ?? '0') > 0
+  return <div className="purchase-detail">
+    <p className="crumbs"><Link to={back}>← Purchase invoices</Link></p>
+    {query.isPending && <Loading label="Loading purchase…" />}
+    {query.error && <ErrorState error={query.error} onRetry={() => void query.refetch()} />}
+    {r && <>
+      <PageHeader eyebrow="PURCHASE" title={r.supplier_name ? `Purchase from ${r.supplier_name}` : 'Purchase with no supplier'} description={`Received ${day(r.purchase_date)}${r.invoice_number ? ` · Supplier invoice ${r.invoice_number}` : ''}`} actions={r.supplier_uuid ? <Link className="button secondary" to={`/suppliers/${r.supplier_uuid}`}>Supplier account</Link> : undefined} />
+      <div className="kpis purchase-kpis">
+        <Kpi label="Total" value={r.total == null ? null : receiptMoney(r.total)} note={r.total == null ? 'Payment terms were not recorded' : undefined} />
+        <Kpi label="Paid" value={r.total == null ? null : receiptMoney(r.paid_amount ?? '0')} />
+        <Kpi label="Balance due" value={r.balance_due == null ? null : receiptMoney(r.balance_due)} tone={late ? 'bad' : undefined} note={r.due_date ? `${late ? 'Overdue since' : 'Due'} ${day(r.due_date)}` : undefined} />
+        <Kpi label="Payment" value={paymentStatus(r.payment_status)} />
+      </div>
+      {r.payment_status === 'not_recorded' && <Alert kind="info">Payment is not recorded for this purchase, so it is not counted in what you owe the supplier.</Alert>}
+      <section className="card" aria-label="Items received">
+        <h2>Items received</h2>
+        <div className="table-wrap"><table className="table">
+          <thead><tr><th>Product</th><th className="num">Quantity</th><th className="num">Unit cost</th><th className="num">Amount</th><th className="hide-sm">Batch / expiry</th></tr></thead>
+          <tbody>{r.items.map(line => <tr key={line.uuid}>
+            <td><Link to={`/products/${line.product_uuid}`}>{line.product_name}</Link></td>
+            <td className="num">{formatQty(line.quantity)} {line.unit_name}</td>
+            <td className="num">{receiptMoney(line.unit_cost)}</td>
+            <td className="num">{receiptMoney(line.amount)}</td>
+            <td className="hide-sm">{line.batch_no ?? '—'}{line.expiry_date && <><br /><small>Expires {day(line.expiry_date)}</small></>}</td>
+          </tr>)}</tbody>
+        </table></div>
+      </section>
+      <section className="card purchase-totals" aria-label="Totals">
+        <h2>Totals</h2>
+        <dl className="facts">
+          <dt>Stock cost (items)</dt><dd>{receiptMoney(r.subtotal)}</dd>
+          {r.total != null && <>
+            <dt>GST</dt><dd>{receiptMoney(r.tax_amount ?? '0')}</dd>
+            <dt>Other charges</dt><dd>{receiptMoney(r.charges_amount ?? '0')}</dd>
+            <dt>Discount</dt><dd>−{receiptMoney(r.discount_amount ?? '0')}</dd>
+            <dt><strong>Total payable</strong></dt><dd><strong>{receiptMoney(r.total)}</strong></dd>
+          </>}
+        </dl>
+        {r.notes && <p><span className="muted">Notes:</span> {r.notes}</p>}
+      </section>
+      <section className="card" aria-label="Payments">
+        <h2>Payments</h2>
+        {r.payments?.length ? <ul className="plain">{r.payments.map(p => <li key={p.uuid}>{day(p.payment_date)} · <strong>{receiptMoney(p.amount)}</strong> · {paymentMethod(p.payment_method)}{p.reference ? ` · ${p.reference}` : ''}</li>)}</ul> : <p className="muted">No payments recorded against this purchase.</p>}
+      </section>
+    </>}
+  </div>
+}

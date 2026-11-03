@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -1467,6 +1467,26 @@ export interface paths {
          * @description The total, amount paid and balance this purchase would be saved with.
          */
         post: operations["preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Purchase Summary
+         * @description Purchases and payments in the dates chosen, plus what is owed and overdue today.
+         */
+        get: operations["purchase_summary_v1_shops__shop_id__purchase_receipts_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4043,6 +4063,30 @@ export interface components {
             /** Unit Cost */
             unit_cost: string;
         };
+        /**
+         * PurchaseSummary
+         * @description Purchase flows for the chosen dates, and balances owed today.
+         */
+        PurchaseSummary: {
+            /** Overdue */
+            overdue: string;
+            /** Overdue Purchases */
+            overdue_purchases: number;
+            /** Payable */
+            payable: string;
+            /** Payments Made */
+            payments_made: string;
+            /** Purchase Value */
+            purchase_value: string;
+            /** Purchases */
+            purchases: number;
+            /** Suppliers Owed */
+            suppliers_owed: number;
+            /** Unrecorded Purchases */
+            unrecorded_purchases: number;
+            /** Unrecorded Stock Cost */
+            unrecorded_stock_cost: string;
+        };
         /** Purchases */
         Purchases: {
             /** From */
@@ -4981,7 +5025,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5003,7 +5047,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7975,6 +8019,12 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                supplier?: string | null;
+                q?: string | null;
+                status?: ("not_recorded" | "unpaid" | "partial" | "paid" | "open") | null;
+                overdue?: boolean;
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {
@@ -8163,6 +8213,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReceiptPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purchase_summary_v1_shops__shop_id__purchase_receipts_summary_get: {
+        parameters: {
+            query?: {
+                supplier?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseSummary"];
                 };
             };
             /** @description Validation Error */
