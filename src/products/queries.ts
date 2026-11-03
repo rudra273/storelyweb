@@ -135,8 +135,8 @@ export const adjustStock = (shop: string, input: { id: string; delta: string; re
   })
 
 /** Sends the chosen file as the raw request body; the server reads CSV and .xlsx. */
-export async function importFile(shop: string, file: File, options: { dryRun: boolean; allowDuplicate: boolean }): Promise<ImportReport> {
-  const query = new URLSearchParams({ filename: file.name, dry_run: String(options.dryRun), allow_duplicate: String(options.allowDuplicate) })
+export async function importFile(shop: string, file: File, options: { dryRun: boolean; allowDuplicate: boolean; stopOnErrors?: boolean }): Promise<ImportReport> {
+  const query = new URLSearchParams({ filename: file.name, dry_run: String(options.dryRun), allow_duplicate: String(options.allowDuplicate), stop_on_errors: String(options.stopOnErrors ?? false) })
   return request<ImportReport>('POST', `/v1/shops/${shop}/products/import?${query}`, { body: file })
 }
 

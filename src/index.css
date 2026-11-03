@@ -934,3 +934,8 @@ main:focus { outline: none; }
   .ledger-table td.nowrap:first-child, .ledger-table td:first-child { white-space: normal; }
   .ledger-table .num { white-space: nowrap; }
 }
+
+/* Import: rows with problems, and the choice about them. */
+.import-problems caption { text-align: left; font-weight: 600; padding-bottom: .25rem; }
+.import-problems th, .import-problems td { text-align: left; }
+.import-skip { display: flex; align-items: center; gap: .5rem; margin: .75rem 0 .25rem; }

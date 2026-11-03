@@ -3341,6 +3341,17 @@
       "title": "Possible Duplicate",
       "type": "boolean"
      },
+     "previous_import_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Previous Import At"
+     },
      "rows_read": {
       "title": "Rows Read",
       "type": "integer"
@@ -10239,7 +10250,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -10248,7 +10259,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -10263,7 +10274,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -10272,7 +10283,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -14486,6 +14497,16 @@
       "schema": {
        "default": false,
        "title": "Allow Duplicate",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "stop_on_errors",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Stop On Errors",
        "type": "boolean"
       }
      }

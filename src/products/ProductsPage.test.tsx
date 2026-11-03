@@ -987,3 +987,69 @@ test('after a bulk price change, new labels are offered for the same selection',
   await screen.findByLabelText('Label preview')
   expect(calls.find(c => c.path.endsWith('/label-data'))?.body).toEqual({ scope: { ids: ['p1'] } })
 })
+
+// ── importing: problems, repeats ──
+
+const REPORT = { dry_run: true, rows_read: 4, added: 1, updated: 1, skipped: 2, possible_duplicate: false, previous_import_at: null, errors: [{ row: 4, message: 'Name is required.' }, { row: 5, message: 'GST 7% is not a standard rate.' }], more_errors: 0 }
+async function importReply(report: object, real: (path: string) => Response = () => new Response(JSON.stringify({ ...REPORT, dry_run: false, skipped: 0, errors: [] }), { status: 200 })) {
+  setup('owner', [{ ...RICE, ...COST }])
+  const base = globalThis.fetch
+  const sent: string[] = []
+  vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+    if (!path.includes('/products/import?')) return base(path, init)
+    sent.push(path)
+    return Promise.resolve(path.includes('dry_run=true') ? new Response(JSON.stringify(report), { status: 200 }) : real(path))
+  })
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Import' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.upload(within(dialog).getByLabelText('CSV or Excel (.xlsx) file, up to 5 MB'), new File(['product_name,quantity,purchase_price\nTea,1,10'], 'products.csv', { type: 'text/csv' }))
+  return { dialog, sent }
+}
+
+test('a file with problem rows imports nothing until it is fixed or skipping them is chosen', async () => {
+  const { dialog, sent } = await importReply(REPORT)
+  const confirm = await within(dialog).findByRole('button', { name: 'Fix the problems first' })
+  expect(confirm).toBeDisabled()
+  expect(within(dialog).getByText('2 rows have a problem')).toBeInTheDocument()
+  expect(within(dialog).getByText('GST 7% is not a standard rate.')).toBeInTheDocument()
+  expect(within(dialog).getByText(/Nothing is imported while any row has a problem/)).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByLabelText(/Import the 2 good rows and skip the 2 with problems/))
+  expect(within(dialog).getByText(/send only the corrected rows/)).toBeInTheDocument()
+  await userEvent.click(await within(dialog).findByRole('button', { name: 'Import 2 products and skip 2 rows' }))
+  await within(dialog).findByText(/Imported:/)
+  const real = sent.find(p => p.includes('dry_run=false'))!
+  expect(real).toContain('stop_on_errors=false')
+  expect(sent.find(p => p.includes('dry_run=true'))).toContain('stop_on_errors=false')
+})
+
+test('without that choice the server is asked to stop on any problem, so nothing partial can slip through', async () => {
+  const refuse = () => new Response(JSON.stringify({ error: { code: 'problem_rows', message: '2 rows in the file have problems, so nothing was imported. Fix them and import again.' } }), { status: 422 })
+  const { dialog, sent } = await importReply({ ...REPORT, skipped: 0, errors: [] }, refuse)
+  await userEvent.click(await within(dialog).findByRole('button', { name: 'Import 2 products' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('nothing was imported')
+  expect(sent.find(p => p.includes('dry_run=false'))).toContain('stop_on_errors=true')
+})
+
+test('the problem rows can be downloaded, and a long list is shortened on screen', async () => {
+  const many = Array.from({ length: 12 }, (_, i) => ({ row: i + 2, message: `Problem ${i + 2}` }))
+  const created = vi.fn(() => 'blob:x')
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: created, revokeObjectURL: vi.fn() }))
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  const { dialog } = await importReply({ ...REPORT, skipped: 12, errors: many })
+  expect(await within(dialog).findByText('Problem 9')).toBeInTheDocument()
+  expect(within(dialog).queryByText('Problem 10')).not.toBeInTheDocument()
+  expect(within(dialog).getByText('…and 4 more.')).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Download the list of problems (CSV)' }))
+  expect(click).toHaveBeenCalledTimes(1)
+  const blob = (created.mock.calls[0] as unknown as [Blob])[0]
+  expect(await blob.text()).toContain('"11","Problem 11"')
+  click.mockRestore()
+})
+
+test('a file that was imported before says when, so a repeat is a knowing choice', async () => {
+  const { dialog } = await importReply({ ...REPORT, skipped: 0, errors: [], possible_duplicate: true, previous_import_at: '2026-10-05T10:00:00.000Z' })
+  expect(await within(dialog).findByText(/already imported on 5 Oct 2026/)).toBeInTheDocument()
+  expect(within(dialog).getByText(/adds the stock again/)).toBeInTheDocument()
+  expect(within(dialog).getByText(/check the products first/)).toBeInTheDocument()
+})

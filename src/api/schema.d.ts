@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -2860,6 +2860,8 @@ export interface components {
             more_errors: number;
             /** Possible Duplicate */
             possible_duplicate: boolean;
+            /** Previous Import At */
+            previous_import_at?: string | null;
             /** Rows Read */
             rows_read: number;
             /** Skipped */
@@ -4979,7 +4981,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -5001,7 +5003,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -7630,6 +7632,7 @@ export interface operations {
                 filename: string;
                 dry_run?: boolean;
                 allow_duplicate?: boolean;
+                stop_on_errors?: boolean;
             };
             header?: never;
             path: {
