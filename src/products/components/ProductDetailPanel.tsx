@@ -10,14 +10,16 @@ import { formatMoney, formatQty } from '../../lib/money'
 import { AdjustStock } from './AdjustStock'
 import { PriceBreakdown } from './PriceBreakdown'
 import { Labels } from './Labels'
+import { MOVEMENT_KIND, movementTime } from './ledgerLabels'
+import { StockLedger } from './StockLedger'
 import { ProductForm } from './ProductForm'
 import { removeProduct, useProduct, useProductMutation } from '../queries'
 
-const KIND: Record<string, string> = { purchase: 'Stock in', sale: 'Sold', adjustment: 'Adjusted', return: 'Returned', void: 'Cancelled sale', stocktake: 'Stock count' }
+const KIND = MOVEMENT_KIND
 
 export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: { id: string; canEdit: boolean; /** Opened straight after Add product: offers the label first. */ justAdded?: boolean; onClose: () => void }) {
   const detail = useProduct(id)
-  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase' | 'labels'>(null)
+  const [mode, setMode] = useState<null | 'edit' | 'adjust' | 'purchase' | 'labels' | 'ledger'>(null)
   const [bannerGone, setBannerGone] = useState(false)
   const remove = useProductMutation(removeProduct)
   const { error, run, busy } = useAction()
@@ -111,7 +113,7 @@ export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: 
               </Button>
             </div>
           )}
-          <h3 className="detail-section-heading">Stock history</h3>
+          <div className="history-head"><h3 className="detail-section-heading">Recent stock history</h3>{p.track_stock && <button type="button" className="link" onClick={() => setMode('ledger')}>See the full history</button>}</div>
           {movements.length === 0 && <p className="muted">No stock movements yet.</p>}
           <ul className="plain history">
             {movements.map((m) => (
@@ -122,7 +124,7 @@ export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: 
                   <br />
                   {/* A web purchase receipt has a date only; the server stamps it noon shop time. */}
                   <small className="muted">
-                    {/^\d{4}-\d{2}-\d{2}(T00:00(:00(\.0+)?)?Z?)?$/.test(m.created_at) || (m.type === 'purchase' && m.created_at.endsWith('T12:00:00+05:30')) ? day(m.created_at) : when(m.created_at)}
+                    {movementTime(m.created_at, m.type)}
                     {m.notes ? ` · ${m.notes}` : ''}
                     {m.expiry_date ? ` · expires ${day(m.expiry_date)}` : ''}
                   </small>
@@ -135,6 +137,7 @@ export function ProductDetailPanel({ id, canEdit, justAdded = false, onClose }: 
             ))}
           </ul>
           {mode === 'labels' && <Labels scope={{ ids: [p.uuid] }} onClose={() => setMode(null)} />}
+          {mode === 'ledger' && <StockLedger id={p.uuid} name={p.name} unit={p.unit_name ?? null} onClose={() => setMode(null)} />}
           {mode === 'purchase' && <PurchaseComposer initialProduct={p} onClose={() => setMode(null)} />}
           {mode === 'edit' && <ProductForm key={p.uuid} product={p} onClose={() => setMode(null)} onSaved={() => { setMode(null); toast('Changes saved') }} />}
           {mode === 'adjust' && <AdjustStock key={p.uuid} product={p} onClose={() => setMode(null)} />}

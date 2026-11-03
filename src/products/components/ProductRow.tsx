@@ -18,7 +18,7 @@ const sameNumber = (a: string, b: string | null | undefined) => (a.trim() === ''
  * category, a fixed price and the reorder level become fields and that same button turns into Save.
  * Stock is never a field: it changes only through the ledger. The full form is in the product's details.
  */
-export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, categories, onPick, onOpen }: {
+export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, categories, onPick, onOpen, onRestock }: {
   p: Product
   selected: boolean
   picked: boolean
@@ -29,6 +29,8 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
   categories: Category[]
   onPick: () => void
   onOpen: () => void
+  /** Opens the purchase composer with this product filled in (low and out-of-stock rows). */
+  onRestock: () => void
 }) {
   const shop = useShop().current?.shop_id ?? ''
   const client = useQueryClient()
@@ -139,7 +141,7 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
         ? <input className="cell-input cell-number" aria-label={`Price of ${p.name}`} inputMode="decimal" value={draft.price} disabled={locked} onChange={e => set('price')(e.target.value)} aria-invalid={error && !isAmount(draft.price) ? true : undefined} />
         : <>{formatMoney(p.selling_price)}{!fixed && <small className="muted"> from cost + margin</small>}</>}</td>
       {seeCost && <td className="hide-sm">{formatMoney(p.purchase_price)}</td>}
-      <td>{tracked ? <>{formatQty(p.quantity)} {p.unit_name ?? ''} {p.low_stock && <span className="badge warn">low</span>}</> : <span className="muted">not tracked</span>}</td>
+      <td>{tracked ? <>{formatQty(p.quantity)} {p.unit_name ?? ''} {p.low_stock && <span className="badge warn">low</span>}{canEdit && p.low_stock && !editing && <button type="button" className="link restock-link" aria-label={`Restock ${p.name}`} onClick={onRestock}>Restock</button>}</> : <span className="muted">not tracked</span>}</td>
       <td className="hide-sm">{editing && tracked
         ? <input className="cell-input cell-number" aria-label={`Reorder level of ${p.name}`} inputMode="decimal" value={draft.reorder} disabled={locked} onChange={e => set('reorder')(e.target.value)} aria-invalid={error && draft.reorder.trim() !== '' && !isAmount(draft.reorder) ? true : undefined} />
         : p.reorder_level ? formatQty(p.reorder_level) : '—'}</td>

@@ -15,7 +15,7 @@ export function NewProductDraft({ line, onClose, onStage }: { line?: DraftLine; 
   const [error, setError] = useState<string | null>(null)
   const units = useUnits(), categories = useCategories()
   const nameQuery = useDebounced(form.name, 250)
-  const existing = useProducts({ q: nameQuery, category: '', low: false, expiring: false, noCode: false, sort: 'name', dir: 'asc', page: 0 })
+  const existing = useProducts({ q: nameQuery, category: '', low: false, expiring: false, noCode: false, out: false, sort: 'name', dir: 'asc', page: 0 })
   const duplicates = !!form.name.trim() && existing.data?.items.some(p => p.name.trim().toLowerCase() === form.name.trim().toLowerCase())
   function submit(event: FormEvent) {
     event.preventDefault()

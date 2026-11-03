@@ -6,7 +6,7 @@ type S = components['schemas']
 export const BULK_LIMIT = 1000
 
 /** What the catalogue is filtered by. A selection belongs to one set of filters. */
-export interface Filters { q: string; category: string; low: boolean; expiring: boolean; noCode: boolean }
+export interface Filters { q: string; category: string; low: boolean; expiring: boolean; noCode: boolean; outOfStock: boolean }
 
 /**
  * Which products are chosen:
@@ -22,7 +22,7 @@ export type Selection =
 
 export const NONE: Selection = { kind: 'none' }
 
-export const filterKey = (f: Filters): string => JSON.stringify([f.q, f.category, f.low, f.expiring, f.noCode])
+export const filterKey = (f: Filters): string => JSON.stringify([f.q, f.category, f.low, f.expiring, f.noCode, f.outOfStock])
 
 export function selectedCount(s: Selection): number {
   return s.kind === 'picked' ? s.ids.length : s.kind === 'matching' ? s.total : 0
@@ -33,7 +33,7 @@ export function scopeOf(s: Selection): S['BulkScope'] {
   if (s.kind === 'picked') return { ids: s.ids }
   if (s.kind === 'matching') {
     const f = s.filters
-    return { filter: { q: f.q || null, category: f.category || null, low_stock: f.low, expiring_days: f.expiring ? 30 : null, no_code: f.noCode } }
+    return { filter: { q: f.q || null, category: f.category || null, low_stock: f.low, expiring_days: f.expiring ? 30 : null, no_code: f.noCode, out_of_stock: f.outOfStock } }
   }
   return { ids: [] }
 }

@@ -256,12 +256,20 @@ test('stock adjustment rejects invalid quantity and preserves input after server
   await userEvent.click(within(dialog).getByRole('button', { name: 'Adjust stock' }))
   expect(await within(dialog).findByRole('alert')).toHaveTextContent('Enter how many')
   expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))).toBe(false)
+  // More than is on the shelf (50) is stopped on screen, with the reason, before the server is asked.
   await userEvent.clear(within(dialog).getByLabelText('Quantity'))
   await userEvent.type(within(dialog).getByLabelText('Quantity'), '51.25')
+  expect(within(dialog).getByRole('status')).toHaveTextContent('below zero: only 50 is on the shelf')
+  expect(within(dialog).getByRole('button', { name: 'Adjust stock' })).toBeDisabled()
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))).toBe(false)
+  // An amount that looks fine can still be refused (the stock may have changed): the input is kept.
+  await userEvent.clear(within(dialog).getByLabelText('Quantity'))
+  await userEvent.type(within(dialog).getByLabelText('Quantity'), '40')
+  expect(within(dialog).getByRole('status')).toHaveTextContent('50 now, 10 after this goes out')
   await userEvent.click(within(dialog).getByRole('button', { name: 'Adjust stock' }))
   expect(await within(dialog).findByRole('alert')).toHaveTextContent('Not enough stock')
-  expect(within(dialog).getByLabelText('Quantity')).toHaveValue('51.25')
-  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))?.body).toMatchObject({ delta: '-51.25' })
+  expect(within(dialog).getByLabelText('Quantity')).toHaveValue('40')
+  expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/stock-adjustments'))?.body).toMatchObject({ delta: '-40' })
 })
 
 test('a category with its own GST can be created from the product form and is selected', async () => {
@@ -743,7 +751,7 @@ test('labels for every matching product ask the server for the filter, not just 
   await userEvent.click(screen.getAllByRole('button', { name: /Print labels/ })[0]!)
   await screen.findByLabelText('Label preview')
   const sent = calls.find(c => c.path.endsWith('/label-data'))
-  expect(sent?.body).toEqual({ scope: { filter: { q: null, category: null, low_stock: false, expiring_days: null, no_code: false } } })
+  expect(sent?.body).toEqual({ scope: { filter: { q: null, category: null, low_stock: false, expiring_days: null, no_code: false, out_of_stock: false } } })
 })
 
 // ── codes and labels ──
@@ -809,4 +817,118 @@ test('staff do not get the missing-code filter or the Assign codes action', asyn
   await userEvent.click(await screen.findByLabelText('Select Basmati Rice'))
   expect(screen.queryByLabelText('No barcode or code')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Assign codes' })).not.toBeInTheDocument()
+})
+
+// ── stock history and stock views ──
+
+const ENTRY = (over: object) => ({ uuid: 'm', type: 'sale', quantity_delta: '-3', balance_after: '47', reason: null, notes: null, batch_no: null, expiry_date: null, created_at: '2026-10-05T10:00:00', source: null, ...over })
+const LEDGER = {
+  items: [
+    ENTRY({ uuid: 'm3', type: 'adjustment', quantity_delta: '-2', balance_after: '47', reason: 'damage', created_at: '2026-10-06T09:00:00Z' }),
+    ENTRY({ uuid: 'm2', quantity_delta: '-3', balance_after: '49', source: { kind: 'bill', uuid: 'b1', label: 'INV/2627/0001' } }),
+    ENTRY({ uuid: 'm1', type: 'purchase', quantity_delta: '52', balance_after: '52', created_at: '2026-10-01T12:00:00+05:30', source: { kind: 'purchase', uuid: 'r1', label: 'Asha Traders · 118' } }),
+  ],
+  total: 5, on_hand: '47', next_cursor: '3',
+}
+const ledgerApi = (extra: object[] = []) => fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+  ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+  ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] }),
+  ...(extra as never[]),
+  ok('GET', /\/products\/p1\/movements\?/, (path: string) => path.includes('cursor=3') ? { items: [ENTRY({ uuid: 'm0', type: 'adjustment', quantity_delta: '50', balance_after: '50', reason: 'count', created_at: '2026-09-20T09:00:00' })], total: 5, on_hand: '47', next_cursor: null } : LEDGER)])
+
+async function openLedger() {
+  await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'See the full history' }))
+  return screen.getByRole('dialog')
+}
+
+test('the full history lists every entry with its source and the balance after it, a page at a time', async () => {
+  const calls = ledgerApi()
+  renderApp('/products')
+  const dialog = await openLedger()
+  expect(await within(dialog).findByText('Adjusted · Damaged')).toBeInTheDocument()
+  expect(within(dialog).getByText(/On the shelf now:/)).toHaveTextContent('47')
+  expect(within(dialog).getByRole('link', { name: 'INV/2627/0001' })).toHaveAttribute('href', '/billing/b1')
+  expect(within(dialog).getByRole('link', { name: 'Asha Traders · 118' })).toHaveAttribute('href', '/purchases')
+  const rows = within(dialog).getAllByRole('row').slice(1)
+  expect(rows[0]).toHaveTextContent('-2')
+  expect(rows[0]).toHaveTextContent('47')
+  expect(rows[2]).toHaveTextContent('+52')
+  expect(within(dialog).getByText('Showing 3 of 5')).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Show older entries' }))
+  expect(await within(dialog).findByText('Showing 4 of 5')).toBeInTheDocument()
+  expect(calls.some(c => c.path.includes('/movements?') && c.path.includes('cursor=3'))).toBe(true)
+})
+
+test('history filters are sent to the server and can be cleared', async () => {
+  const calls = ledgerApi()
+  renderApp('/products')
+  const dialog = await openLedger()
+  await within(dialog).findByText('Showing 3 of 5')
+  await userEvent.selectOptions(within(dialog).getByLabelText('What happened'), 'sale')
+  await waitFor(() => expect(calls.some(c => c.path.includes('/movements?') && c.path.includes('type=sale'))).toBe(true))
+  await userEvent.type(within(dialog).getByLabelText('From'), '2026-10-01')
+  await waitFor(() => expect(calls.some(c => c.path.includes('from=2026-10-01'))).toBe(true))
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Clear filters' }))
+  expect(within(dialog).getByLabelText('What happened')).toHaveValue('')
+})
+
+const withLedgerReply = (reply: object, status = 200) => fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+  ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] }), ok('GET', /\/movements\?/, reply, status)])
+
+test('a history that cannot be read says so and can be retried', async () => {
+  withLedgerReply({ error: { code: 'internal_error', message: 'Could not read the history.' } }, 500)
+  renderApp('/products')
+  const dialog = await openLedger()
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Could not read the history.')
+  expect(within(dialog).getByRole('button', { name: 'Retry history' })).toBeEnabled()
+})
+
+test('a product with no movements says so, and a filter with no matches says that instead', async () => {
+  withLedgerReply({ items: [], total: 0, on_hand: '0', next_cursor: null })
+  renderApp('/products')
+  const dialog = await openLedger()
+  expect(await within(dialog).findByText('No stock movements yet')).toBeInTheDocument()
+  await userEvent.selectOptions(within(dialog).getByLabelText('What happened'), 'void')
+  expect(await within(dialog).findByText('Nothing matches these filters')).toBeInTheDocument()
+})
+
+test('stock views show how many products are in each, and Out of stock filters the list', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS,
+    ok('GET', /^\/v1\/shops\/s1\/products\/stock-summary$/, { all: 40, low: 6, out: 2, expiring: 3, no_code: 0 }),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, quantity: '0', low_stock: true }]))])
+  renderApp('/products')
+  expect(await screen.findByLabelText(/Low stock \(6\)/)).toBeInTheDocument()
+  expect(screen.getByLabelText(/Expiring in 30 days \(3\)/)).toBeInTheDocument()
+  await userEvent.click(screen.getByLabelText(/Out of stock \(2\)/))
+  await waitFor(() => expect(calls.some(c => c.path.startsWith('/v1/shops/s1/products?') && c.path.includes('out_of_stock=true'))).toBe(true))
+  expect(await screen.findByText(/running low or have run out/)).toBeInTheDocument()
+})
+
+test('a low product has a Restock shortcut that opens the purchase composer', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST, quantity: '2', low_stock: true }]))])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Restock Basmati Rice' }))
+  expect(await screen.findByRole('dialog', { name: 'Record purchase' })).toBeInTheDocument()
+})
+
+test('staff can read the history but get no Restock shortcut', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, low_stock: true }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: RICE, movements: [] })])
+  renderApp('/products')
+  await screen.findByRole('button', { name: 'Basmati Rice' })
+  expect(screen.queryByRole('button', { name: /^Restock/ })).not.toBeInTheDocument()
+})
+
+test('adjusting stock shows what is on the shelf now and after, and takes nothing below zero', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }])),
+    ok('GET', '/v1/shops/s1/products/p1', { product: { ...RICE, ...COST }, movements: [] })])
+  renderApp('/products')
+  await userEvent.click(await screen.findByRole('button', { name: 'Basmati Rice' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Adjust stock' }))
+  const dialog = screen.getByRole('dialog')
+  await userEvent.selectOptions(within(dialog).getByLabelText('What happened'), 'add')
+  await userEvent.type(within(dialog).getByLabelText('Quantity'), '12.5')
+  expect(within(dialog).getByRole('status')).toHaveTextContent('50 now, 62.5 after this comes in')
 })

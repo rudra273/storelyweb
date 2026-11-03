@@ -1308,6 +1308,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/products/stock-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stock Summary
+         * @description How many products are low, out of stock, expiring soon or without a code.
+         */
+        get: operations["stock_summary_v1_shops__shop_id__products_stock_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/products/{product_id}": {
         parameters: {
             query?: never;
@@ -1325,6 +1345,26 @@ export interface paths {
         head?: never;
         /** Edit Product */
         patch: operations["edit_product_v1_shops__shop_id__products__product_id__patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/{product_id}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product Ledger
+         * @description The product's full stock history, newest first, a page at a time.
+         */
+        get: operations["product_ledger_v1_shops__shop_id__products__product_id__movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/shops/{shop_id}/products/{product_id}/stock-adjustments": {
@@ -2063,6 +2103,11 @@ export interface components {
              * @default false
              */
             no_code: boolean;
+            /**
+             * Out Of Stock
+             * @default false
+             */
+            out_of_stock: boolean;
             /** Q */
             q?: string | null;
         };
@@ -3027,6 +3072,53 @@ export interface components {
         /** LabelScopeIn */
         LabelScopeIn: {
             scope: components["schemas"]["BulkScope"];
+        };
+        /** LedgerEntry */
+        LedgerEntry: {
+            /** Balance After */
+            balance_after: string;
+            /** Batch No */
+            batch_no: string | null;
+            /** Created At */
+            created_at: string;
+            /** Expiry Date */
+            expiry_date: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Quantity Delta */
+            quantity_delta: string;
+            /** Reason */
+            reason: string | null;
+            source: components["schemas"]["LedgerSource"] | null;
+            /** Type */
+            type: string;
+            /** Unit Cost */
+            unit_cost?: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** LedgerPage */
+        LedgerPage: {
+            /** Items */
+            items: components["schemas"]["LedgerEntry"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** On Hand */
+            on_hand: string | null;
+            /** Total */
+            total: number;
+        };
+        /** LedgerSource */
+        LedgerSource: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bill" | "credit_note" | "purchase" | "phone_purchase";
+            /** Label */
+            label: string;
+            /** Uuid */
+            uuid: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -4562,6 +4654,19 @@ export interface components {
         StatusOut: {
             /** Status */
             status: string;
+        };
+        /** StockSummary */
+        StockSummary: {
+            /** All */
+            all: number;
+            /** Expiring */
+            expiring: number;
+            /** Low */
+            low: number;
+            /** No Code */
+            no_code: number;
+            /** Out */
+            out: number;
         };
         /** StockValuation */
         StockValuation: {
@@ -7378,6 +7483,7 @@ export interface operations {
                 low_stock?: boolean;
                 expiring_days?: number | null;
                 no_code?: boolean;
+                out_of_stock?: boolean;
                 sort?: "name" | "price" | "quantity" | "updated" | "code";
                 direction?: "asc" | "desc";
                 limit?: number;
@@ -7656,6 +7762,37 @@ export interface operations {
             };
         };
     };
+    stock_summary_v1_shops__shop_id__products_stock_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     product_detail_v1_shops__shop_id__products__product_id__get: {
         parameters: {
             query?: never;
@@ -7743,6 +7880,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    product_ledger_v1_shops__shop_id__products__product_id__movements_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                type?: ("purchase" | "sale" | "adjustment" | "return" | "void" | "stocktake") | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
                 };
             };
             /** @description Validation Error */

@@ -16,7 +16,7 @@ import { ProductRow } from './components/ProductRow'
 import { BulkDialog, type BulkKind } from './components/BulkDialog'
 import { TriCheckbox } from './components/TriCheckbox'
 import { BULK_LIMIT, NONE, liveSelection, pageState, scopeOf, selectAllMatching, selectedCount, toggleOne, togglePage, type Filters, type Selection } from './selection'
-import { downloadExport, PAGE_SIZE, useCategories, useProducts, type ProductQuery } from './queries'
+import { downloadExport, PAGE_SIZE, useCategories, useProducts, useStockSummary, type Product, type ProductQuery } from './queries'
 import { describeError } from '../components/useAction'
 
 type Sort = ProductQuery['sort']
@@ -29,6 +29,7 @@ function readQuery(params: URLSearchParams): ProductQuery {
     low: params.get('low') === '1',
     expiring: params.get('exp') === '1',
     noCode: params.get('nocode') === '1',
+    out: params.get('out') === '1',
     sort: sort && ['name', 'price', 'quantity', 'updated', 'code'].includes(sort) ? sort : 'name',
     dir: params.get('dir') === 'desc' ? 'desc' : 'asc',
     page: Math.max(0, Number(params.get('page')) || 0),
@@ -66,6 +67,8 @@ function ProductsWorkspace() {
   const [bulk, setBulk] = useState<BulkKind | null>(null)
   // The product just added: its details open with the label offered straight away.
   const [added, setAdded] = useState<string | null>(null)
+  // A product being restocked from its row: the same purchase composer, with the product filled in.
+  const [restock, setRestock] = useState<Product | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
 
   const update = (changes: Record<string, string | null>, keepPage = false) => {
@@ -86,8 +89,10 @@ function ProductsWorkspace() {
   const products = useProducts(query)
   const categories = useCategories()
   const data = products.data
-  const filtered = !!(query.q || query.category || query.low || query.expiring || query.noCode)
-  const filters: Filters = { q: query.q, category: query.category, low: query.low, expiring: query.expiring, noCode: query.noCode }
+  const filtered = !!(query.q || query.category || query.low || query.expiring || query.noCode || query.out)
+  const filters: Filters = { q: query.q, category: query.category, low: query.low, expiring: query.expiring, noCode: query.noCode, outOfStock: query.out }
+  const summary = useStockSummary()
+  const count = (n: number | undefined) => (n === undefined ? '' : ` (${n.toLocaleString('en-IN')})`)
   // A selection belongs to the filters it was made under: change them and it no longer applies.
   const sel = liveSelection(selection, filters)
   const lostCount = selection.kind !== 'none' && sel.kind === 'none' ? selectedCount(selection) : 0
@@ -141,18 +146,26 @@ function ProductsWorkspace() {
           </select>
           <label className="check inline">
             <input type="checkbox" checked={query.low} onChange={(e) => update({ low: e.target.checked ? '1' : null })} />
-            Low stock
+            Low stock{count(summary.data?.low)}
+          </label>
+          <label className="check inline">
+            <input type="checkbox" checked={query.out} onChange={(e) => update({ out: e.target.checked ? '1' : null })} />
+            Out of stock{count(summary.data?.out)}
           </label>
           <label className="check inline">
             <input type="checkbox" checked={query.expiring} onChange={(e) => update({ exp: e.target.checked ? '1' : null })} />
-            Expiring in 30 days
+            Expiring in 30 days{count(summary.data?.expiring)}
           </label>
           {canEdit && <label className="check inline">
             <input type="checkbox" checked={query.noCode} onChange={(e) => update({ nocode: e.target.checked ? '1' : null })} />
             No barcode or code
           </label>}
-          {filtered && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null, nocode: null }) }}>Clear filters</button>}
+          {filtered && <button className="link" onClick={() => { setSearch(''); update({ q: null, cat: null, low: null, exp: null, nocode: null, out: null }) }}>Clear filters</button>}
         </Toolbar>
+        {canEdit && (query.low || query.out || query.expiring) && data && data.items.length > 0 && <Alert kind="info">
+          {query.expiring && !query.low && !query.out ? 'These products have stock that expires within 30 days.' : 'These products are running low or have run out.'}{' '}
+          Use Restock on a row, or <button className="link" onClick={() => setDialog('purchase')}>record a purchase</button> for several at once.
+        </Alert>}
         {canEdit && data && data.items.length > 0 && <p className="muted inline-hint">Use the pencil on a row to change its name, category, price or reorder level. Open a product for everything else. Stock changes from its details, so the history stays complete.</p>}
         {categories.error && <Alert>Categories could not be loaded. <button className="link" onClick={() => void categories.refetch()}>Retry categories</button></Alert>}
 
@@ -212,7 +225,7 @@ function ProductsWorkspace() {
                 <tbody>
                   {data.items.map((p) => (
                     <ProductRow key={p.uuid} p={p} selected={p.uuid === selectedId} picked={sel.kind === 'matching' || (sel.kind === 'picked' && sel.ids.includes(p.uuid))} pickLocked={sel.kind === 'matching'} canEdit={canEdit} seeCost={seeCost}
-                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} />
+                      categories={categories.data ?? []} onPick={() => setSelection(toggleOne(sel, p.uuid, filters))} onOpen={() => open(p.uuid)} onRestock={() => setRestock(p)} />
                   ))}
                 </tbody>
               </table>
@@ -234,6 +247,7 @@ function ProductsWorkspace() {
 
       {selectedId && <ProductDetailPanel key={selectedId} id={selectedId} canEdit={canEdit} justAdded={added === selectedId} onClose={() => open(null)} />}
       {dialog === 'purchase' && <PurchaseComposer onClose={() => setDialog(null)} />}
+      {restock && <PurchaseComposer initialProduct={restock} onClose={() => setRestock(null)} />}
       {dialog === 'new' && <ProductForm onClose={() => setDialog(null)} onSaved={(id) => { setDialog(null); setAdded(id); open(id); toast('Product added') }} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}

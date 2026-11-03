@@ -836,6 +836,11 @@
       "title": "No Code",
       "type": "boolean"
      },
+     "out_of_stock": {
+      "default": false,
+      "title": "Out Of Stock",
+      "type": "boolean"
+     },
      "q": {
       "anyOf": [
        {
@@ -4078,6 +4083,183 @@
      "scope"
     ],
     "title": "LabelScopeIn",
+    "type": "object"
+   },
+   "LedgerEntry": {
+    "properties": {
+     "balance_after": {
+      "title": "Balance After",
+      "type": "string"
+     },
+     "batch_no": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "quantity_delta": {
+      "title": "Quantity Delta",
+      "type": "string"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "source": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/LedgerSource"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "type": {
+      "title": "Type",
+      "type": "string"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Cost"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "type",
+     "quantity_delta",
+     "balance_after",
+     "reason",
+     "notes",
+     "batch_no",
+     "expiry_date",
+     "created_at",
+     "source"
+    ],
+    "title": "LedgerEntry",
+    "type": "object"
+   },
+   "LedgerPage": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/LedgerEntry"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "next_cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Cursor"
+     },
+     "on_hand": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "On Hand"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "items",
+     "total",
+     "on_hand",
+     "next_cursor"
+    ],
+    "title": "LedgerPage",
+    "type": "object"
+   },
+   "LedgerSource": {
+    "properties": {
+     "kind": {
+      "enum": [
+       "bill",
+       "credit_note",
+       "purchase",
+       "phone_purchase"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "uuid",
+     "label"
+    ],
+    "title": "LedgerSource",
     "type": "object"
    },
    "LoginIn": {
@@ -9055,6 +9237,39 @@
     "title": "StatusOut",
     "type": "object"
    },
+   "StockSummary": {
+    "properties": {
+     "all": {
+      "title": "All",
+      "type": "integer"
+     },
+     "expiring": {
+      "title": "Expiring",
+      "type": "integer"
+     },
+     "low": {
+      "title": "Low",
+      "type": "integer"
+     },
+     "no_code": {
+      "title": "No Code",
+      "type": "integer"
+     },
+     "out": {
+      "title": "Out",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "all",
+     "low",
+     "out",
+     "expiring",
+     "no_code"
+    ],
+    "title": "StockSummary",
+    "type": "object"
+   },
    "StockValuation": {
     "properties": {
      "gst_registered": {
@@ -13943,6 +14158,16 @@
      },
      {
       "in": "query",
+      "name": "out_of_stock",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Out Of Stock",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
       "name": "sort",
       "required": false,
       "schema": {
@@ -14457,6 +14682,49 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/products/stock-summary": {
+   "get": {
+    "description": "How many products are low, out of stock, expiring soon or without a code.",
+    "operationId": "stock_summary_v1_shops__shop_id__products_stock_summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StockSummary"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stock Summary",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/products/{product_id}": {
    "delete": {
     "operationId": "delete_product_v1_shops__shop_id__products__product_id__delete",
@@ -14614,6 +14882,144 @@
      }
     },
     "summary": "Edit Product",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/{product_id}/movements": {
+   "get": {
+    "description": "The product's full stock history, newest first, a page at a time.",
+    "operationId": "product_ledger_v1_shops__shop_id__products__product_id__movements_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "product_id",
+      "required": true,
+      "schema": {
+       "title": "Product Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "in": "query",
+      "name": "type",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "purchase",
+          "sale",
+          "adjustment",
+          "return",
+          "void",
+          "stocktake"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Type"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 25,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Cursor"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LedgerPage"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Ledger",
     "tags": [
      "catalog"
     ]
