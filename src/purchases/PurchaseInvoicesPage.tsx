@@ -14,7 +14,7 @@ import { receiptMoney } from './composer/money'
 import { RECEIPT_PAGE_SIZE, useReceipts, usePurchaseSummary, type ReceiptFilters } from './queries'
 import './purchases.css'
 
-const STATUSES = [['', 'All payment states'], ['open', 'Still owed (unpaid or part paid)'], ['unpaid', 'Unpaid'], ['partial', 'Partially paid'], ['paid', 'Paid'], ['not_recorded', 'Payment not recorded']] as const
+const STATUSES = [['', 'All payment states'], ['open', 'Still owed (unpaid or part paid)'], ['unpaid', 'Unpaid'], ['partial', 'Partially paid'], ['paid', 'Paid'], ['not_recorded', 'Payment not recorded'], ['reversed', 'Reversed purchases']] as const
 
 /** Stock received from suppliers: what came in, from whom, and what is still owed. Filters live in the address so Back keeps them. */
 export function PurchaseInvoicesPage() {
@@ -79,13 +79,13 @@ export function PurchaseInvoicesPage() {
     {rows.length > 0 && <div className="table-wrap"><table className="table">
       <thead><tr><th>Date</th><th>Supplier</th><th className="hide-sm">Supplier invoice</th><th className="num">Total</th><th className="hide-sm">Payment</th><th className="hide-sm">Due date</th><th className="num">Balance due</th></tr></thead>
       <tbody>{rows.map(r => {
-        const late = !!r.due_date && r.due_date < today && Number(r.balance_due ?? '0') > 0
-        return <tr key={r.uuid}>
+        const late = !!r.due_date && !r.reversed_at && r.due_date < today && Number(r.balance_due ?? '0') > 0
+        return <tr key={r.uuid} className={r.reversed_at ? 'reversed-row' : undefined}>
           <td className="nowrap"><Link to={`/purchases/${r.uuid}`} state={{ from: here }} aria-label={`View purchase ${r.invoice_number ?? day(r.purchase_date)}`}>{day(r.purchase_date)}</Link></td>
-          <td>{r.supplier_name ?? <span className="muted">No supplier</span>}<small className="show-sm muted">{r.invoice_number ?? ''} {paymentStatus(r.payment_status)}</small></td>
+          <td>{r.supplier_name ?? <span className="muted">No supplier</span>}<small className="show-sm muted">{r.invoice_number ?? ''} {r.reversed_at ? 'Reversed' : paymentStatus(r.payment_status)}</small></td>
           <td className="hide-sm">{r.invoice_number ?? <span className="muted">—</span>}</td>
           <td className="num">{r.total == null ? <span className="muted" title="Stock cost; payment terms were not recorded">{receiptMoney(r.subtotal)}<small className="stacked-note">stock cost</small></span> : receiptMoney(r.total)}</td>
-          <td className="hide-sm"><span className={`payment-badge ${r.payment_status}`}>{paymentStatus(r.payment_status)}</span></td>
+          <td className="hide-sm">{r.reversed_at ? <span className="payment-badge reversed">Reversed</span> : <span className={`payment-badge ${r.payment_status}`}>{paymentStatus(r.payment_status)}</span>}</td>
           <td className="hide-sm nowrap">{r.due_date ? <>{day(r.due_date)}{late && <span className="payment-badge unpaid overdue-flag">Overdue</span>}</> : <span className="muted">—</span>}</td>
           <td className="num">{r.balance_due == null ? <span className="muted">—</span> : receiptMoney(r.balance_due)}{late && <small className="show-sm bad stacked-note">Overdue</small>}</td>
         </tr>

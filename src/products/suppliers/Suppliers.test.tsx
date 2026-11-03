@@ -227,3 +227,52 @@ test('staff are kept out of suppliers and purchase invoices', async () => {
   expect(await screen.findByRole('heading', { name: 'No access' })).toBeInTheDocument()
   expect(calls.some(c => c.path.endsWith('/suppliers') || c.path.includes('/purchase-receipts'))).toBe(false)
 })
+
+const REVERSAL = {
+  ...STATEMENT,
+  purchases: [{ ...STATEMENT.purchases[0]!, reversed_at: '2026-11-03T10:00:00Z', reversal_reason: 'Entered twice', balance_due: null }, STATEMENT.purchases[1]!],
+  payments: [
+    { ...STATEMENT.payments[0]!, uuid: 'payX', reversed_at: '2026-11-03T11:00:00Z', reversal_reason: 'Wrong supplier' },
+    { uuid: 'pay2', payment_date: '2026-09-21', amount: '30.00', payment_method: 'cash', reference: null, notes: null, reversed_at: null, reversal_reason: null, allocations: [{ purchase_uuid: 'r2', invoice_number: 'A-2', purchase_date: '2026-09-10', amount: '30.00' }] },
+  ],
+  ledger: [
+    ...STATEMENT.ledger.slice(0, 2),
+    { kind: 'purchase_reversal', uuid: 'r1', date: '2026-11-03', reference: 'A-1', method: null, debit: '0', credit: '160.00', balance: '90.00' },
+    { kind: 'payment_reversal', uuid: 'payX', date: '2026-11-03', reference: 'UTR9', method: 'upi', debit: '150.00', credit: '0', balance: '240.00' },
+  ],
+}
+
+test('reversed purchases and payments stay listed, flagged, and the statement shows their reversal entries', async () => {
+  fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', '/v1/shops/s1/suppliers', [supplier]),
+    ok('GET', '/v1/shops/s1/suppliers/vendor1/statement', REVERSAL),
+  ])
+  renderApp('/suppliers/vendor1')
+  await screen.findByRole('heading', { name: 'Asha Wholesale' })
+  const purchases = within(await screen.findByRole('region', { name: 'Purchases' }))
+  expect(purchases.getByText('Reversed', { selector: '.payment-badge' })).toBeInTheDocument()
+  const payments = within(screen.getByRole('region', { name: 'Payments' }))
+  expect(payments.getByText('Reversed', { selector: '.payment-badge' })).toBeInTheDocument()
+  expect(payments.getAllByRole('button', { name: /^Reverse payment of/ })).toHaveLength(1)
+  const statement = within(screen.getByRole('region', { name: 'Statement' }))
+  expect(statement.getByText('Purchase reversed')).toBeInTheDocument()
+  expect(statement.getByText(/Payment reversed · UPI/)).toBeInTheDocument()
+})
+
+test('reversing a payment says where it had been applied and sends the reason', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', '/v1/shops/s1/suppliers', [supplier]),
+    ok('GET', '/v1/shops/s1/suppliers/vendor1/statement', STATEMENT),
+    ok('POST', '/v1/shops/s1/suppliers/vendor1/payments/pay1/reverse', { uuid: 'pay1' }),
+  ])
+  renderApp('/suppliers/vendor1')
+  await userEvent.click(await screen.findByRole('button', { name: /^Reverse payment of ₹150.00/ }))
+  const dialog = screen.getByRole('dialog', { name: 'Reverse payment' })
+  expect(within(dialog).getByText(/make ₹100.00 owed again on invoice A-1/)).toBeInTheDocument()
+  expect(within(dialog).getByText(/make ₹50.00 owed again on invoice A-2/)).toBeInTheDocument()
+  await userEvent.type(within(dialog).getByLabelText('Why is this being reversed?'), 'Paid the wrong supplier')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Reverse payment' }))
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/pay1/reverse'))?.body).toEqual({ reason: 'Paid the wrong supplier' }))
+})

@@ -65,3 +65,27 @@ export function previewPurchaseImport(shop: string, file: File): Promise<ImportP
   const query = new URLSearchParams({ filename: file.name })
   return request<ImportPreview>('POST', `/v1/shops/${shop}/purchase-receipts/import-preview?${query}`, { body: file })
 }
+
+/** Reverses a posted purchase. The server puts the stock back out and takes it off what is owed. */
+export function useReversePurchase(id: string) {
+  const shop = useShop().current?.shop_id ?? ''
+  const client = useQueryClient()
+  return useMutation({ retry: false,
+    mutationFn: (reason: string) => api.post<Receipt>(`/v1/shops/${shop}/purchase-receipts/${id}/reverse`, { reason }),
+    onSuccess: () => {
+      for (const key of [...PURCHASE_VIEWS, 'products', 'product', 'report']) void client.invalidateQueries({ queryKey: [key, shop] })
+    },
+  })
+}
+
+/** Cancels a recorded supplier payment: what it paid is owed again. */
+export function useReversePayment(supplier: string) {
+  const shop = useShop().current?.shop_id ?? ''
+  const client = useQueryClient()
+  return useMutation({ retry: false,
+    mutationFn: (input: { payment: string; reason: string }) => api.post<{ uuid: string }>(`/v1/shops/${shop}/suppliers/${supplier}/payments/${input.payment}/reverse`, { reason: input.reason }),
+    onSuccess: () => {
+      for (const key of PURCHASE_VIEWS) void client.invalidateQueries({ queryKey: [key, shop] })
+    },
+  })
+}

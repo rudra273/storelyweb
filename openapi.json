@@ -4300,7 +4300,9 @@
      "kind": {
       "enum": [
        "purchase",
-       "payment"
+       "payment",
+       "purchase_reversal",
+       "payment_reversal"
       ],
       "title": "Kind",
       "type": "string"
@@ -4397,6 +4399,7 @@
        "bill",
        "credit_note",
        "purchase",
+       "purchase_reversal",
        "phone_purchase"
       ],
       "title": "Kind",
@@ -8334,6 +8337,28 @@
       "title": "Purchase Date",
       "type": "string"
      },
+     "reversal_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversal Reason"
+     },
+     "reversed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversed At"
+     },
      "subtotal": {
       "title": "Subtotal",
       "type": "string"
@@ -9013,6 +9038,22 @@
      "goes_back_to_stock"
     ],
     "title": "ReturnPreviewLine",
+    "type": "object"
+   },
+   "ReversalIn": {
+    "additionalProperties": false,
+    "properties": {
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "reason"
+    ],
+    "title": "ReversalIn",
     "type": "object"
    },
    "ReviewIn": {
@@ -10039,6 +10080,28 @@
       ],
       "title": "Reference"
      },
+     "reversal_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversal Reason"
+     },
+     "reversed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversed At"
+     },
      "uuid": {
       "title": "Uuid",
       "type": "string"
@@ -10103,6 +10166,28 @@
       "format": "date",
       "title": "Purchase Date",
       "type": "string"
+     },
+     "reversal_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversal Reason"
+     },
+     "reversed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversed At"
      },
      "total": {
       "anyOf": [
@@ -10539,7 +10624,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -10548,7 +10633,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -10563,7 +10648,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -10572,7 +10657,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -16074,6 +16159,69 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
+   "post": {
+    "description": "Correct a posted purchase: its stock goes back out and it is no longer owed.",
+    "operationId": "reverse_receipt_v1_shops__shop_id__purchase_receipts__receipt_id__reverse_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "receipt_id",
+      "required": true,
+      "schema": {
+       "title": "Receipt Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReversalIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reverse Receipt",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/reports/day-book": {
    "get": {
     "operationId": "get_day_book_v1_shops__shop_id__reports_day_book_get",
@@ -17152,6 +17300,78 @@
      }
     },
     "summary": "Supplier Payment",
+    "tags": [
+     "catalog",
+     "supplier payments"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/{payment_id}/reverse": {
+   "post": {
+    "description": "Cancel a recorded payment: what it paid is owed again. Repeats are safe.",
+    "operationId": "reverse_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments__payment_id__reverse_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "supplier_id",
+      "required": true,
+      "schema": {
+       "title": "Supplier Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "payment_id",
+      "required": true,
+      "schema": {
+       "title": "Payment Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReversalIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentRecorded"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reverse Supplier Payment",
     "tags": [
      "catalog",
      "supplier payments"

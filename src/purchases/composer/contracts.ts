@@ -42,7 +42,7 @@ export interface ReceiptLine extends ReceiptItemInput {
   movement_uuid: string
   line_number: number
 }
-export interface Receipt extends Partial<Pick<components['schemas']['ReceiptOut'], 'tax_amount' | 'charges_amount' | 'discount_amount' | 'total' | 'due_date' | 'paid_amount' | 'balance_due' | 'payments'>> {
+export interface Receipt extends Partial<Pick<components['schemas']['ReceiptOut'], 'tax_amount' | 'charges_amount' | 'discount_amount' | 'total' | 'due_date' | 'paid_amount' | 'balance_due' | 'payments' | 'reversed_at' | 'reversal_reason'>> {
   uuid: string
   supplier_uuid: string | null
   supplier_name: string | null

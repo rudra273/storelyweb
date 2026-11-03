@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -1530,6 +1530,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse Receipt
+         * @description Correct a posted purchase: its stock goes back out and it is no longer owed.
+         */
+        post: operations["reverse_receipt_v1_shops__shop_id__purchase_receipts__receipt_id__reverse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/reports/day-book": {
         parameters: {
             query?: never;
@@ -1783,6 +1803,26 @@ export interface paths {
         put?: never;
         /** Supplier Payment */
         post: operations["supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/{payment_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse Supplier Payment
+         * @description Cancel a recorded payment: what it paid is owed again. Repeats are safe.
+         */
+        post: operations["reverse_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments__payment_id__reverse_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3184,7 +3224,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "purchase" | "payment";
+            kind: "purchase" | "payment" | "purchase_reversal" | "payment_reversal";
             /** Method */
             method: string | null;
             /** Reference */
@@ -3209,7 +3249,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "bill" | "credit_note" | "purchase" | "phone_purchase";
+            kind: "bill" | "credit_note" | "purchase" | "purchase_reversal" | "phone_purchase";
             /** Label */
             label: string;
             /** Uuid */
@@ -4386,6 +4426,10 @@ export interface components {
              * Format: date
              */
             purchase_date: string;
+            /** Reversal Reason */
+            reversal_reason?: string | null;
+            /** Reversed At */
+            reversed_at?: string | null;
             /** Subtotal */
             subtotal: string;
             /** Supplier Name */
@@ -4631,6 +4675,11 @@ export interface components {
             sold: string;
             /** Unit */
             unit: string | null;
+        };
+        /** ReversalIn */
+        ReversalIn: {
+            /** Reason */
+            reason: string;
         };
         /** ReviewIn */
         ReviewIn: {
@@ -4947,6 +4996,10 @@ export interface components {
             payment_method: string;
             /** Reference */
             reference: string | null;
+            /** Reversal Reason */
+            reversal_reason?: string | null;
+            /** Reversed At */
+            reversed_at?: string | null;
             /** Uuid */
             uuid: string;
         };
@@ -4967,6 +5020,10 @@ export interface components {
              * Format: date
              */
             purchase_date: string;
+            /** Reversal Reason */
+            reversal_reason?: string | null;
+            /** Reversed At */
+            reversed_at?: string | null;
             /** Total */
             total: string | null;
             /** Uuid */
@@ -5134,7 +5191,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5156,7 +5213,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -8437,6 +8494,42 @@ export interface operations {
             };
         };
     };
+    reverse_receipt_v1_shops__shop_id__purchase_receipts__receipt_id__reverse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_day_book_v1_shops__shop_id__reports_day_book_get: {
         parameters: {
             query: {
@@ -8980,6 +9073,43 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecorded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reverse_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments__payment_id__reverse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

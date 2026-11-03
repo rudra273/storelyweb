@@ -104,3 +104,11 @@
   .supplier-detail .allocation { white-space: normal; display: block; }
   .supplier-detail .nowrap { white-space: normal; }
 }
+
+/* Reversed purchases and payments stay visible, set apart. */
+.payment-badge.reversed { background: var(--neutral-bg); color: var(--neutral-text); }
+.reversed-row td { color: var(--muted); }
+.reversed-row td:first-child a { color: inherit; }
+.reverse-effects ul { margin: .25rem 0 .75rem 1.1rem; padding: 0; }
+.reverse-effects li { margin: .2rem 0; }
+#reversal-reason { font: inherit; width: 100%; padding: .6rem .7rem; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); color: inherit; resize: vertical; }

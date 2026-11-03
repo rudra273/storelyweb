@@ -442,3 +442,71 @@ test('a purchase with nothing owed offers no payment', async () => {
   expect(screen.queryByRole('button', { name: 'Pay supplier' })).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Supplier account' })).toHaveAttribute('href', '/suppliers/sup1')
 })
+
+const LIVE = { ...RECEIPT, supplier_uuid: 'sup1', supplier_name: 'Alpha', invoice_number: 'INV-1', total: '36.00', payment_status: 'unpaid', balance_due: '36.00', paid_amount: '0', due_date: null, payments: [], reversed_at: null, reversal_reason: null }
+
+test('reversing a purchase says what will happen, needs a reason, and sends it', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('POST', `${BASE}/purchase-receipts/receipt1/reverse`, { ...LIVE, reversed_at: '2026-11-03T10:00:00Z', reversal_reason: 'Typed the wrong quantity' }),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, LIVE),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Reverse purchase…' }))
+  const dialog = screen.getByRole('dialog', { name: 'Reverse purchase' })
+  expect(within(dialog).getByText(/take 1 item back out of stock \(2 kg Rice\)/)).toBeInTheDocument()
+  expect(within(dialog).getByText(/take ₹36.00 off what you owe Alpha/)).toBeInTheDocument()
+  expect(within(dialog).getByText(/free supplier invoice number INV-1/)).toBeInTheDocument()
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Reverse purchase' }))
+  expect(await within(dialog).findByText(/at least 3 characters/)).toBeInTheDocument()
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/reverse'))).toBe(false)
+  await userEvent.type(within(dialog).getByLabelText('Why is this being reversed?'), 'Typed the wrong quantity')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Reverse purchase' }))
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/reverse'))?.body).toEqual({ reason: 'Typed the wrong quantity' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Reverse purchase' })).not.toBeInTheDocument())
+})
+
+test('a reversed purchase says so, offers the corrected purchase, and offers no payment or second reversal', async () => {
+  const reversed = { ...LIVE, balance_due: null, reversed_at: '2026-11-03T10:00:00Z', reversal_reason: 'Entered twice' }
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]), ok('GET', `${BASE}/purchase-receipts/receipt1`, reversed)])
+  renderApp('/purchases/receipt1')
+  expect(await screen.findByText(/This purchase was reversed on 3 Nov 2026/)).toBeInTheDocument()
+  expect(screen.getByText(/Reason: Entered twice/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Record the corrected purchase' })).toHaveAttribute('href', '/purchases/new?supplier=sup1')
+  expect(screen.queryByRole('button', { name: 'Pay supplier' })).not.toBeInTheDocument()
+  expect(screen.queryByText('More actions')).not.toBeInTheDocument()
+  expect(screen.getByText('Reversed', { selector: '.kpi-value' })).toBeInTheDocument()
+})
+
+test('a refused reversal explains why and points to the supplier account when payments stand', async () => {
+  const paid = { ...LIVE, payments: [{ uuid: 'pay1', payment_date: '2026-10-01', amount: '10.00', payment_method: 'cash', reference: null, notes: null }], paid_amount: '10.00' }
+  fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('POST', `${BASE}/purchase-receipts/receipt1/reverse`, { error: { code: 'payments_recorded', message: 'Payments have been recorded against this purchase. Reverse those payments first.' } }, 409),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, paid),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Reverse purchase…' }))
+  const dialog = screen.getByRole('dialog', { name: 'Reverse purchase' })
+  await userEvent.type(within(dialog).getByLabelText('Why is this being reversed?'), 'Wrong supplier')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Reverse purchase' }))
+  expect(await within(dialog).findByText(/Reverse those payments first/)).toBeInTheDocument()
+  expect(within(dialog).getByRole('link', { name: 'Open the supplier account' })).toHaveAttribute('href', '/suppliers/sup1')
+  expect(within(dialog).getByLabelText('Why is this being reversed?')).toHaveValue('Wrong supplier')
+})
+
+test('staff cannot reverse a purchase and the list marks reversed purchases', async () => {
+  const reversed = { ...LIVE, balance_due: null, reversed_at: '2026-11-03T10:00:00Z', reversal_reason: 'Entered twice' }
+  fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', `${BASE}/suppliers`, []),
+    ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\/summary/, SUMMARY),
+    ok('GET', /^\/v1\/shops\/s1\/purchase-receipts\?/, [reversed]),
+  ])
+  renderApp('/purchases')
+  expect(await screen.findByText('Reversed', { selector: '.payment-badge' })).toBeInTheDocument()
+  expect(screen.getByRole('option', { name: 'Reversed purchases' })).toBeInTheDocument()
+  expect(screen.queryByText('Overdue', { selector: '.payment-badge' })).not.toBeInTheDocument()
+})

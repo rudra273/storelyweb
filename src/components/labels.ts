@@ -29,7 +29,7 @@ export const paymentStatus = (code: string) => PAYMENT_STATUS[code] ?? words(cod
 const ROLES: Record<string, string> = { owner: 'Owner', admin: 'Admin', staff: 'Staff' }
 export const roleLabel = (code: string) => ROLES[code] ?? words(code)
 
-const REASONS: Record<string, string> = { damage: 'Damaged', expired: 'Expired', theft: 'Lost / theft', return: 'Customer return', own_use: 'Own use', count: 'Stock count corrected', other: 'Other' }
+const REASONS: Record<string, string> = { damage: 'Damaged', expired: 'Expired', theft: 'Lost / theft', return: 'Customer return', own_use: 'Own use', count: 'Stock count corrected', other: 'Other', purchase_reversal: 'Purchase reversed' }
 export const stockReason = (code: string | null | undefined) => (code ? REASONS[code] ?? words(code) : '')
 
 const ACTIONS: Record<string, string> = { created: 'Created', payment: 'Payment recorded', cancelled: 'Voided', credit_note: 'Items returned', refund: 'Refund' }
