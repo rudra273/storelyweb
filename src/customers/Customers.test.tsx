@@ -9,6 +9,58 @@ const SHOP = ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Asha Stores', role:
 const page = { items: [], has_more: false, count: 0, total: '0.00', cash_total: '0.00', by_category: [], categories: ['Rent', 'Other'] }
 const list = ok('GET', /^\/v1\/shops\/s1\/expenses\?/, page)
 
+const customerPath = '/v1/shops/s1/customers/c1'
+const customerDetail = {
+  customer: { uuid: 'c1', name: 'Ravi', due: '205.00', due_bills: 2, total_purchase_amount: '210.00', bill_count: 2 },
+  bills: [],
+  payments: [],
+}
+
+test('reviewing a customer payment shows its allocation and confirmation sends the review key', async () => {
+  const review = {
+    due_before: '205.00', due_after: '55.00', review_key: 'reviewed',
+    allocations: [
+      { bill_uuid: 'b1', bill_number: 'INV/1', amount: '100.00', due_after: '0.00' },
+      { bill_uuid: 'b2', bill_number: 'INV/2', amount: '50.00', due_after: '55.00' },
+    ],
+  }
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP, ok('GET', customerPath, customerDetail),
+    ok('POST', `${customerPath}/payments/preview`, review),
+    ok('POST', `${customerPath}/payments`, customerDetail),
+  ])
+  renderApp('/customers/c1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+  const dialog = within(screen.getByRole('dialog'))
+  const amount = dialog.getByLabelText(/Amount received/)
+  await userEvent.clear(amount)
+  await userEvent.type(amount, '150')
+  await userEvent.click(dialog.getByRole('button', { name: 'Review payment' }))
+  expect(await dialog.findByRole('row', { name: /INV\/1.*₹100\.00.*₹0\.00/ })).toBeInTheDocument()
+  expect(calls.some(c => c.path === `${customerPath}/payments`)).toBe(false)
+  await userEvent.click(dialog.getByRole('button', { name: 'Confirm payment' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  const save = calls.find(c => c.path === `${customerPath}/payments`)
+  expect(save?.body).toMatchObject({ amount: '150', review_key: 'reviewed' })
+  expect(save?.headers.get('Idempotency-Key')).toBeTruthy()
+})
+
+test('unassigned balances on Customers open the matching invoice list', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP,
+    ok('GET', /^\/v1\/shops\/s1\/customers\/accounts\?/, {
+      items: [], has_more: false, owing_customers: 0, total_due: '0.00',
+      unassigned_due: '205.00', unassigned_bills: 2,
+    }),
+    ok('GET', /^\/v1\/shops\/s1\/bills\?/, { items: [], total: 0, next_cursor: null }),
+  ])
+  renderApp('/customers')
+  expect(await screen.findByText('₹205.00')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('link', { name: 'View 2 invoices' }))
+  expect(await screen.findByRole('checkbox', { name: 'Unassigned balances' })).toBeChecked()
+  await waitFor(() => expect(calls.some(c => c.path.includes('unassigned_credit=true'))).toBe(true))
+})
+
 test('adding an expense again after a lost response replays the same request', async () => {
   const calls = fakeApi([...SIGNED_IN, SHOP, list, ok('POST', '/v1/shops/s1/expenses', { error: { code: 'network', message: 'Connection interrupted' } }, 503)])
   renderApp('/expenses')

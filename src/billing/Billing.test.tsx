@@ -92,10 +92,11 @@ test('a bill waits for server pricing and confirmation, then sends decimal input
   expect(await screen.findByRole('button', { name: /^Create invoice/ })).toBeDisabled()
   await addRice()
   await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   await screen.findByText(bill.bill_number)
-  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [{ product_uuid: 'p1', quantity: '1' }], discount_percent: '0', payment: { amount: '0', method: 'cash' } })
+  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [{ product_uuid: 'p1', quantity: '1' }], discount_percent: '0', allow_unassigned_credit: true, payment: { amount: '0', method: 'cash' } })
 })
 
 test('a bill cannot be created until the cashier says how the customer paid', async () => {
@@ -109,7 +110,7 @@ test('a bill cannot be created until the cashier says how the customer paid', as
   await userEvent.click(screen.getByLabelText(/^Paid in full/))
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   await screen.findByText(bill.bill_number)
-  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ payment: { amount: preview.total, method: 'cash' } })
+  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ allow_unassigned_credit: false, payment: { amount: preview.total, method: 'cash' } })
 })
 
 test('a failed save keeps an identical body for retry and locks the cart', async () => {
@@ -117,6 +118,7 @@ test('a failed save keeps an identical body for retry and locks the cart', async
   renderApp('/billing/new')
   await addRice()
   await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   expect(await screen.findByRole('alert')).toHaveTextContent('cart is locked')
@@ -155,6 +157,7 @@ test('a bill whose save was not confirmed comes back locked with the same retry 
   const first = renderApp('/billing/new')
   await addRice()
   await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   await screen.findByRole('button', { name: 'Retry saving invoice' })
@@ -186,6 +189,7 @@ test('a rejected bill can be corrected without keeping the cart locked', async (
   renderApp('/billing/new')
   await addRice()
   await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   expect(await screen.findByRole('alert')).toHaveTextContent('Only 189 is due')
@@ -223,6 +227,7 @@ test('an idempotency conflict keeps the original bill request locked for safe re
   renderApp('/billing/new')
   await addRice()
   await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   expect(await screen.findByRole('alert')).toHaveTextContent('cart is locked')
@@ -346,12 +351,20 @@ test('Enter on an empty scan box moves to payment, and cash received shows the c
   expect(screen.getByText(/Change to return/)).toBeInTheDocument()
 })
 
-test('unpaid money for a customer with no phone number is called out before saving', async () => {
+test('unassigned credit requires a deliberate choice before saving', async () => {
   fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
   renderApp('/billing/new')
   await addRice()
   await userEvent.click(screen.getByLabelText('Not paid yet'))
-  expect(await screen.findByText(/walk-in sale, so the unpaid amount will not be tracked/)).toBeInTheDocument()
+  const create = screen.getByRole('button', { name: /^Create invoice/ })
+  const unassigned = await screen.findByLabelText('Keep this balance unassigned')
+  expect(create).toBeDisabled()
+  await userEvent.click(unassigned)
+  await waitFor(() => expect(create).toBeEnabled())
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.click(screen.getByLabelText('Not paid yet'))
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  expect(create).toBeDisabled()
 })
 
 test('a saved invoice shows what was recorded and the three next steps', async () => {
@@ -361,6 +374,7 @@ test('a saved invoice shows what was recorded and the three next steps', async (
   await addRice()
   await userEvent.click(screen.getByLabelText('Part paid'))
   await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   expect(await screen.findByRole('heading', { name: 'Invoice saved' })).toBeInTheDocument()

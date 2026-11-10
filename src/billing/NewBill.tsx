@@ -71,6 +71,7 @@ function BillForm({ another }: { another: () => void }) {
   // No default: the cashier says how the customer paid, so an unpaid invoice is never an accident.
   const [payment, setPayment] = useState<PaymentFields>({ paid: saved?.paid ?? null, amount: saved?.amount ?? '', method: saved?.method ?? 'cash', reference: saved?.reference ?? '', cash: '' })
   const [paidError, setPaidError] = useState('')
+  const [allowUnassigned, setAllowUnassigned] = useState(false)
   const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(saved?.attempt ?? null)
   const [done, setDone] = useState<BillDetail | null>(null)
   const sending = useRef(false)
@@ -84,6 +85,7 @@ function BillForm({ another }: { another: () => void }) {
   function discard() {
     commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
+    setAllowUnassigned(false)
     clearDraft('bill', userId, shop)
     setRestored(null)
   }
@@ -141,10 +143,13 @@ function BillForm({ another }: { another: () => void }) {
   const setQuantity = (index: number, quantity: string) => commit(items.map((row, n) => n === index ? { ...row, quantity } : row))
   // The payment options may only just have appeared (the first item), so look after this render.
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
+  const unlinked = !!payment.paid && payment.paid !== 'full' && Number(totals?.total) > 0 && !/\d/.test(customer.customer_phone)
+  const canCreate = !!totals && priceCurrent && !preview.isFetching && !preview.error &&
+    lineCount > 0 && (!unlinked || allowUnassigned)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (sending.current || (!attempt && (!totals || !priceCurrent || preview.isFetching || preview.error))) return
+    if (sending.current || (!attempt && !canCreate)) return
     let paidNow = '0'
     if (!attempt && (customerErrors.phone || customerErrors.gstin)) {
       setCheckCustomer(true)
@@ -162,7 +167,14 @@ function BillForm({ another }: { another: () => void }) {
     setPaidError('')
     sending.current = true
     const reference = payment.method === 'cash' ? null : payment.reference || null
-    const next = attempt ?? { body: { ...cart, payment: { amount: paidNow, method: payment.method, reference: payment.paid === 'none' ? null : reference } }, key: crypto.randomUUID() }
+    const next = attempt ?? {
+      body: {
+        ...cart,
+        allow_unassigned_credit: unlinked && allowUnassigned,
+        payment: { amount: paidNow, method: payment.method, reference: payment.paid === 'none' ? null : reference },
+      },
+      key: crypto.randomUUID(),
+    }
     setAttempt(next)
     try {
       const result = await mutation.mutateAsync(next)
@@ -172,14 +184,14 @@ function BillForm({ another }: { another: () => void }) {
       // A rejected validation has rolled back. An unknown outcome keeps the key
       // and exact payload so a retry cannot charge or reduce stock twice.
       if (error instanceof ApiError && (error.status === 422 || (error.status === 409 && error.code !== 'idempotency_conflict'))) setAttempt(null)
+      if (error instanceof ApiError && error.code === 'unassigned_credit') void preview.refetch()
     }
     finally { sending.current = false }
   }
 
   if (done) return <div className="checkout-page"><PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">{SALES.invoices}</Link>} /><Completion detail={done} onAnother={another} /></div>
 
-  const canSave = !mutation.isPending && (!!attempt || (!!totals && priceCurrent && !preview.isFetching && !preview.error && lineCount > 0))
-  const unlinked = payment.paid && payment.paid !== 'full' && !customer.customer_phone.trim()
+  const canSave = !mutation.isPending && (!!attempt || canCreate)
   const rows: [string, string][] = totals ? ([['Subtotal', totals.subtotal], ['Discount', totals.discount_amount], ['CGST', totals.cgst_amount], ['SGST', totals.sgst_amount], ['IGST', totals.igst_amount], ['Round-off', totals.round_off_amount]] as [string, string][]).filter(([k, v]) => k === 'Subtotal' || Number(v) !== 0) : []
   return <div className="checkout-page">
     <PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">← Back to {SALES.invoices.toLowerCase()}</Link>} />
@@ -225,7 +237,7 @@ function BillForm({ another }: { another: () => void }) {
       </fieldset>
       <aside className="checkout-summary" aria-label="Customer and payment">
         <fieldset className="bare" disabled={locked}>
-          <CustomerPanel customer={customer} onChange={setCustomer} billType={billType} onBillType={setBillType} errors={shownErrors} open={customerOpen || !!(shownErrors.phone || shownErrors.gstin)} onOpen={setCustomerOpen} disabled={locked} />
+          <CustomerPanel customer={customer} onChange={next => { setCustomer(next); setAllowUnassigned(false) }} billType={billType} onBillType={setBillType} errors={shownErrors} open={customerOpen || !!(shownErrors.phone || shownErrors.gstin)} onOpen={setCustomerOpen} disabled={locked} />
         </fieldset>
         <section className="card checkout-totals" aria-label="Invoice total" aria-busy={pricing}>
           {!lineCount ? <p className="muted">Totals and payment appear once you add an item.</p> : <>
@@ -238,8 +250,12 @@ function BillForm({ another }: { another: () => void }) {
             <p className="pricing-note muted" role="status">{pricing ? 'Updating total…' : ''}</p>
             <label className="discount">Discount (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" required value={discount} disabled={locked} onChange={e => setDiscount(e.target.value)} /></label>
             {items.some(i => { const line = totals?.lines?.find(l => l.product_uuid === i.product.uuid); return line && i.product.mrp_price != null && Number(line.unit_price) > Number(i.product.mrp_price) }) && <Alert kind="info">A product’s selling price is above its MRP. Check the price before creating the invoice.</Alert>}
-            <PaymentPanel total={totals?.total} value={payment} onChange={next => { setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
-            {unlinked && <Alert kind="info">{customer.customer_name.trim() ? 'This customer has no phone number, so the unpaid amount will not appear under Customers.' : 'This is a walk-in sale, so the unpaid amount will not be tracked against anyone.'} <button type="button" className="link" onClick={() => setCustomerOpen(true)}>Add a customer with a phone number</button></Alert>}
+            <PaymentPanel total={totals?.total} value={payment} onChange={next => { if (next.paid !== payment.paid) setAllowUnassigned(false); setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
+            {unlinked && !locked && <Alert kind="info">
+              <p>Add a customer with a phone number to put this balance on their account. Unassigned balances can be collected from the invoice.</p>
+              <button type="button" className="link" onClick={() => setCustomerOpen(true)}>Add a customer with a phone number</button>
+              <label className="check"><input type="checkbox" checked={allowUnassigned} onChange={e => setAllowUnassigned(e.target.checked)} />Keep this balance unassigned</label>
+            </Alert>}
           </>}
         </section>
         {mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Your cart is locked. Retry to safely retrieve or create this same invoice.' : 'Check your cart and try again.'}</Alert>}

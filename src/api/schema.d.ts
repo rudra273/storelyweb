@@ -977,7 +977,7 @@ export interface paths {
         };
         /**
          * Get Customer
-         * @description The customer with a page of 200 bills; `due` always covers every bill.
+         * @description The customer with pages of bills and payments and totals across the entire account.
          */
         get: operations["get_customer_v1_shops__shop_id__customers__customer_id__get"];
         put?: never;
@@ -1006,6 +1006,40 @@ export interface paths {
          * @description Money received from a customer, put against their unpaid bills oldest first.
          */
         post: operations["settle_v1_shops__shop_id__customers__customer_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/customers/{customer_id}/payments/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Customer Payment */
+        post: operations["preview_customer_payment_v1_shops__shop_id__customers__customer_id__payments_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/customers/{customer_id}/statement.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customer Statement */
+        get: operations["customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2022,6 +2056,8 @@ export interface components {
         };
         /** BillIn */
         BillIn: {
+            /** Allow Unassigned Credit */
+            allow_unassigned_credit?: boolean | null;
             /**
              * Bill Type
              * @default b2c
@@ -2422,6 +2458,19 @@ export interface components {
              */
             settlement: "refund" | "adjust";
         };
+        /** CustomerAllocation */
+        CustomerAllocation: {
+            /** Amount */
+            amount: string;
+            /** Bill Number */
+            bill_number: string;
+            /** Bill Uuid */
+            bill_uuid: string;
+            /** Due After */
+            due_after: string;
+            /** Due Before */
+            due_before: string;
+        };
         /** CustomerBill */
         CustomerBill: {
             /** Balance Due */
@@ -2539,6 +2588,10 @@ export interface components {
             owing_customers: number;
             /** Total Due */
             total_due: string;
+            /** Unassigned Bills */
+            unassigned_bills: number;
+            /** Unassigned Due */
+            unassigned_due: string;
         };
         /** CustomerPayment */
         CustomerPayment: {
@@ -2558,6 +2611,17 @@ export interface components {
             received_at: string;
             /** Uuid */
             uuid: string;
+        };
+        /** CustomerPaymentPreview */
+        CustomerPaymentPreview: {
+            /** Allocations */
+            allocations: components["schemas"]["CustomerAllocation"][];
+            /** Due After */
+            due_after: string;
+            /** Due Before */
+            due_before: string;
+            /** Review Key */
+            review_key: string;
         };
         /** CustomerRow */
         CustomerRow: {
@@ -4790,6 +4854,13 @@ export interface components {
             method: "cash" | "upi" | "card" | "bank" | "online";
             /** Reference */
             reference?: string | null;
+            /** Review Key */
+            review_key?: string | null;
+        };
+        /** SettlePreviewIn */
+        SettlePreviewIn: {
+            /** Amount */
+            amount: number | string;
         };
         /** ShopCreatedOut */
         ShopCreatedOut: {
@@ -6656,6 +6727,7 @@ export interface operations {
                 kind?: ("invoice" | "credit_note") | null;
                 q?: string | null;
                 cancelled?: boolean;
+                unassigned_credit?: boolean;
                 limit?: number;
                 cursor?: string | null;
             };
@@ -7213,6 +7285,7 @@ export interface operations {
         parameters: {
             query?: {
                 bills_offset?: number;
+                payments_offset?: number;
             };
             header?: never;
             path: {
@@ -7305,6 +7378,72 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CustomerDetail"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_customer_payment_v1_shops__shop_id__customers__customer_id__payments_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettlePreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerPaymentPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

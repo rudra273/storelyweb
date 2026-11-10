@@ -20,6 +20,7 @@ export function BillsPage() {
   const from = url.get('from') ?? ''
   const to = url.get('to') ?? ''
   const cancelled = url.get('voided') === '1'
+  const unassigned = url.get('unassigned_credit') === '1'
   const page = Math.max(0, Number(url.get('page')) || 0)
   const change = (patch: Record<string, string>) => setUrl(prev => {
     const next = new URLSearchParams(prev)
@@ -32,6 +33,7 @@ export function BillsPage() {
   const urlQ = url.get('q') ?? ''
   useEffect(() => { if (urlQ !== q) change({ q }) }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
   const params = new URLSearchParams({ limit: '25', cursor: String(page * 25), cancelled: String(cancelled) })
+  if (unassigned) params.set('unassigned_credit', 'true')
   for (const [k, v] of Object.entries({ q, status, kind, from, to })) if (v) params.set(k, v)
 
   const query = useBillingQuery<BillPage>('bills', `bills?${params}`)
@@ -43,9 +45,10 @@ export function BillsPage() {
       <label>Document<select value={kind} onChange={e => change({ kind: e.target.value })}><option value="">All documents</option><option value="invoice">Invoices</option><option value="credit_note">Credit notes</option></select></label>
       <Field label="From" type="date" value={from} onChange={e => change({ from: e.target.value })} />
       <Field label="To" type="date" min={from} value={to} onChange={e => change({ to: e.target.value })} />
-      <label className="check inline"><input type="checkbox" checked={cancelled} onChange={e => change({ voided: e.target.checked ? '1' : '' })} />Voided invoices</label>
+      <label className="check inline"><input type="checkbox" checked={cancelled} onChange={e => change(e.target.checked ? { voided: '1', unassigned_credit: '' } : { voided: '' })} />Voided invoices</label>
+      <label className="check inline"><input type="checkbox" checked={unassigned} onChange={e => change(e.target.checked ? { unassigned_credit: '1', voided: '', status: '', kind: '' } : { unassigned_credit: '' })} />Unassigned balances</label>
     </Toolbar>
-    {(search || status || kind || from || to || cancelled) && <button className="link clear-bill-filters" onClick={() => { setSearch(''); setUrl({}, { replace: true }) }}>Clear filters</button>}
+    {(search || status || kind || from || to || cancelled || unassigned) && <button className="link clear-bill-filters" onClick={() => { setSearch(''); setUrl({}, { replace: true }) }}>Clear filters</button>}
     {query.isPending && <Loading />}
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}
     {query.data && <>

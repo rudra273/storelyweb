@@ -233,6 +233,17 @@
    "BillIn": {
     "additionalProperties": false,
     "properties": {
+     "allow_unassigned_credit": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Allow Unassigned Credit"
+     },
      "bill_type": {
       "default": "b2c",
       "enum": [
@@ -1641,6 +1652,39 @@
     "title": "CreditNoteIn",
     "type": "object"
    },
+   "CustomerAllocation": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "bill_number": {
+      "title": "Bill Number",
+      "type": "string"
+     },
+     "bill_uuid": {
+      "title": "Bill Uuid",
+      "type": "string"
+     },
+     "due_after": {
+      "title": "Due After",
+      "type": "string"
+     },
+     "due_before": {
+      "title": "Due Before",
+      "type": "string"
+     }
+    },
+    "required": [
+     "bill_uuid",
+     "bill_number",
+     "amount",
+     "due_before",
+     "due_after"
+    ],
+    "title": "CustomerAllocation",
+    "type": "object"
+   },
    "CustomerBill": {
     "properties": {
      "balance_due": {
@@ -2089,13 +2133,23 @@
      "total_due": {
       "title": "Total Due",
       "type": "string"
+     },
+     "unassigned_bills": {
+      "title": "Unassigned Bills",
+      "type": "integer"
+     },
+     "unassigned_due": {
+      "title": "Unassigned Due",
+      "type": "string"
      }
     },
     "required": [
      "items",
      "has_more",
      "owing_customers",
-     "total_due"
+     "total_due",
+     "unassigned_due",
+     "unassigned_bills"
     ],
     "title": "CustomerPage",
     "type": "object"
@@ -2160,6 +2214,37 @@
      "received_at"
     ],
     "title": "CustomerPayment",
+    "type": "object"
+   },
+   "CustomerPaymentPreview": {
+    "properties": {
+     "allocations": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerAllocation"
+      },
+      "title": "Allocations",
+      "type": "array"
+     },
+     "due_after": {
+      "title": "Due After",
+      "type": "string"
+     },
+     "due_before": {
+      "title": "Due Before",
+      "type": "string"
+     },
+     "review_key": {
+      "title": "Review Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "due_before",
+     "due_after",
+     "allocations",
+     "review_key"
+    ],
+    "title": "CustomerPaymentPreview",
     "type": "object"
    },
    "CustomerRow": {
@@ -9314,12 +9399,47 @@
        }
       ],
       "title": "Reference"
+     },
+     "review_key": {
+      "anyOf": [
+       {
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Review Key"
      }
     },
     "required": [
      "amount"
     ],
     "title": "SettleIn",
+    "type": "object"
+   },
+   "SettlePreviewIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     }
+    },
+    "required": [
+     "amount"
+    ],
+    "title": "SettlePreviewIn",
     "type": "object"
    },
    "ShopCreatedOut": {
@@ -12705,6 +12825,16 @@
      },
      {
       "in": "query",
+      "name": "unassigned_credit",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Unassigned Credit",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
       "name": "limit",
       "required": false,
       "schema": {
@@ -13681,7 +13811,7 @@
   },
   "/v1/shops/{shop_id}/customers/{customer_id}": {
    "get": {
-    "description": "The customer with a page of 200 bills; `due` always covers every bill.",
+    "description": "The customer with pages of bills and payments and totals across the entire account.",
     "operationId": "get_customer_v1_shops__shop_id__customers__customer_id__get",
     "parameters": [
      {
@@ -13711,6 +13841,18 @@
        "maximum": 1000000,
        "minimum": 0,
        "title": "Bills Offset",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payments_offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Payments Offset",
        "type": "integer"
       }
      }
@@ -13876,6 +14018,111 @@
      }
     },
     "summary": "Settle",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/customers/{customer_id}/payments/preview": {
+   "post": {
+    "operationId": "preview_customer_payment_v1_shops__shop_id__customers__customer_id__payments_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SettlePreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerPaymentPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Preview Customer Payment",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/customers/{customer_id}/statement.csv": {
+   "get": {
+    "operationId": "customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Customer Statement",
     "tags": [
      "customers"
     ]
