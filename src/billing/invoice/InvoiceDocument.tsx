@@ -61,7 +61,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
           ? <p>{[show('show_shop_phone') && s.shop_phone && `Phone: ${s.shop_phone}`, show('show_shop_email') && s.shop_email].filter(Boolean).join(' · ')}</p> : null}
         {show('show_shop_gstin') && s.shop_gstin && <p><strong>GSTIN: {s.shop_gstin}</strong></p>}
         {show('show_invoice_title') && <h3 className="invoice-title">{documentTitle(s, b)}</h3>}
-        {s.gst_scheme === 'composition' && b.document_type !== 'credit_note' && <p className="invoice-note">Composition taxable person, not eligible to collect tax on supplies.</p>}
+        {s.gst_scheme === 'composition' && !hasGst && b.document_type !== 'credit_note' && <p className="invoice-note">Composition taxable person, not eligible to collect tax on supplies.</p>}
       </header>
       {b.cancelled && <p className="invoice-cancelled">VOID{b.cancel_reason ? ` · ${b.cancel_reason}` : ''}</p>}
 

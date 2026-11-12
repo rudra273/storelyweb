@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { formatMoney } from '../../lib/money'
 
 export interface Trend { label: string; value: number }
@@ -11,10 +12,10 @@ const ARROW = { up: '▲', down: '▼', flat: '▬' } as const
  * tracked), which reads as an em dash and is announced as such; it is never shown as zero.
  * `comparison` of null means there is nothing to compare with ("No comparison").
  */
-export function Kpi({ label, value, note, tone, comparison, trend, trendTitle }: { label: string; value: string | null | undefined; note?: string; tone?: 'good' | 'bad'; comparison?: Comparison | null; trend?: Trend[]; trendTitle?: string }) {
+export function Kpi({ label, value, note, tone, comparison, trend, trendTitle, to }: { label: string; value: string | null | undefined; note?: string; tone?: 'good' | 'bad'; comparison?: Comparison | null; trend?: Trend[]; trendTitle?: string; to?: string }) {
   const missing = value === null || value === undefined
   return <div className="kpi">
-    <span className="kpi-label">{label}</span>
+    <span className="kpi-label">{to ? <Link className="kpi-link" to={to}>{label}</Link> : label}</span>
     <strong className={tone ? `kpi-value ${tone}` : 'kpi-value'}>{missing ? <><span aria-hidden="true">—</span><span className="sr-only">Not available</span></> : value}</strong>
     {comparison !== undefined && (comparison
       ? <small className={`kpi-change ${comparison.direction}`}><span aria-hidden="true">{ARROW[comparison.direction]}</span> {comparison.text}</small>

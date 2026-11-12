@@ -12,7 +12,7 @@ import { useShop } from '../shops/context'
 import { BillAction, type BillActionKind } from './BillActions'
 import { documentKind, documentStatus } from './documentStatus'
 import { InvoiceSheet } from './invoice/Invoice'
-import { PAPERS, useInvoicePaper } from './invoice/paper'
+import { PAPERS, paperGuidance, useInvoicePaper } from './invoice/paper'
 import { downloadInvoicePdf } from './invoice/pdf'
 import { type Paper } from './invoice/InvoiceDocument'
 import { useBillingQuery, type BillDetail } from './queries'
@@ -99,6 +99,7 @@ function Detail({ detail }: { detail: BillDetail }) {
         <section className="card rail-card" aria-label="Print options">
           <label>Paper size<select value={paper} onChange={e => setPaper(e.target.value as Paper)}>{PAPERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></label>
           <p className="muted rail-note">{paper === saved ? 'This is your shop’s saved paper.' : <>For this print or PDF only. Your saved paper stays <strong>{saved}</strong>.</>}</p>
+          <p className="muted rail-note">{paperGuidance(paper)}</p>
           {can(role, 'shop.settings') && <Link to="/settings" className="rail-link">Change the saved paper and layout</Link>}
         </section>
       </aside>

@@ -127,6 +127,18 @@
       ],
       "title": "Customer Phone"
      },
+     "customer_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Customer Uuid"
+     },
      "total": {
       "title": "Total",
       "type": "string"
@@ -3664,6 +3676,21 @@
       ],
       "title": "Bank Details"
      },
+     "default_gst_percent": {
+      "default": "18",
+      "title": "Default Gst Percent",
+      "type": "string"
+     },
+     "default_overhead_cost": {
+      "default": "0",
+      "title": "Default Overhead Cost",
+      "type": "string"
+     },
+     "default_profit_margin_percent": {
+      "default": "0",
+      "title": "Default Profit Margin Percent",
+      "type": "string"
+     },
      "digital_signature": {
       "anyOf": [
        {
@@ -3829,6 +3856,48 @@
       ],
       "title": "Bank Details"
      },
+     "default_gst_percent": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Gst Percent"
+     },
+     "default_overhead_cost": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Overhead Cost"
+     },
+     "default_profit_margin_percent": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Profit Margin Percent"
+     },
      "digital_signature": {
       "anyOf": [
        {
@@ -3886,7 +3955,9 @@
        {
         "enum": [
          "a4",
-         "a5"
+         "a5",
+         "80mm",
+         "58mm"
         ],
         "type": "string"
        },
@@ -4065,6 +4136,91 @@
     "title": "InvoiceSettingsIn",
     "type": "object"
    },
+   "KpiComparison": {
+    "properties": {
+     "direction": {
+      "enum": [
+       "up",
+       "down",
+       "flat"
+      ],
+      "title": "Direction",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text",
+     "direction"
+    ],
+    "title": "KpiComparison",
+    "type": "object"
+   },
+   "KpiComparisons": {
+    "properties": {
+     "collected": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "expenses": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "gross_profit": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
+     "previous_from": {
+      "title": "Previous From",
+      "type": "string"
+     },
+     "previous_to": {
+      "title": "Previous To",
+      "type": "string"
+     },
+     "revenue": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     }
+    },
+    "required": [
+     "previous_from",
+     "previous_to"
+    ],
+    "title": "KpiComparisons",
+    "type": "object"
+   },
    "Kpis": {
     "properties": {
      "average_order_value": {
@@ -4089,6 +4245,17 @@
       "title": "Collected",
       "type": "string"
      },
+     "comparisons": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparisons"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null
+     },
      "daily": {
       "items": {
        "$ref": "#/components/schemas/DailyPoint"
@@ -4103,6 +4270,14 @@
      "expenses": {
       "title": "Expenses",
       "type": "string"
+     },
+     "expenses_by_category": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/ExpenseCategory"
+      },
+      "title": "Expenses By Category",
+      "type": "array"
      },
      "gross_margin_percent": {
       "title": "Gross Margin Percent",
@@ -7624,6 +7799,30 @@
       "title": "Product Name",
       "type": "string"
      },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Product Uuid"
+     },
+     "purchase_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Purchase Uuid"
+     },
      "quantity": {
       "title": "Quantity",
       "type": "string"
@@ -9733,6 +9932,18 @@
      "name": {
       "title": "Name",
       "type": "string"
+     },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Product Uuid"
      },
      "quantity": {
       "title": "Quantity",
@@ -14218,6 +14429,47 @@
         }
        ],
        "title": "Category"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 100,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 1000,
+       "maximum": 1000,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
       }
      }
     ],

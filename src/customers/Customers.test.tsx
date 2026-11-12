@@ -134,3 +134,25 @@ test('switching shop with an unsaved form asks first and keeps the form if decli
   expect(screen.getByRole('dialog')).toBeInTheDocument()
   confirm.mockRestore()
 })
+
+test('customer and expense filters stay in the address so Back returns to the same view', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP,
+    ok('GET', /^\/v1\/shops\/s1\/customers\/accounts\?/, {
+      items: [{ uuid: 'c1', name: 'Ravi', phone: '919876543210', due: '205.00', due_bills: 2, total_purchase_amount: '210.00', bill_count: 2, last_purchase_at: '2026-11-01' }],
+      has_more: false, owing_customers: 1, total_due: '205.00', unassigned_due: '0.00', unassigned_bills: 0,
+    }),
+    ok('GET', customerPath, customerDetail),
+    ok('GET', /^\/v1\/shops\/s1\/expenses\?/, page),
+  ])
+  renderApp('/customers?owing=1&q=Ravi')
+  expect(await screen.findByRole('checkbox', { name: 'Only customers who owe' })).toBeChecked()
+  expect(screen.getByLabelText('Search')).toHaveValue('Ravi')
+  await userEvent.click(await screen.findByRole('link', { name: 'Ravi' }))
+  expect(await screen.findByRole('heading', { name: 'Ravi' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Back to customers' })).toHaveAttribute('href', '/customers?owing=1&q=Ravi')
+
+  renderApp('/expenses?start=2026-10-01&end=2026-10-15&category=Rent&q=office')
+  expect(await screen.findByLabelText('Search')).toHaveValue('office')
+  await waitFor(() => expect(calls.some(c => c.path.includes('/expenses?start=2026-10-01&end=2026-10-15&category=Rent&q=office'))).toBe(true))
+})

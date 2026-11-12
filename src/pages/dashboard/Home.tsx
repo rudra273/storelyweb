@@ -37,10 +37,10 @@ function DailySummary() {
   return <section aria-labelledby="daily-heading"><div className="section-heading"><div><h2 id="daily-heading">Today at a glance</h2><p className="muted">Sales and collections for today. Stock and unpaid bills across your shop.</p></div><Link to="/reports">View reports →</Link></div>
     <State query={query} fallback={<KpiSkeletons count={4} className="kpis home-kpis" />}>{k => <>
       <div className="kpis home-kpis">
-        <Tile label="Today’s sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'} · net of returns`} />
-        <Tile label="Money received today" value={formatMoney(k.collected)} />
-        <Tile label="Outstanding payments" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid invoice${k.unpaid_count === 1 ? '' : 's'} · all time`} tone={k.unpaid_count ? 'bad' : undefined} />
-        <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={k.gst_registered ? 'Current inventory value' : 'Current inventory value, incl. GST paid on purchase'} />
+        <Tile label="Today’s sales" value={formatMoney(k.revenue)} note={`${k.invoices} invoice${k.invoices === 1 ? '' : 's'} · net of returns`} comparison={k.comparisons ? k.comparisons.revenue ?? null : undefined} to={`/billing?from=${day}&to=${day}`} />
+        <Tile label="Money received today" value={formatMoney(k.collected)} comparison={k.comparisons ? k.comparisons.collected ?? null : undefined} to={`/reports/day-book?day=${day}`} />
+        <Tile label="Outstanding payments" value={formatMoney(k.unpaid_total)} note={`${k.unpaid_count} unpaid invoice${k.unpaid_count === 1 ? '' : 's'} · all time`} tone={k.unpaid_count ? 'bad' : undefined} to="/customers?owing=1" />
+        <Tile label="Stock at cost" value={formatMoney(k.inventory_value)} note={k.gst_registered ? 'Current inventory value' : 'Current inventory value, incl. GST paid on purchase'} to="/reports/stock" />
       </div>
       <div className="attention-strip"><div><span className="attention-dot" aria-hidden="true" /><strong>Stock watch</strong><span>{k.low_stock_count} running low · {k.out_of_stock_count} out of stock</span></div><Link to="/products?low=1">Review stock →</Link></div>
     </>}</State>
@@ -53,10 +53,12 @@ function GettingStarted() {
   if (!products.data || products.data.items.length > 0) return null
   return <section className="card wide getting-started" aria-labelledby="start-heading">
     <h2 id="start-heading">Get your shop ready</h2>
-    <p className="muted">Three steps and you can invoice your first customer.</p>
+    <p className="muted">Five steps and you can invoice your first customer.</p>
     <ol>
-      <li><Link to="/settings"><strong>Check your shop details</strong><span>Address, phone and GST registration, as they print on invoices.</span></Link></li>
-      <li><Link to="/products?new=1"><strong>Add your first product</strong><span>Name and price are enough to start; add stock now or later.</span></Link></li>
+      <li><Link to="/settings?tab=shop"><strong>Shop identity</strong><span>Name, address, phone and GSTIN, as they print on invoices.</span></Link></li>
+      <li><Link to="/settings?tab=pricing"><strong>Tax configuration</strong><span>Regular GST, composition or not registered, and default rates.</span></Link></li>
+      <li><Link to="/settings?tab=printing"><strong>Invoice and printing</strong><span>Choose A4, A5 or a receipt roll and preview the layout.</span></Link></li>
+      <li><Link to="/products?new=1"><strong>Add your first product</strong><span>Name and price are enough to start; or import a file from Products.</span></Link></li>
       <li><Link to="/billing/new"><strong>Create your first invoice</strong><span>Pick products, take payment and print or share the invoice.</span></Link></li>
     </ol>
   </section>

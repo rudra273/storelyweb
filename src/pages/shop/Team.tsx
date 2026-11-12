@@ -111,7 +111,7 @@ export function Team() {
         </form>
         <p className="muted">The person signs up (or signs in) with this email and accepts the invitation.</p>
       </Card>
-      <section className="role-guide"><h2>Roles at a glance</h2><dl><dt>Owner</dt><dd>Full access to the shop and team.</dd><dt>Admin</dt><dd>Manage products, billing, reports and staff.</dd><dt>Staff</dt><dd>Look up products and create bills.</dd></dl></section></div></div>
+      <section className="role-guide"><h2>Roles at a glance</h2><dl><dt>Owner</dt><dd>Everything: shop settings, team, subscription, reports and billing. Only owners change roles.</dd><dt>Admin</dt><dd>Products, purchases, billing, returns, reports, expenses and shop settings; can add or remove Staff only.</dd><dt>Staff</dt><dd>Look up products, create invoices and record payments. No reports, costs, settings or returns.</dd></dl><h2>Invitation states</h2><p className="muted">Pending: sent, not yet accepted. Accepted: the person appears under People with access. Cancel a pending invitation to withdraw it.</p><p className="muted">Removing someone, or changing their role, takes effect on their next request; their open sessions lose access to this shop immediately.</p></section></div></div>
     </div>
   )
 }

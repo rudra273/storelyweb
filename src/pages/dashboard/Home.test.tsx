@@ -35,7 +35,7 @@ test('a new shop with no products gets three steps to get started', async () => 
   renderApp('/')
   expect(await screen.findByRole('heading', { name: 'Get your shop ready' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: /Add your first product/ })).toHaveAttribute('href', '/products?new=1')
-  expect(screen.getByRole('link', { name: /Check your shop details/ })).toHaveAttribute('href', '/settings')
+  expect(screen.getByRole('link', { name: /Shop identity/ })).toHaveAttribute('href', '/settings?tab=shop')
 })
 
 test('a shop that has products does not see the get-started steps', async () => {

@@ -10,6 +10,9 @@ import { imageSrc, prepareImage } from '../../lib/images'
 import { Button, PageHeader } from '../../components/ui/workspace'
 import { useShop } from '../../shops/context'
 import { InvoiceDocument, type Paper } from './InvoiceDocument'
+import { PAPERS, paperGuidance, resolvePaper } from './paper'
+import { useDirtyClose } from '../../lib/dirty'
+import { Link, useSearchParams } from 'react-router'
 import { PaperSheet } from './PaperSheet'
 import { useBillingQuery, type BillDetail, type InvoiceSettings } from '../queries'
 
@@ -24,6 +27,14 @@ const GROUPS: { title: string; keys: [ShowKey, string][] }[] = [
   { title: 'Totals', keys: [['show_subtotal', 'Subtotal'], ['show_discount', 'Discount'], ['show_taxable_amount', 'Taxable value'], ['show_cgst_sgst_igst', 'CGST / SGST / IGST'], ['show_grand_total', 'Grand total and round-off']] },
   { title: 'Extras', keys: [['show_amount_in_words', 'Amount in words'], ['show_hsn_summary', 'Tax summary by HSN'], ['show_payment_details', 'Payments and balance due'], ['show_upi_qr', 'UPI QR for the balance due'], ['show_footer_text', 'Footer text'], ['show_digital_signature', 'Signature']] },
 ]
+
+const TABS = [
+  { id: 'shop', label: 'Shop details' },
+  { id: 'pricing', label: 'Pricing & tax' },
+  { id: 'invoice', label: 'Invoice appearance' },
+  { id: 'printing', label: 'Printing' },
+] as const
+type TabId = (typeof TABS)[number]['id']
 
 const SCHEMES = [
   { value: 'regular', label: 'Regular GST', note: 'GST is charged on invoices; they print as Tax Invoices.' },
@@ -96,7 +107,10 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   const [problems, setProblems] = useState<Record<string, string>>({})
   const { ref: formRef, focusFirstError } = useFirstError()
   const [done, setDone] = useState(false)
-  const [paper, setPaper] = useState<Paper>(saved.paper_size === 'a5' ? 'A5' : 'A4')
+  const [paper, setPaper] = useState<Paper>(resolvePaper(saved.paper_size))
+  const [params] = useSearchParams()
+  const wanted = TABS.find(t => t.id === params.get('tab'))?.id
+  const [tab, setTab] = useState<TabId>(wanted ?? 'shop')
   const [draft, setDraft] = useState<InvoiceSettings>(saved)
   const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
   const err = (key: string) => problems[key] || fieldErrors[key] || undefined
@@ -115,7 +129,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     setError(null)
     // Send only what changed, so a field edited on a phone meanwhile is left alone.
     const change: Record<string, unknown> = {}
-    for (const key of ['shop_name', 'shop_address', 'shop_phone', 'shop_email', 'shop_gstin', 'gst_scheme', 'invoice_title', 'footer_text', 'paper_size', 'upi_id', 'terms_text', 'bank_details', 'round_off_total', 'shop_logo', 'digital_signature'] as const) {
+    for (const key of ['shop_name', 'shop_address', 'shop_phone', 'shop_email', 'shop_gstin', 'gst_scheme', 'default_gst_percent', 'default_profit_margin_percent', 'default_overhead_cost', 'invoice_title', 'footer_text', 'paper_size', 'upi_id', 'terms_text', 'bank_details', 'round_off_total', 'shop_logo', 'digital_signature'] as const) {
       if ((draft[key] ?? '') !== (saved[key] ?? '')) change[key] = typeof draft[key] === 'string' ? (draft[key] as string).trim() || null : draft[key]
     }
     const show = Object.fromEntries(Object.entries(draft.show).filter(([k, v]) => saved.show[k] !== v))
@@ -131,12 +145,17 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   }
 
   const changed = JSON.stringify(draft) !== JSON.stringify(saved)
+  useDirtyClose(changed, () => undefined)
+  const show = (id: TabId) => ({ hidden: tab !== id, role: 'tabpanel' as const, 'aria-labelledby': `tab-${id}` })
   return <div className="settings-page">
     <PageHeader eyebrow="SHOP SETTINGS" title="Shop and invoice" description="Your shop's details and how invoices look. Saved settings also reach your phones when they sync." />
     <div className="settings-grid">
       <form ref={formRef} className="settings-form" onSubmit={save} noValidate aria-busy={busy}>
+        <div role="tablist" aria-label="Settings sections" className="settings-tabs">
+          {TABS.map(t => <button key={t.id} type="button" role="tab" id={`tab-${t.id}`} aria-selected={tab === t.id} className={tab === t.id ? 'active' : undefined} onClick={() => setTab(t.id)}>{t.label}</button>)}
+        </div>
         <fieldset disabled={busy}>
-          <section className="card wide">
+          <section className="card wide" {...show('shop')}>
             <h2>Shop details</h2>
             <Field label="Shop name" required maxLength={120} value={draft.shop_name} onChange={text('shop_name')} error={err('shop_name')} />
             <label className="field-block">Address<textarea rows={2} maxLength={500} value={draft.shop_address ?? ''} onChange={text('shop_address')} /></label>
@@ -145,14 +164,9 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               <Field label="Email" type="email" maxLength={254} error={err('shop_email')} value={draft.shop_email ?? ''} onChange={text('shop_email')} />
               <Field label="GSTIN" maxLength={15} placeholder="27ABCDE1234F1Z5" error={err('shop_gstin')} value={draft.shop_gstin ?? ''} onChange={text('shop_gstin')} hint="15 characters, starting with your state code." />
             </div>
-            <fieldset className="scheme-choice">
-              <legend>GST registration</legend>
-              {SCHEMES.map(sc => <label key={sc.value} className="check"><input type="radio" name="scheme" checked={draft.gst_scheme === sc.value} onChange={() => set('gst_scheme', sc.value)} /><span><strong>{sc.label}</strong><br /><small className="muted">{sc.note}</small></span></label>)}
-              {draft.gst_scheme !== saved.gst_scheme && <Alert kind="info">This changes how new bills are taxed and priced. Bills already made keep their tax.</Alert>}
-            </fieldset>
           </section>
 
-          <section className="card wide">
+          <section className="card wide" {...show('shop')}>
             <h2>Logo and signature</h2>
             <p className="muted">PNG or JPG. Large pictures are made smaller (up to 400 KB, as on the phone).</p>
             <div className="image-pickers">
@@ -166,29 +180,50 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
             </div>
           </section>
 
-          <section className="card wide">
+          <section className="card wide" {...show('pricing')}>
+            <h2>Tax and pricing defaults</h2>
+            <fieldset className="scheme-choice">
+              <legend>GST registration</legend>
+              {SCHEMES.map(sc => <label key={sc.value} className="check"><input type="radio" name="scheme" checked={draft.gst_scheme === sc.value} onChange={() => set('gst_scheme', sc.value)} /><span><strong>{sc.label}</strong><br /><small className="muted">{sc.note}</small></span></label>)}
+              {draft.gst_scheme !== saved.gst_scheme && <Alert kind="info">This changes how new bills are taxed and priced. Bills already made keep their tax.</Alert>}
+            </fieldset>
+            <div className="form-grid">
+              <Field label="Default GST %" inputMode="decimal" value={draft.default_gst_percent ?? '18'} onChange={e => set('default_gst_percent', e.target.value)} hint="Used for products and categories with no GST rate of their own." />
+              <Field label="Default profit margin %" inputMode="decimal" value={draft.default_profit_margin_percent ?? '0'} onChange={e => set('default_profit_margin_percent', e.target.value)} />
+              <Field label="Default overhead cost (₹)" inputMode="decimal" value={draft.default_overhead_cost ?? '0'} onChange={e => set('default_overhead_cost', e.target.value)} />
+            </div>
+            <label className="check"><input type="checkbox" checked={draft.round_off_total} onChange={e => set('round_off_total', e.target.checked)} />Round totals to the nearest rupee (new bills)</label>
+            <Alert kind="info">Changing these affects new invoices only. Issued invoices keep their saved prices, tax and totals.</Alert>
+          </section>
+
+          <section className="card wide" {...show('invoice')}>
             <h2>Invoice</h2>
             <div className="form-grid">
               <Field label="Title" maxLength={40} placeholder="Automatic" value={draft.invoice_title === 'TAX INVOICE' ? '' : draft.invoice_title} onChange={text('invoice_title')} hint="Leave blank for the standard title: Tax Invoice, Bill of Supply or Bill." />
-              <label>Default paper<select value={draft.paper_size} onChange={e => { set('paper_size', e.target.value); setPaper(e.target.value === 'a5' ? 'A5' : 'A4') }}><option value="a4">A4</option><option value="a5">A5</option></select></label>
               <Field label="UPI id" maxLength={100} placeholder="shopname@okaxis" error={err('upi_id')} value={draft.upi_id ?? ''} onChange={text('upi_id')} hint="Unpaid bills show a QR to pay the balance." />
             </div>
-            <label className="check"><input type="checkbox" checked={draft.round_off_total} onChange={e => set('round_off_total', e.target.checked)} />Round totals to the nearest rupee (new bills)</label>
             <label className="field-block">Bank details<textarea rows={3} maxLength={500} placeholder={'Account name\nAccount number · IFSC\nBank and branch'} value={draft.bank_details ?? ''} onChange={text('bank_details')} /></label>
             <label className="field-block">Terms<textarea rows={2} maxLength={1000} placeholder="Goods once sold will not be taken back." value={draft.terms_text ?? ''} onChange={text('terms_text')} /></label>
             <Field label="Footer" maxLength={300} value={draft.footer_text} onChange={text('footer_text')} />
           </section>
 
-          <section className="card wide">
+          <section className="card wide" {...show('invoice')}>
             <h2>What the invoice shows</h2>
             <div className="show-groups">{GROUPS.map(g => <fieldset key={g.title}><legend>{g.title}</legend>{g.keys.map(([key, label]) => <label key={key} className="check"><input type="checkbox" checked={draft.show[key] !== false} onChange={e => set('show', { ...draft.show, [key]: e.target.checked })} />{label}</label>)}</fieldset>)}</div>
           </section>
+          <section className="card wide" {...show('printing')}>
+            <h2>Printing</h2>
+            <label>Default paper<select value={resolvePaper(draft.paper_size)} onChange={e => { const p = PAPERS.find(x => x.value === e.target.value)!; set('paper_size', p.setting); setPaper(p.value) }}>{PAPERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></label>
+            <p className="muted">{paperGuidance(resolvePaper(draft.paper_size))}</p>
+            <p className="muted">New invoices, reloads and the PDF open on this paper. Staff can pick another paper for a single print without changing it. Use the preview to check long names and line counts before printing on hardware.</p>
+          </section>
+          <p className="muted">Team access is managed under <Link to="/team">Team &amp; permissions</Link>; plan and renewal under <Link to="/subscription">Subscription</Link>.</p>
         </fieldset>
         <div className="settings-save">
           {error && <Alert>{error}</Alert>}
           {done && !changed && <Alert kind="success">Saved. Phones get the new layout on their next sync.</Alert>}
           <Button type="submit" variant="primary" disabled={busy || !changed}>{busy ? 'Saving…' : 'Save settings'}</Button>
-          {changed && <Button disabled={busy} onClick={() => { setDraft(saved); setDone(false) }}>Discard changes</Button>}
+          {changed && <><span className="unsaved" role="status">Unsaved changes</span><Button disabled={busy} onClick={() => { setDraft(saved); setPaper(resolvePaper(saved.paper_size)); setDone(false) }}>Discard changes</Button></>}
         </div>
       </form>
       <aside className="settings-preview" aria-label="Invoice preview">

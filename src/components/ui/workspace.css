@@ -120,3 +120,9 @@
 .image-picker-actions .button { cursor: pointer; }
 .image-picker-actions .button.disabled { opacity: .6; pointer-events: none; }
 .danger-link { color: var(--danger); }
+
+.settings-tabs { display: flex; flex-wrap: wrap; gap: .25rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem; }
+.settings-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .6rem .9rem; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.settings-tabs button[aria-selected='true'] { color: var(--heading); border-bottom-color: var(--gold, #f5a623); }
+.settings-save .unsaved { color: var(--warn, #b45309); font-weight: 600; }
+.onboarding-steps li.done a::after { content: '✓ Done'; color: var(--ok); font-weight: 600; font-size: .8rem; }

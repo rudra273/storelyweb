@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { ApiError, api, request } from '../api/client'
 import type { components } from '../api/schema'
 import { day, paymentMethod, paymentStatus } from '../components/labels'
@@ -42,15 +42,27 @@ export function CustomersPage() {
 function CustomerList() {
   const { shop, base } = useCustomersBase()
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
+  const location = useLocation()
+  const [url, setUrl] = useSearchParams()
+  const [search, setSearch] = useState(url.get('q') ?? '')
   const q = useDebounced(search.trim(), 250)
-  const [owing, setOwing] = useState(false)
-  const [page, setPage] = useState(0)
+  const owing = url.get('owing') === '1'
+  const page = Math.max(0, Number(url.get('page')) || 0)
   const [adding, setAdding] = useState(false)
+  const change = (patch: Record<string, string>) => setUrl(prev => {
+    const next = new URLSearchParams(prev)
+    for (const [k, v] of Object.entries(patch)) if (v) next.set(k, v); else next.delete(k)
+    if (!('page' in patch)) next.delete('page')
+    return next
+  }, { replace: true })
+  const setPage = (n: number) => change({ page: n ? String(n) : '' })
+  const urlQ = url.get('q') ?? ''
+  useEffect(() => { if (urlQ !== q) change({ q }) }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
   const params = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE), owing: String(owing) })
   if (q) params.set('q', q)
   const query = useQuery({ queryKey: ['customers', shop, 'accounts', params.toString()], queryFn: () => api.get<S['CustomerPage']>(`${base}/customers/accounts?${params}`), enabled: !!shop })
   const filtered = !!q || owing
+  const here = location.pathname + location.search
   return <div className="customers-page">
     <PageHeader eyebrow="CUSTOMER ACCOUNTS" title="Customers" description="See who owes you money, their bills and payments. Customers are added when a bill has a phone number." actions={<button className="primary" onClick={() => setAdding(true)}>Add customer</button>} />
     {query.data && <div className="customer-summary" aria-label="Money owed to you">
@@ -62,16 +74,17 @@ function CustomerList() {
         {query.data.unassigned_bills > 0 && <Link to="/billing?unassigned_credit=1">View {query.data.unassigned_bills} {query.data.unassigned_bills === 1 ? 'invoice' : 'invoices'}</Link>}
       </div>}
     </div>}
-    <Toolbar label="Find customers" className="customer-filters" onChange={() => setPage(0)}>
+    <Toolbar label="Find customers" className="customer-filters">
       <Field label="Search" type="search" placeholder="Name, phone or GSTIN" maxLength={60} value={search} onChange={e => setSearch(e.target.value)} />
-      <label className="check inline"><input type="checkbox" checked={owing} onChange={e => setOwing(e.target.checked)} />Only customers who owe</label>
+      <label className="check inline"><input type="checkbox" checked={owing} onChange={e => change({ owing: e.target.checked ? '1' : '' })} />Only customers who owe</label>
     </Toolbar>
+    {(search || owing) && <button className="link clear-bill-filters" onClick={() => { setSearch(''); setUrl({}, { replace: true }) }}>Clear filters</button>}
     {query.isPending && <Loading />}
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>}
     {query.data && <>
       {query.data.items.length ? <div className="table-wrap"><table className="table customer-table"><thead><tr><th>Customer</th><th className="hide-sm">Bills</th><th className="hide-sm">Bought</th><th className="hide-sm">Last bill</th><th>Due</th></tr></thead><tbody>
         {query.data.items.map(c => <tr key={c.uuid}>
-          <td><Link to={`/customers/${c.uuid}`}>{c.name}</Link><br /><small className="muted">{phoneLabel(c.phone)}</small></td>
+          <td><Link to={`/customers/${c.uuid}`} state={{ from: here }}>{c.name}</Link><br /><small className="muted">{phoneLabel(c.phone)}</small></td>
           <td className="hide-sm">{c.bill_count}</td>
           <td className="hide-sm">{formatMoney(c.total_purchase_amount)}</td>
           <td className="hide-sm">{c.last_purchase_at ? day(c.last_purchase_at) : '—'}</td>
@@ -88,6 +101,9 @@ function CustomerList() {
 
 function CustomerDetailPage({ id }: { id: string }) {
   const { shop, base } = useCustomersBase()
+  const location = useLocation()
+  const back = (location.state as { from?: string } | null)?.from ?? '/customers'
+  const here = location.pathname + location.search
   const path = `${base}/customers/${encodeURIComponent(id)}`
   const [billPage, setBillPage] = useState(0)
   const [paymentPage, setPaymentPage] = useState(0)
@@ -113,7 +129,7 @@ function CustomerDetailPage({ id }: { id: string }) {
     void client.invalidateQueries({ queryKey: ['customers', shop, 'accounts'] })
   }
   return <div className="customers-page">
-    <Link to="/customers">Back to customers</Link>
+    <Link to={back}>Back to customers</Link>
     {query.isPending && <Loading />}
     {query.error && <Alert>{describeError(query.error)} <button className="link" onClick={() => void query.refetch()}>Retry</button>
       {!!(billPage || paymentPage) && <button className="link" onClick={() => { setBillPage(0); setPaymentPage(0) }}>Back to first pages</button>}
@@ -140,7 +156,7 @@ function CustomerDetailPage({ id }: { id: string }) {
                 const credit = b.document_type === 'credit_note'
                 const status = b.cancelled ? 'Voided' : credit ? 'Credit note' : paymentStatus(b.payment_status ?? 'unpaid')
                 return <tr key={b.uuid}>
-                  <td><Link to={`/billing/${b.uuid}`}>{b.bill_number}</Link><br /><small className="muted">{day(b.created_at)}</small></td>
+                  <td><Link to={`/billing/${b.uuid}`} state={{ from: here }}>{b.bill_number}</Link><br /><small className="muted">{day(b.created_at)}</small></td>
                   <td><span className={`payment-badge ${b.cancelled ? 'cancelled' : credit ? 'credit' : b.payment_status ?? ''}`}>{status}</span></td>
                   <td>{formatMoney(b.total_amount)}</td><td>{b.cancelled || credit ? '—' : formatMoney(b.balance_due)}</td>
                 </tr>
@@ -150,7 +166,7 @@ function CustomerDetailPage({ id }: { id: string }) {
           </section>
           <div className="customer-side">
             <section className="card" aria-busy={query.isPlaceholderData}><h2>Payment entries</h2>
-              {payments.length ? <ul className="plain">{payments.map(p => <li className="row" key={p.uuid}><span>{day(p.received_at)} · {paymentMethod(p.payment_method)}<br /><small className="muted"><Link to={`/billing/${p.bill_uuid}`}>{p.bill_number}</Link>{p.payment_reference && ` · ${p.payment_reference}`}</small></span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p className="muted">No payments yet.</p>}
+              {payments.length ? <ul className="plain">{payments.map(p => <li className="row" key={p.uuid}><span>{day(p.received_at)} · {paymentMethod(p.payment_method)}<br /><small className="muted"><Link to={`/billing/${p.bill_uuid}`} state={{ from: here }}>{p.bill_number}</Link>{p.payment_reference && ` · ${p.payment_reference}`}</small></span><strong>{formatMoney(p.amount)}</strong></li>)}</ul> : <p className="muted">No payments yet.</p>}
               <HistoryPager label="payment entries" page={paymentPage} more={payments_has_more} loading={query.isPlaceholderData} setPage={setPaymentPage} />
             </section>
             <section className="card"><h2>Details</h2><dl className="customer-facts">

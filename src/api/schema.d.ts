@@ -2018,6 +2018,11 @@ export interface components {
             customer_name: string;
             /** Customer Phone */
             customer_phone: string | null;
+            /**
+             * Customer Uuid
+             * @default null
+             */
+            customer_uuid?: string | null;
             /** Total */
             total: string;
         };
@@ -3121,6 +3126,21 @@ export interface components {
         InvoiceSettings: {
             /** Bank Details */
             bank_details: string | null;
+            /**
+             * Default Gst Percent
+             * @default 18
+             */
+            default_gst_percent?: string;
+            /**
+             * Default Overhead Cost
+             * @default 0
+             */
+            default_overhead_cost?: string;
+            /**
+             * Default Profit Margin Percent
+             * @default 0
+             */
+            default_profit_margin_percent?: string;
             /** Digital Signature */
             digital_signature?: string | null;
             /** Footer Text */
@@ -3166,6 +3186,12 @@ export interface components {
         InvoiceSettingsIn: {
             /** Bank Details */
             bank_details?: string | null;
+            /** Default Gst Percent */
+            default_gst_percent?: number | string | null;
+            /** Default Overhead Cost */
+            default_overhead_cost?: number | string | null;
+            /** Default Profit Margin Percent */
+            default_profit_margin_percent?: number | string | null;
             /** Digital Signature */
             digital_signature?: string | null;
             /** Footer Text */
@@ -3175,7 +3201,7 @@ export interface components {
             /** Invoice Title */
             invoice_title?: string | null;
             /** Paper Size */
-            paper_size?: ("a4" | "a5") | null;
+            paper_size?: ("a4" | "a5" | "80mm" | "58mm") | null;
             /** Round Off Total */
             round_off_total?: boolean | null;
             /** Shop Address */
@@ -3199,6 +3225,31 @@ export interface components {
             /** Upi Id */
             upi_id?: string | null;
         };
+        /** KpiComparison */
+        KpiComparison: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** Text */
+            text: string;
+        };
+        /** KpiComparisons */
+        KpiComparisons: {
+            /** @default null */
+            collected?: components["schemas"]["KpiComparison"] | null;
+            /** @default null */
+            expenses?: components["schemas"]["KpiComparison"] | null;
+            /** @default null */
+            gross_profit?: components["schemas"]["KpiComparison"] | null;
+            /** Previous From */
+            previous_from: string;
+            /** Previous To */
+            previous_to: string;
+            /** @default null */
+            revenue?: components["schemas"]["KpiComparison"] | null;
+        };
         /** Kpis */
         Kpis: {
             /** Average Order Value */
@@ -3209,12 +3260,19 @@ export interface components {
             by_payment_method: components["schemas"]["MethodTotal"][];
             /** Collected */
             collected: string;
+            /** @default null */
+            comparisons?: components["schemas"]["KpiComparisons"] | null;
             /** Daily */
             daily: components["schemas"]["DailyPoint"][];
             /** Discount Rate Percent */
             discount_rate_percent: string;
             /** Expenses */
             expenses: string;
+            /**
+             * Expenses By Category
+             * @default []
+             */
+            expenses_by_category?: components["schemas"]["ExpenseCategory"][];
             /** Gross Margin Percent */
             gross_margin_percent: string;
             /** Gross Profit */
@@ -4265,6 +4323,16 @@ export interface components {
             imported: boolean;
             /** Product Name */
             product_name: string;
+            /**
+             * Product Uuid
+             * @default null
+             */
+            product_uuid?: string | null;
+            /**
+             * Purchase Uuid
+             * @default null
+             */
+            purchase_uuid?: string | null;
             /** Quantity */
             quantity: string;
             /** Supplier */
@@ -4962,6 +5030,11 @@ export interface components {
             gst_percent: string;
             /** Name */
             name: string;
+            /**
+             * Product Uuid
+             * @default null
+             */
+            product_uuid?: string | null;
             /** Quantity */
             quantity: string;
             /** Sale Value */
@@ -7493,6 +7566,9 @@ export interface operations {
                 start: string;
                 end: string;
                 category?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path: {
