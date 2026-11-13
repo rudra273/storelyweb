@@ -66,7 +66,7 @@ export function useProducts(query: ProductQuery) {
   if (query.page > 0) params.set('cursor', String(query.page * PAGE_SIZE))
   return useQuery({
     queryKey: ['products', shop, params.toString()],
-    queryFn: () => api.get<ProductPage>(`/v1/shops/${shop}/products?${params}`),
+    queryFn: ({ signal }) => api.get<ProductPage>(`/v1/shops/${shop}/products?${params}`, { signal }),
     enabled: !!shop,
     placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === shop ? previous : undefined,
   })
@@ -76,7 +76,7 @@ export function useProduct(id: string | undefined) {
   const shop = useShopId()
   return useQuery({
     queryKey: ['product', shop, id],
-    queryFn: () => api.get<ProductDetail>(`/v1/shops/${shop}/products/${id}`),
+    queryFn: ({ signal }) => api.get<ProductDetail>(`/v1/shops/${shop}/products/${id}`, { signal }),
     enabled: !!shop && !!id,
   })
 }

@@ -12,6 +12,7 @@ import { describeError, useAction } from '../components/useAction'
 import { PageHeader, Toolbar } from '../components/ui/workspace'
 import { downloadFile } from '../lib/download'
 import { formatMoney } from '../lib/money'
+import { useRetryKey } from '../lib/retryKey'
 import { STATE_OPTIONS, stateLabel } from '../lib/states'
 import { useDebounced } from '../lib/useDebounced'
 import { amountProblem, emailProblem, gstinProblem, phoneLabel, phoneProblem } from '../lib/validate'
@@ -60,7 +61,7 @@ function CustomerList() {
   useEffect(() => { if (urlQ !== q) change({ q }) }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
   const params = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE), owing: String(owing) })
   if (q) params.set('q', q)
-  const query = useQuery({ queryKey: ['customers', shop, 'accounts', params.toString()], queryFn: () => api.get<S['CustomerPage']>(`${base}/customers/accounts?${params}`), enabled: !!shop })
+  const query = useQuery({ queryKey: ['customers', shop, 'accounts', params.toString()], queryFn: ({ signal }) => api.get<S['CustomerPage']>(`${base}/customers/accounts?${params}`, { signal }), enabled: !!shop })
   const filtered = !!q || owing
   const here = location.pathname + location.search
   return <div className="customers-page">
@@ -212,6 +213,7 @@ export function CustomerForm({ current, close, saved }: { current?: Row; close: 
   const { base } = useCustomersBase()
   const toast = useToast()
   const action = useAction()
+  const retryKey = useRetryKey()
   const [draft, setDraft] = useState<Draft>(() => Object.fromEntries(KEYS.map(k => [k, current?.[k] ?? ''])) as Draft)
   const [errors, setErrors] = useState<Partial<Record<keyof Draft, string>>>({})
   const leave = useDirtyClose(useIsDirty(draft), close)
@@ -235,7 +237,9 @@ export function CustomerForm({ current, close, saved }: { current?: Row; close: 
       if (!current ? value : value !== (current[k] ?? '')) body[k] = value || null
     }
     if (current && !Object.keys(body).length) return close()
-    const result = await action.run(() => current ? api.patch<Detail>(`${base}/customers/${current.uuid}`, body) : api.post<Detail>(`${base}/customers`, body))
+    const result = await action.run(() => current
+      ? api.patch<Detail>(`${base}/customers/${current.uuid}`, body)
+      : request<Detail>('POST', `${base}/customers`, { body, idempotencyKey: retryKey(body) }))
     if (result) {
       toast(current ? 'Customer saved' : 'Customer added')
       saved(result)

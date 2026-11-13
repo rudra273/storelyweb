@@ -109,5 +109,8 @@ export function describeError(error: unknown): string {
     text = error.message
   }
   if (error.status === 429 && error.retryAfter) text = `${text} Try again in ${error.retryAfter} seconds.`
+  if (error.requestId && (error.status >= 500 || error.status === 408 || error.code === 'internal_error')) {
+    text = `${text} (Ref: ${error.requestId})`
+  }
   return text
 }

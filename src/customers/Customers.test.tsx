@@ -61,6 +61,29 @@ test('unassigned balances on Customers open the matching invoice list', async ()
   await waitFor(() => expect(calls.some(c => c.path.includes('unassigned_credit=true'))).toBe(true))
 })
 
+test('creating a customer keeps the same Idempotency-Key on retry after failure', async () => {
+  const calls = fakeApi([
+    ...SIGNED_IN, SHOP,
+    ok('GET', /^\/v1\/shops\/s1\/customers\/accounts\?/, {
+      items: [], has_more: false, owing_customers: 0, total_due: '0.00',
+      unassigned_due: '0.00', unassigned_bills: 0,
+    }),
+    ok('POST', '/v1/shops/s1/customers', { error: { code: 'internal_error', message: 'Temporary failure' } }, 500),
+  ])
+  renderApp('/customers')
+  await userEvent.click(await screen.findByRole('button', { name: 'Add customer' }))
+  const dialog = within(screen.getByRole('dialog'))
+  await userEvent.type(dialog.getByLabelText(/Name/), 'Ravi')
+  await userEvent.type(dialog.getByLabelText(/Phone/), '9876543210')
+  await userEvent.click(dialog.getByRole('button', { name: 'Add customer' }))
+  expect(await dialog.findByRole('alert')).toHaveTextContent('Temporary failure')
+  await userEvent.click(dialog.getByRole('button', { name: 'Add customer' }))
+  await waitFor(() => expect(calls.filter(c => c.method === 'POST' && c.path === '/v1/shops/s1/customers')).toHaveLength(2))
+  const posts = calls.filter(c => c.method === 'POST' && c.path === '/v1/shops/s1/customers')
+  expect(posts[0]!.headers.get('Idempotency-Key')).toBeTruthy()
+  expect(posts[0]!.headers.get('Idempotency-Key')).toBe(posts[1]!.headers.get('Idempotency-Key'))
+})
+
 test('adding an expense again after a lost response replays the same request', async () => {
   const calls = fakeApi([...SIGNED_IN, SHOP, list, ok('POST', '/v1/shops/s1/expenses', { error: { code: 'network', message: 'Connection interrupted' } }, 503)])
   renderApp('/expenses')
