@@ -1,4 +1,4 @@
-.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e
+.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e e2e-onboarding
 
 # Everything runs in Docker (Node 26); the host needs only Docker.
 IMG = storelyweb:dev
@@ -55,3 +55,10 @@ e2e:             ## browser end-to-end test of sign-in, roles, two-step, session
 	  mcr.microsoft.com/playwright:v1.64.1-noble sh -c \
 	  'mkdir /tmp/p && cd /tmp/p && npm init -y >/dev/null && npm i playwright@1.64.1 >/dev/null 2>&1 && NODE_PATH=/tmp/p/node_modules node /e2e/live.cjs'; \
 	status=$$?; cd ../storelyapi && docker compose up -d --wait api >/dev/null; exit $$status
+
+# Bounded current-onboarding smoke. Start the shared API and a current-checkout
+# Vite server first; this target never restarts the API or changes rate limits.
+# PLAYWRIGHT_MODULE may point at an isolated runtime; optional CHROME_EXECUTABLE
+# selects an already-installed compatible Chromium. See docs/refactor-e00-baseline.md.
+e2e-onboarding:
+	node e2e/onboarding.cjs
