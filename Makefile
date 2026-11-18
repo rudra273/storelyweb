@@ -1,4 +1,4 @@
-.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e e2e-onboarding e2e-invoice-recovery
+.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e e2e-onboarding e2e-invoice-recovery e2e-invoice-locks
 
 # Everything runs in Docker (Node 26); the host needs only Docker.
 IMG = storelyweb:dev
@@ -66,3 +66,7 @@ e2e-onboarding:
 # Coordinator-created isolated premium fixture only; never uses a personal shop.
 e2e-invoice-recovery:
 	node e2e/invoice-recovery.cjs
+
+# Same-origin cross-tab locking; no account or business fixture required.
+e2e-invoice-locks:
+	node e2e/invoice-locks.cjs

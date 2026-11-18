@@ -27,9 +27,10 @@ import { createBill, useBillingMutation, type BillDetail, type BillInput, type C
 
 export function NewBill() {
   const { current } = useShop()
+  const userId = useAuth().user?.id ?? ''
   const [round, setRound] = useState(0)
   // A shop switch, or "New invoice" on the completion screen, starts from a clean cart.
-  return <BillForm key={`${current?.shop_id}/${round}`} another={() => setRound(round + 1)} />
+  return <BillForm key={`${userId}/${current?.shop_id}/${round}`} another={() => setRound(round + 1)} />
 }
 
 /** What survives a reload. `attempt` is an invoice whose save may or may not have reached the
@@ -98,19 +99,22 @@ function BillForm({ another }: { another: () => void }) {
   const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(saved?.attempt ?? null)
   const [done, setDone] = useState<BillDetail | null>(null)
   const sending = useRef(false)
+  const [preparing, setPreparing] = useState(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
   const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, attempt } satisfies BillDraft)
   useEffect(() => {
     if (done || !userId) return
     const draft = JSON.parse(draftText) as BillDraft
-    try {
-      if (!draft.items.length && !draft.custom.length && !draft.customer.customer_name.trim() && !draft.customer.customer_phone.trim() && !draft.attempt) draftStore.clear()
-      else draftStore.save(draft)
-    // The effect synchronizes with external storage; expose its failure to the cashier.
-    // oxlint-disable-next-line react/set-state-in-effect
-    } catch (error) { persistenceFailure(error) }
+    const empty = !draft.items.length && !draft.custom.length && !draft.customer.customer_name.trim() && !draft.customer.customer_phone.trim() && !draft.attempt
+    // Storage is coordinated across tabs; the callback only reports an external failure.
+    void (empty ? draftStore.clear({ isActive: () => mounted.current }) : draftStore.save(draft, { isActive: () => mounted.current })).catch(persistenceFailure)
   }, [draftText, userId, shop, done, draftStore])
-  function discard() {
-    try { draftStore.clear() } catch (error) { persistenceFailure(error); return }
+  async function discard() {
+    try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
     commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
     setAllowUnassigned(false)
@@ -150,7 +154,7 @@ function BillForm({ another }: { another: () => void }) {
   })
   const pricing = lineCount > 0 && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
   const totals = lineCount > 0 && !needsGstin ? preview.data : undefined
-  const locked = !!attempt || mutation.isPending || draftConflict
+  const locked = !!attempt || mutation.isPending || preparing || draftConflict
   // A cart the server refused (not enough stock, a whole-unit item): retrying cannot help.
   const cartProblem = !needsGstin && preview.error instanceof ApiError && preview.error.status === 422
   const customPreview = totals?.lines?.filter(l => l.product_uuid === null) ?? []
@@ -194,6 +198,7 @@ function BillForm({ another }: { another: () => void }) {
     }
     setPaidError('')
     sending.current = true
+    setPreparing(true)
     const reference = payment.method === 'cash' ? null : payment.reference || null
     const next = attempt ?? {
       body: {
@@ -205,33 +210,36 @@ function BillForm({ another }: { another: () => void }) {
     }
     // React effects run later: durably freeze the exact key/body before sending.
     try {
-      draftStore.save({ ...JSON.parse(draftText) as BillDraft, attempt: next })
+      await draftStore.save({ ...JSON.parse(draftText) as BillDraft, attempt: next }, { isActive: () => mounted.current })
       setStorageError('')
-    } catch (error) { persistenceFailure(error); sending.current = false; return }
+    } catch (error) { persistenceFailure(error); sending.current = false; if (mounted.current) setPreparing(false); return }
+    // A queued lock may outlive this page or its user/shop. Keep the frozen
+    // request for recovery, but do not send from a screen that was left.
+    if (!mounted.current) { sending.current = false; return }
     setAttempt(next)
     try {
       const result = await mutation.mutateAsync(next)
-      try { draftStore.clear(); setStorageError('') } catch (error) { persistenceFailure(error) }
+      try { await draftStore.clear({ completed: true }); setStorageError('') } catch (error) { persistenceFailure(error) }
       setDone(result)
     } catch (error) {
       // A rejected validation has rolled back. An unknown outcome keeps the key
       // and exact payload so a retry cannot charge or reduce stock twice.
       if (error instanceof ApiError && (error.status === 422 || (error.status === 409 && ['overpayment', 'no_free_number'].includes(error.code)))) {
         try {
-          draftStore.save({ ...JSON.parse(draftText) as BillDraft, attempt: null })
+          await draftStore.save({ ...JSON.parse(draftText) as BillDraft, attempt: null }, { releaseAttempt: true, isActive: () => mounted.current })
           setAttempt(null)
         } catch (storageFailure) { persistenceFailure(storageFailure) }
       }
       if (error instanceof ApiError && error.code === 'unassigned_credit') void preview.refetch()
     }
-    finally { sending.current = false }
+    finally { sending.current = false; if (mounted.current) setPreparing(false) }
   }
 
-  if (done) return <div className="checkout-page"><PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">{SALES.invoices}</Link>} />{storageError && <Alert>{storageError}</Alert>}<Completion detail={done} onAnother={() => {
-    try { draftStore.clear(); another() } catch (error) { persistenceFailure(error) }
+  if (done) return <div className="checkout-page"><PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">{SALES.invoices}</Link>} />{storageError && <Alert>{storageError}</Alert>}<Completion detail={done} onAnother={async () => {
+    try { await draftStore.clear({ completed: true }); another() } catch (error) { persistenceFailure(error) }
   }} /></div>
 
-  const canSave = !draftConflict && !mutation.isPending && (!!attempt || canCreate)
+  const canSave = !draftConflict && !preparing && !mutation.isPending && (!!attempt || canCreate)
   const rows: [string, string][] = totals ? ([['Subtotal', totals.subtotal], ['Discount', totals.discount_amount], ['CGST', totals.cgst_amount], ['SGST', totals.sgst_amount], ['IGST', totals.igst_amount], ['Round-off', totals.round_off_amount]] as [string, string][]).filter(([k, v]) => k === 'Subtotal' || Number(v) !== 0) : []
   return <div className="checkout-page">
     <PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">← Back to {SALES.invoices.toLowerCase()}</Link>} />
@@ -300,7 +308,7 @@ function BillForm({ another }: { another: () => void }) {
           </>}
         </section>
         {mutation.error && <Alert>{describeError(mutation.error)} {attempt ? 'Your cart is locked. Retry to safely retrieve or create this same invoice.' : 'Check your cart and try again.'}</Alert>}
-        <div className="actions checkout-submit"><button className="primary" disabled={!canSave}>{mutation.isPending ? 'Saving…' : attempt ? 'Retry saving invoice' : SALES.createInvoice}{!mutation.isPending && !attempt && totals && !pricing ? ` · ${formatMoney(totals.total)}` : ''}</button></div>
+        <div className="actions checkout-submit"><button className="primary" disabled={!canSave}>{mutation.isPending || preparing ? 'Saving…' : attempt ? 'Retry saving invoice' : SALES.createInvoice}{!mutation.isPending && !preparing && !attempt && totals && !pricing ? ` · ${formatMoney(totals.total)}` : ''}</button></div>
       </aside>
     </form>
     {addingCustom && <CustomItemEditor onClose={() => setAddingCustom(false)} onAdd={line => { setCustom([...custom, line]); setAddingCustom(false); setUnknown(null) }} />}

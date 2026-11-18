@@ -1,7 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { SIGNED_IN, fakeApi, ok, renderApp } from '../test-utils'
+
+import { installInvoiceLocks } from './checkout/invoiceLocksTestSupport'
+
+beforeEach(() => installInvoiceLocks())
 
 const SHOP = (role: string) => ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Asha Stores', role }])
 const bill = { uuid: 'b1', bill_number: 'INV/2627/A0001', bill_type: 'b2c', document_type: 'invoice', customer_name: 'Ravi', customer_phone: null, customer_gstin: null, customer_address_snapshot: null, place_of_supply_state_code: null, subtotal_amount: '210.00', discount_amount: '21.00', taxable_amount: '180.00', cgst_amount: '4.50', sgst_amount: '4.50', igst_amount: '0.00', round_off_amount: '0.00', total_amount: '189.00', paid_amount: '0.00', balance_due: '189.00', payment_status: 'unpaid', cancelled: false, created_at: '2026-10-26T12:00:00' }
@@ -647,4 +651,37 @@ test('successful save with failed draft cleanup cannot start a fresh invoice unt
   await screen.findByLabelText('Scan barcode or search products')
   expect(localStorage.getItem('storely.draft.bill.u1.s1')).toBeNull()
   expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(1)
+})
+
+test('a browser without Web Locks cannot send an invoice', async () => {
+  const original = navigator
+  vi.stubGlobal('navigator', new Proxy(original, { get: (target, key) => key === 'locks' ? undefined : Reflect.get(target, key, target) }))
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  expect(await screen.findByText(/Web Locks on HTTPS or localhost/)).toBeInTheDocument()
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+})
+
+test('leaving checkout while its save lock is queued never sends from the old page', async () => {
+  const locks = installInvoiceLocks()
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  const view = renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  let release!: () => void
+  let entered!: () => void
+  const ready = new Promise<void>(resolve => { entered = resolve })
+  const held = locks.request('storely.draft.bill.u1.s1', () => new Promise<void>(resolve => { release = resolve; entered() }))
+  await ready
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  view.unmount()
+  release()
+  await held
+  await waitFor(() => expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt).toBeNull())
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
 })

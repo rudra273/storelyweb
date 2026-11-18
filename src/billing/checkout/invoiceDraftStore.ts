@@ -1,4 +1,4 @@
-/** Synchronous persistence is a precondition for sending a financial operation.
+/** Durable persistence is a precondition for sending a financial operation.
  * Keeps the existing draft envelope/key so older saved invoices remain recoverable.
  * Only the owner of the last observed record may replace or clear it. */
 export class InvoiceDraftError extends Error {
@@ -27,6 +27,17 @@ export function openInvoiceDraft<T extends { attempt: unknown }>(userId: string,
   } catch {
     initialError = new InvoiceDraftError('unreadable', 'The saved invoice could not be read. Restore browser storage access and reload before creating another invoice.')
   }
+  async function exclusive(work: () => void) {
+    if (!navigator.locks?.request) throw new InvoiceDraftError('storage', 'This browser cannot safely coordinate invoice saves across tabs. Use a current browser with Web Locks on HTTPS or localhost, then retry this same invoice.')
+    try { await navigator.locks.request(key, work) }
+    catch (error) {
+      if (error instanceof InvoiceDraftError) throw error
+      throw new InvoiceDraftError('storage', 'This browser could not acquire the invoice save lock. Reload and retry the same invoice; this attempt was not sent.')
+    }
+  }
+  function frozenAttempt() {
+    return expected === null ? null : JSON.parse(expected).data.attempt
+  }
   function current() {
     if (initialError) throw initialError
     try {
@@ -39,28 +50,37 @@ export function openInvoiceDraft<T extends { attempt: unknown }>(userId: string,
   return {
     initial,
     initialError,
-    save(data: T) {
-      current()
-      const next = JSON.stringify({ v: 1, savedAt: Date.now(), data })
-      try {
-        localStorage.setItem(key, next)
-        if (localStorage.getItem(key) !== next) throw new InvoiceDraftError('conflict', CONFLICT_ERROR)
-        expected = next
-      } catch (error) {
-        if (error instanceof InvoiceDraftError) throw error
-        throw new InvoiceDraftError('storage', STORAGE_ERROR)
-      }
+    async save(data: T, options: { releaseAttempt?: boolean; isActive?: () => boolean } = {}) {
+      await exclusive(() => {
+        if (options.isActive && !options.isActive()) throw new InvoiceDraftError('storage', 'Invoice save cancelled because checkout was closed. No request was sent.')
+        current()
+        const previous = frozenAttempt()
+        if (previous && !options.releaseAttempt && JSON.stringify(previous) !== JSON.stringify(data.attempt)) throw new InvoiceDraftError('conflict', 'Resolve the previously unconfirmed invoice before replacing its saved request.')
+        const next = JSON.stringify({ v: 1, savedAt: Date.now(), data })
+        try {
+          localStorage.setItem(key, next)
+          if (localStorage.getItem(key) !== next) throw new InvoiceDraftError('conflict', CONFLICT_ERROR)
+          expected = next
+        } catch (error) {
+          if (error instanceof InvoiceDraftError) throw error
+          throw new InvoiceDraftError('storage', STORAGE_ERROR)
+        }
+      })
     },
-    clear() {
-      current()
-      try {
-        localStorage.removeItem(key)
-        if (localStorage.getItem(key) !== null) throw new InvoiceDraftError('conflict', CONFLICT_ERROR)
-        expected = null
-      } catch (error) {
-        if (error instanceof InvoiceDraftError) throw error
-        throw new InvoiceDraftError('storage', 'The completed invoice is saved, but its browser draft could not be cleared. Restore storage access before starting another invoice.')
-      }
+    async clear(options: { completed?: boolean; isActive?: () => boolean } = {}) {
+      await exclusive(() => {
+        if (options.isActive && !options.isActive()) throw new InvoiceDraftError('storage', 'Invoice save cancelled because checkout was closed. No request was sent.')
+        current()
+        if (frozenAttempt() && !options.completed) throw new InvoiceDraftError('conflict', 'Resolve the previously unconfirmed invoice before clearing its saved request.')
+        try {
+          localStorage.removeItem(key)
+          if (localStorage.getItem(key) !== null) throw new InvoiceDraftError('conflict', CONFLICT_ERROR)
+          expected = null
+        } catch (error) {
+          if (error instanceof InvoiceDraftError) throw error
+          throw new InvoiceDraftError('storage', 'The completed invoice is saved, but its browser draft could not be cleared. Restore storage access before starting another invoice.')
+        }
+      })
     },
   }
 }

@@ -32,3 +32,15 @@ Browser command requires `STORELY_FIXTURE` pointing to a run-owned JSON file wit
 ## Remaining E01 work
 
 Generic durable job/outbox infrastructure, server-side command normalization/posting adapters, broader mobile/web workflow parity, financial editors beyond New invoice, and atomic cross-tab ownership transfer are not implemented by this slice. E01 remains partial until its other vertical slices pass their gates.
+
+## Follow-up: exclusive cross-tab persistence
+
+New invoice now acquires the browser's Web Lock for its origin/user/shop-scoped draft key before every store mutation. The serialized-record comparison happens inside that exclusive callback. Callbacks perform storage work only; they do not hold a lock while awaiting network responses. Two participating tabs starting from the same prior record can no longer both persist distinct financial operations. Uncertain retries may share the same already-frozen request; server idempotency protects network overlap.
+
+There is no application lease/expiry timer. The browser releases the lock after the callback completes or its owning context closes. Browsers without Web Locks, insecure contexts or denied lock requests fail closed with actionable feedback; no invoice is sent using an unsafe compare/write fallback. A tab running an older application version that ignores this protocol is outside the guarantee, so coordinated client rollout remains required.
+
+A queued stale autosave cannot strip a frozen request. Only explicit definitive rejection or successful completion permits release. Checkout fields/save controls are locked while preparing persistence. User/shop identity is part of the mounted form key; leaving checkout before a queued write runs cancels that write and prevents sending from the old screen. An active-owner check inside the lock prevents a queued task from repopulating browser drafts after sign-out. If the request was already persisted before the screen closes, its frozen identity remains recoverable. Explicit sign-out still clears drafts under the existing privacy policy.
+
+Verification: typecheck/lint passed; full suite **370 tests / 40 files passed**, with focused checkout/store **56 passed** after final waiting-state UI handling. Production build passes (existing bundle-size warning). Real two-tab browser test (`e2e/invoice-locks.cjs`) passed: both writers queued behind one owner, exactly one operation won, and closing a lock owner released its lock automatically. Existing real API recovery browser scenario also passed with asynchronous locking: blocked storage never sent, committed/lost-response reload reused exact body/key, and stock changed once. Logs: `/tmp/storely-e01-web-locks.log` and `/tmp/storely-e01-web-recovery-locks.log`. Root cleaned the run-owned paid fixture; no real business data was used.
+
+The earlier best-effort compare/write limitation above is superseded for cooperating current-version New invoice tabs by Web Locks. Generic durable background jobs, cross-device ownership transfer, and other financial editors remain out of scope for this follow-up.
