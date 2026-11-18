@@ -542,3 +542,109 @@ test('invoice list filters live in the address, so going back keeps them', async
   expect(screen.getByRole('link', { name: bill.bill_number })).toHaveAttribute('href', '/billing/b1')
   expect(calls.some(c => c.path.includes('status=unpaid') && c.path.includes('cancelled=true'))).toBe(true)
 })
+
+test('invoice sending waits for durable storage and a storage failure never sends', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', detail)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  const original = Storage.prototype.setItem
+  const storage = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (key.startsWith('storely.draft.bill.') && JSON.parse(value).data.attempt) throw new DOMException('Quota', 'QuotaExceededError')
+    original.call(this, key, value)
+  })
+  try {
+    await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+    expect(await screen.findByText(/This attempt has not been sent/)).toBeInTheDocument()
+    expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+    expect(screen.getByLabelText('Quantity for Rice')).toBeEnabled()
+  } finally { storage.mockRestore() }
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByText(bill.bill_number)
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(1)
+})
+
+test('a cross-tab draft change blocks invoice creation instead of replacing it', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  const key = 'storely.draft.bill.u1.s1'
+  const otherTab = localStorage.getItem(key)!.replace('"discount":"0"', '"discount":"5"')
+  localStorage.setItem(key, otherTab)
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  expect(await screen.findByText(/draft changed in another tab/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
+  expect(localStorage.getItem(key)).toBe(otherTab)
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+})
+
+test('an unclassified request conflict keeps the exact operation frozen for retry', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', { error: { code: 'request_conflict', message: 'Check this request' } }, 409)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  expect(await screen.findByRole('button', { name: 'Retry saving invoice' })).toBeEnabled()
+  expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Retry saving invoice' }))
+  const writes = calls.filter(c => c.path === '/v1/shops/s1/bills')
+  expect(writes).toHaveLength(2)
+  expect(writes[0]!.body).toEqual(writes[1]!.body)
+  expect(writes[0]!.headers.get('Idempotency-Key')).toBe(writes[1]!.headers.get('Idempotency-Key'))
+})
+
+test('a network call sees the exact persisted body and key before invoice creation', async () => {
+  let durable: { attempt: { key: string; body: unknown } } | undefined
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', () => {
+    durable = JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data
+    return detail
+  })])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByText(bill.bill_number)
+  const write = calls.find(c => c.path === '/v1/shops/s1/bills')!
+  expect(durable?.attempt.body).toEqual(write.body)
+  expect(durable?.attempt.key).toBe(write.headers.get('Idempotency-Key'))
+})
+
+test('malformed recovery data fails closed without a render crash or new invoice', async () => {
+  localStorage.setItem('storely.draft.bill.u1.s1', JSON.stringify({ v: 1, savedAt: Date.now(), data: { attempt: { key: 'possibly-sent', body: {} }, items: 'broken' } }))
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT])
+  renderApp('/billing/new')
+  expect(await screen.findByText(/saved invoice could not be read/)).toBeInTheDocument()
+  expect(screen.getByLabelText('Scan barcode or search products')).toBeDisabled()
+  expect(screen.queryByRole('button', { name: 'Discard draft' })).not.toBeInTheDocument()
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+})
+
+test('successful save with failed draft cleanup cannot start a fresh invoice until cleanup works', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', detail)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  const original = Storage.prototype.removeItem
+  const storage = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key) {
+    if (key.startsWith('storely.draft.bill.')) throw new DOMException('Blocked', 'SecurityError')
+    original.call(this, key)
+  })
+  try {
+    await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+    await screen.findByRole('heading', { name: 'Invoice saved' })
+    await userEvent.click(screen.getByRole('button', { name: 'New invoice' }))
+    expect(screen.getByRole('heading', { name: 'Invoice saved' })).toBeInTheDocument()
+    expect(screen.getByText(/draft could not be cleared/)).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt.key).toBeTruthy()
+  } finally { storage.mockRestore() }
+  await userEvent.click(screen.getByRole('button', { name: 'New invoice' }))
+  await screen.findByLabelText('Scan barcode or search products')
+  expect(localStorage.getItem('storely.draft.bill.u1.s1')).toBeNull()
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(1)
+})

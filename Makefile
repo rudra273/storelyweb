@@ -1,4 +1,4 @@
-.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e e2e-onboarding
+.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e e2e-onboarding e2e-invoice-recovery
 
 # Everything runs in Docker (Node 26); the host needs only Docker.
 IMG = storelyweb:dev
@@ -62,3 +62,7 @@ e2e:             ## browser end-to-end test of sign-in, roles, two-step, session
 # selects an already-installed compatible Chromium. See docs/refactor-e00-baseline.md.
 e2e-onboarding:
 	node e2e/onboarding.cjs
+
+# Coordinator-created isolated premium fixture only; never uses a personal shop.
+e2e-invoice-recovery:
+	node e2e/invoice-recovery.cjs

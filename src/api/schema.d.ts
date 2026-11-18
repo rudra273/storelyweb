@@ -739,6 +739,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shop Audit Events
+         * @description Business audit log for financial records, catalog, customers and settings.
+         */
+        get: operations["shop_audit_events_v1_shops__shop_id__audit_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills": {
         parameters: {
             query?: never;
@@ -1198,6 +1218,26 @@ export interface paths {
         head?: never;
         /** Change Role */
         patch: operations["change_role_v1_shops__shop_id__members__member_id__patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/operations/{operation_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Operation Status
+         * @description Check whether an idempotent write with `operation_key` has already committed.
+         */
+        get: operations["get_operation_status_v1_shops__shop_id__operations__operation_key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/shops/{shop_id}/products": {
@@ -2018,10 +2058,7 @@ export interface components {
             customer_name: string;
             /** Customer Phone */
             customer_phone: string | null;
-            /**
-             * Customer Uuid
-             * @default null
-             */
+            /** Customer Uuid */
             customer_uuid?: string | null;
             /** Total */
             total: string;
@@ -2046,6 +2083,32 @@ export interface components {
              * @enum {string}
              */
             type: "assign_codes";
+        };
+        /** AuditEventOut */
+        AuditEventOut: {
+            /** Action */
+            action: string;
+            /** Actor */
+            actor: string | null;
+            /** Created At */
+            created_at: string;
+            /** Details */
+            details: string | null;
+            /** Device Id */
+            device_id: string | null;
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Uuid */
+            entity_uuid: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** AuditPageOut */
+        AuditPageOut: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["AuditEventOut"][];
         };
         /** BillDetail */
         BillDetail: {
@@ -3130,17 +3193,17 @@ export interface components {
              * Default Gst Percent
              * @default 18
              */
-            default_gst_percent?: string;
+            default_gst_percent: string;
             /**
              * Default Overhead Cost
              * @default 0
              */
-            default_overhead_cost?: string;
+            default_overhead_cost: string;
             /**
              * Default Profit Margin Percent
              * @default 0
              */
-            default_profit_margin_percent?: string;
+            default_profit_margin_percent: string;
             /** Digital Signature */
             digital_signature?: string | null;
             /** Footer Text */
@@ -3237,17 +3300,13 @@ export interface components {
         };
         /** KpiComparisons */
         KpiComparisons: {
-            /** @default null */
             collected?: components["schemas"]["KpiComparison"] | null;
-            /** @default null */
             expenses?: components["schemas"]["KpiComparison"] | null;
-            /** @default null */
             gross_profit?: components["schemas"]["KpiComparison"] | null;
             /** Previous From */
             previous_from: string;
             /** Previous To */
             previous_to: string;
-            /** @default null */
             revenue?: components["schemas"]["KpiComparison"] | null;
         };
         /** Kpis */
@@ -3260,7 +3319,6 @@ export interface components {
             by_payment_method: components["schemas"]["MethodTotal"][];
             /** Collected */
             collected: string;
-            /** @default null */
             comparisons?: components["schemas"]["KpiComparisons"] | null;
             /** Daily */
             daily: components["schemas"]["DailyPoint"][];
@@ -3272,7 +3330,7 @@ export interface components {
              * Expenses By Category
              * @default []
              */
-            expenses_by_category?: components["schemas"]["ExpenseCategory"][];
+            expenses_by_category: components["schemas"]["ExpenseCategory"][];
             /** Gross Margin Percent */
             gross_margin_percent: string;
             /** Gross Profit */
@@ -3737,6 +3795,30 @@ export interface components {
             total_amount: string;
             /** Uuid */
             uuid: string;
+        };
+        /** OperationStatusOut */
+        OperationStatusOut: {
+            /**
+             * Contract Version
+             * @default 1
+             * @constant
+             */
+            contract_version: 1;
+            /** Created At */
+            created_at: string | null;
+            /** Key */
+            key: string;
+            /** Operation Kind */
+            operation_kind: ("idempotent_write" | "purchase_receipt" | "supplier_payment") | null;
+            /** Result Kind */
+            result_kind: ("purchase_receipt" | "supplier_payment") | null;
+            /** Result Uuid */
+            result_uuid: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "committed" | "not_found";
         };
         /** PasswordChangeIn */
         PasswordChangeIn: {
@@ -4323,15 +4405,9 @@ export interface components {
             imported: boolean;
             /** Product Name */
             product_name: string;
-            /**
-             * Product Uuid
-             * @default null
-             */
+            /** Product Uuid */
             product_uuid?: string | null;
-            /**
-             * Purchase Uuid
-             * @default null
-             */
+            /** Purchase Uuid */
             purchase_uuid?: string | null;
             /** Quantity */
             quantity: string;
@@ -5030,10 +5106,7 @@ export interface components {
             gst_percent: string;
             /** Name */
             name: string;
-            /**
-             * Product Uuid
-             * @default null
-             */
+            /** Product Uuid */
             product_uuid?: string | null;
             /** Quantity */
             quantity: string;
@@ -6791,6 +6864,42 @@ export interface operations {
             };
         };
     };
+    shop_audit_events_v1_shops__shop_id__audit_events_get: {
+        parameters: {
+            query?: {
+                entity_type?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_bills_v1_shops__shop_id__bills_get: {
         parameters: {
             query?: {
@@ -7286,7 +7395,9 @@ export interface operations {
     create_customer_v1_shops__shop_id__customers_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path: {
                 shop_id: string;
             };
@@ -7947,6 +8058,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_operation_status_v1_shops__shop_id__operations__operation_key__get: {
+        parameters: {
+            query?: {
+                operation_kind?: ("idempotent_write" | "purchase_receipt" | "supplier_payment") | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+                operation_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationStatusOut"];
                 };
             };
             /** @description Validation Error */
