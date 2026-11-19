@@ -2629,6 +2629,12 @@ export interface components {
              */
             product_expected_updated_at: 1;
             /**
+             * Settings Revision
+             * @default 1
+             * @constant
+             */
+            settings_revision: 1;
+            /**
              * Supplier Payment Binding
              * @default 2
              * @constant
@@ -3355,6 +3361,8 @@ export interface components {
             invoice_title: string;
             /** Paper Size */
             paper_size: string;
+            /** Revision */
+            revision: string;
             /** Round Off Total */
             round_off_total: boolean;
             /** Shop Address */
@@ -3393,6 +3401,8 @@ export interface components {
             default_profit_margin_percent?: number | string | null;
             /** Digital Signature */
             digital_signature?: string | null;
+            /** Expected Revision */
+            expected_revision?: string | null;
             /** Footer Text */
             footer_text?: string | null;
             /** Gst Scheme */

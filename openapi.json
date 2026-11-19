@@ -1740,6 +1740,12 @@
       "title": "Product Expected Updated At",
       "type": "integer"
      },
+     "settings_revision": {
+      "const": 1,
+      "default": 1,
+      "title": "Settings Revision",
+      "type": "integer"
+     },
      "supplier_payment_binding": {
       "const": 2,
       "default": 2,
@@ -3880,6 +3886,10 @@
       "title": "Paper Size",
       "type": "string"
      },
+     "revision": {
+      "title": "Revision",
+      "type": "string"
+     },
      "round_off_total": {
       "title": "Round Off Total",
       "type": "boolean"
@@ -3974,6 +3984,7 @@
      }
     },
     "required": [
+     "revision",
      "shop_name",
      "shop_phone",
      "shop_email",
@@ -4068,6 +4079,19 @@
        }
       ],
       "title": "Digital Signature"
+     },
+     "expected_revision": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "pattern": "^s1:[0-9]+$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Revision"
      },
      "footer_text": {
       "anyOf": [

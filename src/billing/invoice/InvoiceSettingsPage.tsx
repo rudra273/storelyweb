@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { api } from '../../api/client'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { api, ApiError } from '../../api/client'
 import type { components } from '../../api/schema'
 import { Alert, Field, Loading } from '../../components/ui/ui'
 import { useAction } from '../../components/useAction'
@@ -8,6 +8,7 @@ import { useFirstError } from '../../components/useFirstError'
 import { emailProblem, gstinProblem, shopPhoneProblem, upiProblem } from '../../lib/validate'
 import { imageSrc, prepareImage } from '../../lib/images'
 import { Button, PageHeader } from '../../components/ui/workspace'
+import { useAuth } from '../../auth/context'
 import { useShop } from '../../shops/context'
 import { InvoiceDocument, type Paper } from './InvoiceDocument'
 import { PAPERS, paperGuidance, resolvePaper } from './paper'
@@ -15,6 +16,8 @@ import { useDirtyClose } from '../../lib/dirty'
 import { Link, useSearchParams } from 'react-router'
 import { PaperSheet } from './PaperSheet'
 import { useBillingQuery, type BillDetail, type InvoiceSettings } from '../queries'
+
+import { assertSettingsRevisionSupport, rebaseSettings, requireSettingsRevision, settingsChanges, settingsReview } from './settingsRevision'
 
 type Change = components['schemas']['InvoiceSettingsIn']
 type ShowKey = keyof NonNullable<Change['show']>
@@ -94,10 +97,15 @@ function ImagePicker({ label, hint, box, value, shown, disabled, onChange, onSho
 }
 
 export function InvoiceSettingsPage() {
+  const user = useAuth().user?.id ?? ''
+  const scope = `${user}/${useShop().current?.shop_id ?? ''}`
   const query = useBillingQuery<InvoiceSettings>('invoice-settings', 'invoice-settings')
   if (query.isPending) return <Loading label="Loading shop settings…" />
-  if (query.error || !query.data) return <Alert>Shop settings could not be loaded. <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>
-  return <Editor saved={query.data} />
+  if (!query.data) return <Alert>Shop settings could not be loaded. <button className="link" onClick={() => void query.refetch()}>Retry</button></Alert>
+  return <>
+    {query.error && <Alert>Latest settings could not be refreshed. Your edits are kept. <button className="link" onClick={() => void query.refetch()}>Retry refresh</button></Alert>}
+    <Editor key={scope} saved={query.data} />
+  </>
 }
 
 function Editor({ saved }: { saved: InvoiceSettings }) {
@@ -111,7 +119,13 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   const [params] = useSearchParams()
   const wanted = TABS.find(t => t.id === params.get('tab'))?.id
   const [tab, setTab] = useState<TabId>(wanted ?? 'shop')
+  const [baseline, setBaseline] = useState<InvoiceSettings>(saved)
   const [draft, setDraft] = useState<InvoiceSettings>(saved)
+  const [stale, setStale] = useState(false)
+  const [latest, setLatest] = useState<InvoiceSettings | null>(null)
+  const sending = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
   const err = (key: string) => problems[key] || fieldErrors[key] || undefined
   const text = (key: 'shop_name' | 'shop_address' | 'shop_phone' | 'shop_email' | 'shop_gstin' | 'invoice_title' | 'footer_text' | 'upi_id' | 'terms_text' | 'bank_details') =>
@@ -120,6 +134,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
 
   async function save(event: FormEvent) {
     event.preventDefault()
+    if (sending.current || stale) return
     const found: Record<string, string> = {}
     if (!draft.shop_name.trim()) found.shop_name = 'Enter the shop name.'
     const checks: [string, string | null][] = [['shop_phone', shopPhoneProblem(draft.shop_phone ?? '')], ['shop_email', emailProblem(draft.shop_email ?? '')], ['shop_gstin', gstinProblem(draft.shop_gstin ?? '')], ['upi_id', upiProblem(draft.upi_id ?? '')]]
@@ -127,24 +142,33 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     setProblems(found)
     if (Object.keys(found).length) { setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
     setError(null)
-    // Send only what changed, so a field edited on a phone meanwhile is left alone.
-    const change: Record<string, unknown> = {}
-    for (const key of ['shop_name', 'shop_address', 'shop_phone', 'shop_email', 'shop_gstin', 'gst_scheme', 'default_gst_percent', 'default_profit_margin_percent', 'default_overhead_cost', 'invoice_title', 'footer_text', 'paper_size', 'upi_id', 'terms_text', 'bank_details', 'round_off_total', 'shop_logo', 'digital_signature'] as const) {
-      if ((draft[key] ?? '') !== (saved[key] ?? '')) change[key] = typeof draft[key] === 'string' ? (draft[key] as string).trim() || null : draft[key]
-    }
-    const show = Object.fromEntries(Object.entries(draft.show).filter(([k, v]) => saved.show[k] !== v))
-    if (Object.keys(show).length) change.show = show
+    const change = settingsChanges(baseline, draft)
     if (!Object.keys(change).length) { setDone(true); return }
-    const result = await run(() => api.patch<InvoiceSettings>(`/v1/shops/${shop}/invoice-settings`, change))
+    sending.current = true
+    let result: InvoiceSettings | undefined
+    try {
+      result = await run(async () => {
+        const revision = requireSettingsRevision(baseline)
+        await assertSettingsRevisionSupport(shop)
+        if (!mounted.current) return
+        try { return await api.patch<InvoiceSettings>(`/v1/shops/${shop}/invoice-settings`, { ...change, expected_revision: revision }) }
+        catch (failure) {
+          if (mounted.current && failure instanceof ApiError && failure.code === 'settings_changed') { setStale(true); setLatest(null) }
+          throw failure
+        }
+      })
+    } finally { sending.current = false }
+    if (!mounted.current) return
     if (result) {
       setDraft(result)
+      setBaseline(result)
       setDone(true)
       client.setQueryData(['invoice-settings', shop, 'invoice-settings'], result)
       await client.invalidateQueries({ queryKey: ['bill-preview', shop] })
     }
   }
 
-  const changed = JSON.stringify(draft) !== JSON.stringify(saved)
+  const changed = Object.keys(settingsChanges(baseline, draft)).length > 0
   useDirtyClose(changed, () => undefined)
   const show = (id: TabId) => ({ hidden: tab !== id, role: 'tabpanel' as const, 'aria-labelledby': `tab-${id}` })
   return <div className="settings-page">
@@ -221,9 +245,29 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
         </fieldset>
         <div className="settings-save">
           {error && <Alert>{error}</Alert>}
+          {stale && <>
+            <p>Your settings edits are kept. Review the latest saved settings before choosing how to continue.</p>
+            <Button disabled={busy} onClick={async () => {
+              const result = await run(async () => {
+                const value = await api.get<InvoiceSettings>(`/v1/shops/${shop}/invoice-settings`)
+                requireSettingsRevision(value)
+                return value
+              })
+              if (result && mounted.current) setLatest(result)
+            }}>Review latest settings</Button>
+          </>}
+          {stale && latest && <section aria-label="Latest settings review">
+            <p>These are your edited fields. Other changes in the latest settings will be kept.</p>
+            <div className="table-wrap"><table className="table"><thead><tr><th>Field</th><th>Latest value</th><th>Your value</th></tr></thead><tbody>{settingsReview(baseline, draft, latest).map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{row.current}</td><td>{row.mine}</td></tr>)}</tbody></table></div>
+            <Button onClick={() => {
+              const merged = rebaseSettings(baseline, draft, latest)
+              setDraft(merged); setBaseline(latest); setPaper(resolvePaper(merged.paper_size)); setLatest(null); setStale(false); setError(null); setDone(false)
+            }}>Keep my edits with latest settings</Button>
+          </section>}
+
           {done && !changed && <Alert kind="success">Saved. Phones get the new layout on their next sync.</Alert>}
-          <Button type="submit" variant="primary" disabled={busy || !changed}>{busy ? 'Saving…' : 'Save settings'}</Button>
-          {changed && <><span className="unsaved" role="status">Unsaved changes</span><Button disabled={busy} onClick={() => { setDraft(saved); setPaper(resolvePaper(saved.paper_size)); setDone(false) }}>Discard changes</Button></>}
+          <Button type="submit" variant="primary" disabled={busy || stale || !changed}>{busy ? 'Saving…' : 'Save settings'}</Button>
+          {changed && <><span className="unsaved" role="status">Unsaved changes</span><Button disabled={busy} onClick={() => { const discarded = latest ?? saved; setBaseline(discarded); setDraft(discarded); setPaper(resolvePaper(discarded.paper_size)); setDone(false); setStale(false); setLatest(null); setError(null) }}>Discard changes</Button></>}
         </div>
       </form>
       <aside className="settings-preview" aria-label="Invoice preview">

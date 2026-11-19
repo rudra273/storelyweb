@@ -57,4 +57,4 @@ export const PAID_SHOP: Route[] = [
   ok('GET', /^\/v1\/shops\/[^/]+\/entitlement$/, (path: string) => ({ ...ACTIVE_ENTITLEMENT, shop_id: path.split('/')[3] })),
 ]
 
-export const SIGNED_IN: Route[] = [...ACCOUNT_SESSION, ...PAID_SHOP, ok('GET', /^\/v1\/shops\/[^/]+\/capabilities$/, (path: string) => ({ contract_version: 1, shop_id: path.split('/')[3], role: 'owner', features: { operation_lookup: 1, supplier_payment_proof: 1, supplier_payment_binding: 2, product_expected_updated_at: 1 } }))]
+export const SIGNED_IN: Route[] = [...ACCOUNT_SESSION, ...PAID_SHOP, ok('GET', /^\/v1\/shops\/[^/]+\/capabilities$/, (path: string) => ({ contract_version: 1, shop_id: path.split('/')[3], role: 'owner', features: { operation_lookup: 1, supplier_payment_proof: 1, supplier_payment_binding: 2, product_expected_updated_at: 1, settings_revision: 1 } }))]

@@ -78,3 +78,7 @@ e2e-supplier-payment-recovery:
 # Run-owned premium product fixture only; actual server CAS and dirty-only rebase.
 e2e-product-revision:
 	node e2e/product-revision.cjs
+
+# Run-owned premium shop fixture only; aggregate settings revision/review/rebase.
+e2e-settings-revision:
+	node e2e/settings-revision.cjs
