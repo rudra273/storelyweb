@@ -1054,3 +1054,67 @@ test('a file that was imported before says when, so a repeat is a knowing choice
   expect(within(dialog).getByText(/adds the stock again/)).toBeInTheDocument()
   expect(within(dialog).getByText(/check the products first/)).toBeInTheDocument()
 })
+
+test('inline conflict keeps its opened version until explicit latest review and rebases only dirty fields', async () => {
+  const latest = { ...RICE, ...COST, name: 'Updated Rice', selling_price: '40', updated_at: '2026-11-19T00:00:00Z' }
+  let remoteChanged = false
+  const routes = [...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, () => page([remoteChanged ? latest : { ...RICE, ...COST }])), ok('GET', '/v1/shops/s1/products/p1', { product: latest, movements: [] })]
+  const calls = fakeApi([...routes, ok('PATCH', '/v1/shops/s1/products/p1', () => { remoteChanged = true; return { error: { code: 'changed_elsewhere', message: 'Changed elsewhere' } } }, 409)])
+  renderApp('/products')
+  await editRice()
+  const reorder = fieldNamed('Reorder level of Basmati Rice')
+  await userEvent.clear(reorder)
+  await userEvent.type(reorder, '20{Enter}')
+  await screen.findByText('Changed elsewhere')
+  await waitFor(() => expect(fieldNamed('Name of Updated Rice')).toHaveValue('Basmati Rice'))
+  expect(patches(calls)[0]?.body).toMatchObject({ reorder_level: '20', expected_updated_at: RICE.updated_at })
+  expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Review latest product' }))
+  await screen.findByRole('region', { name: 'Latest product review' })
+  expect(reorder).toHaveValue('20')
+  await userEvent.click(screen.getByRole('button', { name: 'Keep my edits with latest product' }))
+  expect(fieldNamed('Name of Updated Rice')).toHaveValue('Updated Rice')
+  expect(fieldNamed('Price of Updated Rice')).toHaveValue('40')
+  await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+  await waitFor(() => expect(patches(calls)).toHaveLength(2))
+  expect(patches(calls)[1]?.body).toEqual({ reorder_level: '20', expected_updated_at: latest.updated_at })
+})
+
+test('a future capability refuses a product PATCH while preserving entered values', async () => {
+  const calls = fakeApi([ok('GET', '/v1/shops/s1/capabilities', { contract_version: 99 }), ...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }]))])
+  renderApp('/products')
+  await editRice()
+  const reorder = fieldNamed('Reorder level of Basmati Rice')
+  await userEvent.clear(reorder)
+  await userEvent.type(reorder, '20{Enter}')
+  expect(await screen.findByRole('alert')).toHaveTextContent('cannot confirm safe product editing')
+  expect(reorder).toHaveValue('20')
+  expect(patches(calls)).toHaveLength(0)
+})
+
+test('full product edit preserves typed values and explicitly rebases untouched fields to the latest version', async () => {
+  const original = { ...RICE, ...COST }
+  const latest = { ...original, name: 'Remote Rice', selling_price: '40', purchase_price: '22', updated_at: '2026-11-19T00:00:00Z' }
+  let remoteChanged = false
+  const shown = { price_mode: 'fixed', selling_price: '25.50', pre_gst_selling_price: '25.50', output_gst_amount: '0', purchase_price: '18', purchase_gst_amount: '0', overhead_cost: '1', total_cost: '19', cost_known: true, profit_margin_percent: '0', profit_amount: '6.5', gst_percent: '0', gst_source: 'product', category_name: 'Grains', gst_registered: false }
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, page([original])), ok('GET', '/v1/shops/s1/products/p1', () => ({ product: remoteChanged ? latest : original, movements: [] })), ok('POST', '/v1/shops/s1/products/price-preview', shown), ok('PATCH', '/v1/shops/s1/products/p1', () => { remoteChanged = true; return { error: { code: 'changed_elsewhere', message: 'Changed elsewhere' } } }, 409)])
+  renderApp('/products/p1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
+  const dialog = screen.getByRole('dialog', { name: 'Edit product' })
+  const name = within(dialog).getByLabelText('Product name')
+  await userEvent.clear(name)
+  await userEvent.type(name, 'My Rice')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+  expect(await within(dialog).findByText('Changed elsewhere')).toBeInTheDocument()
+  expect(name).toHaveValue('My Rice')
+  expect(within(dialog).getByRole('button', { name: 'Save changes' })).toBeDisabled()
+  expect(patches(calls)[0]?.body).toMatchObject({ name: 'My Rice', expected_updated_at: original.updated_at })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Review latest product' }))
+  await within(dialog).findByRole('region', { name: 'Latest product review' })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Keep my edits with latest product' }))
+  expect(name).toHaveValue('My Rice')
+  expect(within(dialog).getByLabelText('Selling price (₹)')).toHaveValue('40')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+  await waitFor(() => expect(patches(calls)).toHaveLength(2))
+  expect(patches(calls)[1]?.body).toMatchObject({ name: 'My Rice', selling_price: '40', purchase_price: '22', expected_updated_at: latest.updated_at })
+})

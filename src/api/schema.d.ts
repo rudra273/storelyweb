@@ -914,6 +914,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shop Capabilities
+         * @description Negotiate supported contracts without opening paid business-data access.
+         */
+        get: operations["shop_capabilities_v1_shops__shop_id__capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/categories": {
         parameters: {
             query?: never;
@@ -1180,6 +1200,58 @@ export interface paths {
          *     so a change on either side shows on both.
          */
         patch: operations["edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enqueue Report */
+        post: operations["enqueue_report_v1_shops__shop_id__jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job Status */
+        get: operations["job_status_v1_shops__shop_id__jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        /** Cancel Job */
+        delete: operations["cancel_job_v1_shops__shop_id__jobs__job_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/jobs/{job_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job Result */
+        get: operations["job_result_v1_shops__shop_id__jobs__job_id__result_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/shops/{shop_id}/members": {
@@ -2424,6 +2496,23 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /** CapabilitiesOut */
+        CapabilitiesOut: {
+            /**
+             * Contract Version
+             * @default 1
+             * @constant
+             */
+            contract_version: 1;
+            features: components["schemas"]["ContractFeatures"];
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "owner" | "admin" | "staff";
+            /** Shop Id */
+            shop_id: string;
+        };
         /** CartIn */
         CartIn: {
             /**
@@ -2521,6 +2610,36 @@ export interface components {
             amount: string;
             /** Category */
             category: string;
+        };
+        /**
+         * ContractFeatures
+         * @description Service support versions, never a substitute for per-command authorization.
+         */
+        ContractFeatures: {
+            /**
+             * Operation Lookup
+             * @default 1
+             * @constant
+             */
+            operation_lookup: 1;
+            /**
+             * Product Expected Updated At
+             * @default 1
+             * @constant
+             */
+            product_expected_updated_at: 1;
+            /**
+             * Supplier Payment Binding
+             * @default 2
+             * @constant
+             */
+            supplier_payment_binding: 2;
+            /**
+             * Supplier Payment Proof
+             * @default 1
+             * @constant
+             */
+            supplier_payment_proof: 1;
         };
         /** CreditNoteIn */
         CreditNoteIn: {
@@ -3304,6 +3423,58 @@ export interface components {
             terms_text?: string | null;
             /** Upi Id */
             upi_id?: string | null;
+        };
+        /** JobIn */
+        JobIn: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "stock_valuation_csv_v1";
+            /** Request Key */
+            request_key: string;
+        };
+        /** JobOut */
+        JobOut: {
+            /** Attempts */
+            attempts: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error Code */
+            error_code: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "stock_valuation_csv_v1";
+            /**
+             * Next Attempt At
+             * Format: date-time
+             */
+            next_attempt_at: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "ready" | "running" | "retry" | "succeeded" | "failed" | "cancelled";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** KpiComparison */
         KpiComparison: {
@@ -7262,6 +7433,37 @@ export interface operations {
             };
         };
     };
+    shop_capabilities_v1_shops__shop_id__capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_categories_v1_shops__shop_id__categories_get: {
         parameters: {
             query?: never;
@@ -7996,6 +8198,137 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvoiceSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enqueue_report_v1_shops__shop_id__jobs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_status_v1_shops__shop_id__jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_v1_shops__shop_id__jobs__job_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_result_v1_shops__shop_id__jobs__job_id__result_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
             /** @description Validation Error */

@@ -13,12 +13,17 @@ import { useAuth } from '../../auth/context'
 import { useShop } from '../../shops/context'
 import { clearDraft, loadDraft, saveDraft } from '../../lib/drafts'
 import { GST_RATES, saveProduct, useCategories, usePricePreview, useProductMutation, useUnits, useSuppliers, type PriceInput, type Product } from '../queries'
+import { api, ApiError } from '../../api/client'
+import { assertProductEditSupport, changedFields, rebaseEditedFields } from '../editGuard'
+import { ProductConflictReview } from './ProductConflictReview'
 import { useDirtyClose } from '../../lib/dirty'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
 export function ProductForm({ product, startingBarcode, onClose, onSaved }: { product?: Product; startingBarcode?: string; onClose: () => void; onSaved: (id: string) => void }) {
   const sending = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const close = () => { if (!sending.current) onClose() }
   const editing = !!product
   // A form opened for one scanned code is its own small task: it neither restores nor overwrites the saved new-product draft.
@@ -37,25 +42,29 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
   const [focusTick, setFocusTick] = useState(0)
   // After a failed save, take the shop owner straight to the first field that needs fixing.
   useEffect(() => { if (focusTick) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus() }, [focusTick])
-  const blank = {
-    name: product?.name ?? '',
-    supplier: product?.supplier_uuid ?? '',
-    code: product?.product_code ?? '',
-    barcode: product?.barcode ?? startingBarcode ?? '',
-    category: product?.category_uuid ?? '',
-    unit: product?.unit_uuid ?? '',
-    hsn: product?.hsn_code ?? '',
-    gst: product?.gst_percent ?? '',
-    selling: product?.selling_price ?? '',
-    mrp: product?.mrp_price ?? '',
-    purchase: product?.purchase_price ?? '',
-    reorder: product?.reorder_level ?? '',
-    track: product?.track_stock ?? true,
+  const [baseline, setBaseline] = useState(product)
+  const [stale, setStale] = useState(false)
+  const [latest, setLatest] = useState<Product | null>(null)
+  const fields = (value?: Product) => ({
+    name: value?.name ?? '',
+    supplier: value?.supplier_uuid ?? '',
+    code: value?.product_code ?? '',
+    barcode: value?.barcode ?? startingBarcode ?? '',
+    category: value?.category_uuid ?? '',
+    unit: value?.unit_uuid ?? '',
+    hsn: value?.hsn_code ?? '',
+    gst: value?.gst_percent ?? '',
+    selling: value?.selling_price ?? '',
+    mrp: value?.mrp_price ?? '',
+    purchase: value?.purchase_price ?? '',
+    reorder: value?.reorder_level ?? '',
+    track: value?.track_stock ?? true,
     opening: '',
-    mode: product?.price_mode ?? 'fixed',
-    margin: product?.profit_margin_percent ?? '',
-    overhead: product?.overhead_cost ?? '',
-  }
+    mode: value?.price_mode ?? 'fixed',
+    margin: value?.profit_margin_percent ?? '',
+    overhead: value?.overhead_cost ?? '',
+  })
+  const blank = fields(baseline)
   type Fields = typeof blank
   // A new product is kept per person and shop, so a reload or an accidental close does not lose it.
   const userId = useAuth().user?.id ?? ''
@@ -94,7 +103,7 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (sending.current) return
+    if (sending.current || stale) return
     const problems: Record<string, string> = {}
     if (!f.name.trim()) problems.name = 'Enter a product name.'
     if (!formula && !f.selling.trim()) problems.selling_price = 'Enter the price you sell this product at.'
@@ -131,12 +140,20 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
     // The cost fields exist for owners and admins only; a staff member never sees this form.
     body.supplier_uuid = f.supplier || null
     // The version this form was opened on: if someone changed the product since, the save is refused, not applied.
-    if (editing) body.expected_updated_at = product.updated_at
+    if (editing) body.expected_updated_at = baseline?.updated_at
     body.purchase_price = decimalOrNull(f.purchase)
     if (!editing && decimalOrNull(f.opening)) body.opening_quantity = decimalOrNull(f.opening)
     sending.current = true
     try {
-      const saved = await run(() => save.mutateAsync({ id: product?.uuid, body, retryKey: product ? undefined : retryKey(body) }))
+      const saved = await run(async () => {
+        if (editing) {
+          if (!baseline?.updated_at) throw new ApiError(409, 'missing_revision', 'This product has no saved version. Reload it before editing.')
+          await assertProductEditSupport(shopId)
+          if (!mounted.current) return
+        }
+        try { return await save.mutateAsync({ id: baseline?.uuid, body, retryKey: product ? undefined : retryKey(body) }) }
+        catch (failure) { if (failure instanceof ApiError && failure.code === 'changed_elsewhere') { setStale(true); setLatest(null) }; throw failure }
+      })
       if (saved) { if (keepsDraft) clearDraft('product', userId, shopId); onSaved(saved.product.uuid) }
       else setFocusTick(t => t + 1)
     } finally { sending.current = false }
@@ -212,9 +229,25 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
         </fieldset>
         {/* Next to the Save button, where the eye is after clicking it. */}
         {error && <Alert>{error}</Alert>}
+        {stale && <button type="button" disabled={busy} onClick={async () => {
+          const result = await run(() => api.get<{ product: Product }>(`/v1/shops/${shopId}/products/${baseline!.uuid}`))
+          if (result) {
+            if (result.product.uuid !== baseline!.uuid || !result.product.updated_at) { setError('The latest product could not be safely reviewed. Your edits are kept.'); return }
+            setLatest(result.product)
+          }
+        }}>Review latest product</button>}
+        {stale && latest && <ProductConflictReview rows={changedFields(blank, f, fields(latest), { name: 'Name', supplier: 'Supplier', code: 'Product code', barcode: 'Barcode', category: 'Category', unit: 'Unit', hsn: 'HSN / SAC', gst: 'GST', selling: 'Selling price', mrp: 'MRP', purchase: 'Cost price', reorder: 'Reorder level', track: 'Track stock', mode: 'Pricing mode', margin: 'Margin', overhead: 'Overhead' }, (key, value) => {
+          if (key === 'category') return categories.data?.find(category => category.uuid === value)?.name ?? (value ? 'Selected category' : 'None')
+          if (key === 'unit') return units.data?.find(unit => unit.uuid === value)?.name ?? (value ? 'Selected unit' : 'None')
+          if (key === 'supplier') return suppliers.data?.find(supplier => supplier.uuid === value)?.name ?? (value ? 'Selected supplier' : 'None')
+          return typeof value === 'boolean' ? value ? 'Yes' : 'No' : value || 'None'
+        })} onApply={() => {
+          setF(rebaseEditedFields(blank, f, fields(latest))); setBaseline(latest); setLatest(null); setStale(false); setError(null)
+        }} />}
+
         <div className="actions form-footer">
           <Button disabled={busy} onClick={leave}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
+          <Button type="submit" variant="primary" disabled={busy || stale}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Add product'}</Button>
         </div>
       </form>
       {adding === 'category' && <CategoryEditor onClose={() => setAdding(null)} onSaved={category => { setF(current => ({ ...current, category: category.uuid })); setAdding(null) }} />}

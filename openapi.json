@@ -1263,6 +1263,39 @@
     "title": "Candidate",
     "type": "object"
    },
+   "CapabilitiesOut": {
+    "properties": {
+     "contract_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+     },
+     "features": {
+      "$ref": "#/components/schemas/ContractFeatures"
+     },
+     "role": {
+      "enum": [
+       "owner",
+       "admin",
+       "staff"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "shop_id": {
+      "title": "Shop Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "shop_id",
+     "role",
+     "features"
+    ],
+    "title": "CapabilitiesOut",
+    "type": "object"
+   },
    "CartIn": {
     "additionalProperties": false,
     "properties": {
@@ -1690,6 +1723,37 @@
      "amount"
     ],
     "title": "CategoryTotal",
+    "type": "object"
+   },
+   "ContractFeatures": {
+    "description": "Service support versions, never a substitute for per-command authorization.",
+    "properties": {
+     "operation_lookup": {
+      "const": 1,
+      "default": 1,
+      "title": "Operation Lookup",
+      "type": "integer"
+     },
+     "product_expected_updated_at": {
+      "const": 1,
+      "default": 1,
+      "title": "Product Expected Updated At",
+      "type": "integer"
+     },
+     "supplier_payment_binding": {
+      "const": 2,
+      "default": 2,
+      "title": "Supplier Payment Binding",
+      "type": "integer"
+     },
+     "supplier_payment_proof": {
+      "const": 1,
+      "default": 1,
+      "title": "Supplier Payment Proof",
+      "type": "integer"
+     }
+    },
+    "title": "ContractFeatures",
     "type": "object"
    },
    "CreditNoteIn": {
@@ -4229,6 +4293,101 @@
      }
     },
     "title": "InvoiceSettingsIn",
+    "type": "object"
+   },
+   "JobIn": {
+    "additionalProperties": false,
+    "properties": {
+     "kind": {
+      "const": "stock_valuation_csv_v1",
+      "title": "Kind",
+      "type": "string"
+     },
+     "request_key": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Request Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request_key",
+     "kind"
+    ],
+    "title": "JobIn",
+    "type": "object"
+   },
+   "JobOut": {
+    "properties": {
+     "attempts": {
+      "title": "Attempts",
+      "type": "integer"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "error_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error Code"
+     },
+     "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "kind": {
+      "const": "stock_valuation_csv_v1",
+      "title": "Kind",
+      "type": "string"
+     },
+     "next_attempt_at": {
+      "format": "date-time",
+      "title": "Next Attempt At",
+      "type": "string"
+     },
+     "state": {
+      "enum": [
+       "ready",
+       "running",
+       "retry",
+       "succeeded",
+       "failed",
+       "cancelled"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "state",
+     "attempts",
+     "error_code",
+     "created_at",
+     "updated_at",
+     "expires_at",
+     "next_attempt_at"
+    ],
+    "title": "JobOut",
     "type": "object"
    },
    "KpiComparison": {
@@ -13944,6 +14103,49 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/capabilities": {
+   "get": {
+    "description": "Negotiate supported contracts without opening paid business-data access.",
+    "operationId": "shop_capabilities_v1_shops__shop_id__capabilities_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CapabilitiesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shop Capabilities",
+    "tags": [
+     "shops"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/categories": {
    "get": {
     "operationId": "list_categories_v1_shops__shop_id__categories_get",
@@ -15243,6 +15445,213 @@
     "summary": "Edit Invoice Settings",
     "tags": [
      "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/jobs": {
+   "post": {
+    "operationId": "enqueue_report_v1_shops__shop_id__jobs_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/JobIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Enqueue Report",
+    "tags": [
+     "jobs"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/jobs/{job_id}": {
+   "delete": {
+    "operationId": "cancel_job_v1_shops__shop_id__jobs__job_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cancel Job",
+    "tags": [
+     "jobs"
+    ]
+   },
+   "get": {
+    "operationId": "job_status_v1_shops__shop_id__jobs__job_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Job Status",
+    "tags": [
+     "jobs"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/jobs/{job_id}/result": {
+   "get": {
+    "operationId": "job_result_v1_shops__shop_id__jobs__job_id__result_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "text/csv": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Job Result",
+    "tags": [
+     "jobs"
     ]
    }
   },

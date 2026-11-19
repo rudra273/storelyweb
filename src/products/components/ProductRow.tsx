@@ -1,12 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { ApiError } from '../../api/client'
+import { ApiError, api } from '../../api/client'
 import { day } from '../../components/labels'
 import { NavIcon } from '../../components/layout/NavIcon'
 import { describeError } from '../../components/useAction'
 import { formatMoney, formatQty, isAmount } from '../../lib/money'
 import { useShop } from '../../shops/context'
 import { saveProduct, useProductMutation, type Category, type Product } from '../queries'
+
+import { assertProductEditSupport, changedFields, rebaseEditedFields } from '../editGuard'
+import { ProductConflictReview } from './ProductConflictReview'
 
 type Mode = 'view' | 'edit' | 'review' | 'saving'
 type Draft = { name: string; category: string; price: string; reorder: string }
@@ -38,6 +41,10 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
   const client = useQueryClient()
   const save = useProductMutation(saveProduct)
   const [mode, setMode] = useState<Mode>('view')
+  const [baseline, setBaseline] = useState(p)
+  const [stale, setStale] = useState(false)
+  const [latest, setLatest] = useState<Product | null>(null)
+  const [reviewBusy, setReviewBusy] = useState(false)
   const [draft, setDraft] = useState<Draft>({ name: '', category: '', price: '', reorder: '' })
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -47,10 +54,12 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
   const saveButton = useRef<HTMLButtonElement>(null)
   const editButton = useRef<HTMLButtonElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; clearTimeout(timer.current) } }, [])
 
-  const fixed = p.price_mode === 'fixed'
-  const tracked = p.track_stock
   const editing = mode !== 'view'
+  const fixed = (editing ? baseline : p).price_mode === 'fixed'
+  const tracked = (editing ? baseline : p).track_stock
   const cost = p.purchase_price
 
   // Keyboard focus follows the step: the name field to start, the Confirm button when the effect is shown.
@@ -59,7 +68,9 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
     else if (mode === 'review') saveButton.current?.focus()
   }, [mode])
 
+  const fields = (value: Product): Draft => ({ name: value.name, category: value.category_uuid ?? '', price: value.selling_price ?? '', reorder: value.reorder_level ?? '' })
   function start() {
+    setBaseline(p); setStale(false); setLatest(null)
     setDraft({ name: p.name, category: p.category_uuid ?? '', price: p.selling_price ?? '', reorder: p.reorder_level ?? '' })
     setError(null)
     setSaved(false)
@@ -76,10 +87,10 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
   /** Only what was changed is sent. */
   function changes(): Record<string, unknown> {
     const out: Record<string, unknown> = {}
-    if (draft.name.trim() !== p.name) out.name = draft.name.trim()
-    if (draft.category !== (p.category_uuid ?? '')) out.category_uuid = draft.category || null
-    if (fixed && !sameNumber(draft.price, p.selling_price)) { out.price_mode = 'fixed'; out.selling_price = draft.price.trim() }
-    if (tracked && !sameNumber(draft.reorder, p.reorder_level)) out.reorder_level = draft.reorder.trim() || null
+    if (draft.name.trim() !== baseline.name) out.name = draft.name.trim()
+    if (draft.category !== (baseline.category_uuid ?? '')) out.category_uuid = draft.category || null
+    if (fixed && !sameNumber(draft.price, baseline.selling_price)) { out.price_mode = 'fixed'; out.selling_price = draft.price.trim() }
+    if (tracked && !sameNumber(draft.reorder, baseline.reorder_level)) out.reorder_level = draft.reorder.trim() || null
     return out
   }
   function problem(): string | null {
@@ -93,7 +104,10 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
     setMode('saving')
     try {
       // The token is the version this row showed; if someone changed the product since, the server refuses.
-      await save.mutateAsync({ id: p.uuid, body: { ...body, expected_updated_at: p.updated_at } })
+      if (!baseline.updated_at) throw new ApiError(409, 'missing_revision', 'This product has no saved version. Reload it before editing.')
+      await assertProductEditSupport(shop)
+      if (!mounted.current) return
+      await save.mutateAsync({ id: baseline.uuid, body: { ...body, expected_updated_at: baseline.updated_at } })
       setMode('view')
       setSaved(true)
       setPriceChanged('selling_price' in body)
@@ -102,13 +116,13 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
       setTimeout(() => editButton.current?.focus(), 0)
     } catch (e) {
       // Show what it says now; saving again is the deliberate choice to replace it.
-      if (e instanceof ApiError && e.code === 'changed_elsewhere') void client.invalidateQueries({ queryKey: ['products', shop] })
+      if (e instanceof ApiError && e.code === 'changed_elsewhere') { setStale(true); setLatest(null); void client.invalidateQueries({ queryKey: ['products', shop] }) }
       setError(describeError(e))
       setMode('edit')
     }
   }
   function submit() {
-    if (mode === 'saving') return
+    if (mode === 'saving' || stale) return
     const bad = problem()
     if (bad) { setError(bad); setMode('edit'); return }
     const body = changes()
@@ -155,7 +169,7 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
       {canEdit && <td className="row-actions">
         {editing
           ? <span className="row-edit-actions">
-              <button ref={saveButton} type="button" className="ui-button primary icon-button" disabled={mode === 'saving'} onClick={submit}><NavIcon name="check" className="button-icon" />{mode === 'saving' ? 'Saving…' : reviewing ? 'Confirm' : 'Save'}</button>
+              <button ref={saveButton} type="button" className="ui-button primary icon-button" disabled={mode === 'saving' || stale || reviewBusy} onClick={submit}><NavIcon name="check" className="button-icon" />{mode === 'saving' ? 'Saving…' : reviewing ? 'Confirm' : 'Save'}</button>
               <button type="button" className="ui-button icon-button" aria-label={reviewing ? 'Go back and keep editing' : `Cancel editing ${p.name}`} title={reviewing ? 'Back' : 'Cancel'} disabled={mode === 'saving'} onClick={() => reviewing ? setMode('edit') : stop()}><NavIcon name="close" className="button-icon" /></button>
             </span>
           : <>
@@ -167,6 +181,20 @@ export function ProductRow({ p, selected, picked, pickLocked, canEdit, seeCost, 
     </tr>
     {(error || reviewing) && <tr className="row-note selected"><td colSpan={9}>
       {error && <p className="inline-error" role="alert">{error}</p>}
+      {stale && <button type="button" disabled={reviewBusy} onClick={async () => {
+        setReviewBusy(true)
+        try {
+          const value = (await api.get<{ product: Product }>(`/v1/shops/${shop}/products/${baseline.uuid}`)).product
+          if (value.uuid !== baseline.uuid || !value.updated_at) throw new ApiError(409, 'invalid_revision', 'The latest product could not be safely reviewed. Your edits are kept.')
+          setLatest(value)
+        }
+        catch (failure) { setError(describeError(failure)) }
+        finally { setReviewBusy(false) }
+      }}>{reviewBusy ? 'Loading latest product…' : 'Review latest product'}</button>}
+      {stale && latest && <ProductConflictReview rows={changedFields(fields(baseline), draft, fields(latest), { name: 'Name', category: 'Category', price: 'Selling price', reorder: 'Reorder level' }, (key, value) => key === 'category' ? categories.find(category => category.uuid === value)?.name ?? (value ? 'Selected category' : 'None') : value || 'None')} incompatible={baseline.price_mode !== latest.price_mode || baseline.track_stock !== latest.track_stock} onApply={() => {
+        setDraft(rebaseEditedFields(fields(baseline), draft, fields(latest))); setBaseline(latest); setLatest(null); setStale(false); setError(null); setMode('edit')
+      }} />}
+
       {reviewing && <p className="inline-review" role="status">{formatMoney(p.selling_price)} to <strong>{formatMoney(draft.price)}</strong>. New invoices use the new price; saved invoices keep theirs.{seeCost && cost && price < Number(cost) ? <> This is below your cost of {formatMoney(cost)}.</> : null}</p>}
     </td></tr>}
   </>

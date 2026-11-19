@@ -74,3 +74,7 @@ e2e-invoice-locks:
 # Run-owned premium fixture with two unpaid purchases; see E01 supplier evidence.
 e2e-supplier-payment-recovery:
 	node e2e/supplier-payment-recovery.cjs
+
+# Run-owned premium product fixture only; actual server CAS and dirty-only rebase.
+e2e-product-revision:
+	node e2e/product-revision.cjs
