@@ -1,4 +1,5 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
+import { focusManager } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { SIGNED_IN, fakeApi, ok, renderApp } from '../test-utils'
@@ -11,7 +12,7 @@ const SHOP = (role: string) => ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'A
 const bill = { uuid: 'b1', bill_number: 'INV/2627/A0001', bill_type: 'b2c', document_type: 'invoice', customer_name: 'Ravi', customer_phone: null, customer_gstin: null, customer_address_snapshot: null, place_of_supply_state_code: null, subtotal_amount: '210.00', discount_amount: '21.00', taxable_amount: '180.00', cgst_amount: '4.50', sgst_amount: '4.50', igst_amount: '0.00', round_off_amount: '0.00', total_amount: '189.00', paid_amount: '0.00', balance_due: '189.00', payment_status: 'unpaid', cancelled: false, created_at: '2026-10-26T12:00:00' }
 const detail = { bill, items: [{ uuid: 'i1', product_uuid: 'p1', product_name: 'Rice', quantity: '2', selling_price: '105.00', subtotal: '210.00', taxable_value: '90.00', gst: '4.50', line_taxable_value: '180.00', line_gst: '9.00', amount: '189.00', gst_percent: '5', unit: 'kg' }], payments: [], credit_notes: [], history: [] }
 const product = { uuid: 'p1', name: 'Rice', selling_price: '105.00', quantity: '10', barcode: '8901' }
-const preview = { subtotal: '210.00', discount_amount: '21.00', taxable_amount: '180.00', cgst_amount: '4.50', sgst_amount: '4.50', igst_amount: '0.00', round_off_amount: '0.00', total: '189.00' }
+const preview = { reviewed_context: `br1:${'a'.repeat(64)}`, subtotal: '210.00', discount_amount: '21.00', taxable_amount: '180.00', cgst_amount: '4.50', sgst_amount: '4.50', igst_amount: '0.00', round_off_amount: '0.00', total: '189.00' }
 const products = ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [product], next_cursor: null, total: 1 })
 const lookup = ok('GET', /^\/v1\/shops\/s1\/products\/lookup\?code=8901$/, product)
 const CHECKOUT = [products, lookup, ok('GET', '/v1/shops/s1/categories', [])]
@@ -26,7 +27,7 @@ async function addRice() {
 }
 const returnLine = { item_uuid: 'i1', product_name: 'Rice', unit: 'kg', sold: '2', already_returned: '0', remaining: '2', returning: '0.5', credit: '94.50', goes_back_to_stock: true }
 const returnReview = { lines: [returnLine], subtotal: '90.00', taxable_amount: '90.00', cgst_amount: '2.25', sgst_amount: '2.25', igst_amount: '0.00', round_off_amount: '0.00', tax_amount: '4.50', credit_total: '94.50', settlement: 'refund', invoice_paid: '0.00', invoice_due: '189.00', invoice_due_after: '189.00', refund_to_customer: '94.50', reduces_invoice_due: '0.00', can_return: true }
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.unstubAllGlobals(); focusManager.setFocused(undefined) })
 
 test('staff can browse bills and filters are sent to the API', async () => {
   const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', /^\/v1\/shops\/s1\/bills\?/, { items: [bill], total: 1, next_cursor: null })])
@@ -100,7 +101,7 @@ test('a bill waits for server pricing and confirmation, then sends decimal input
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   await screen.findByText(bill.bill_number)
-  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [{ product_uuid: 'p1', quantity: '1' }], discount_percent: '0', allow_unassigned_credit: true, payment: { amount: '0', method: 'cash' } })
+  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [{ product_uuid: 'p1', quantity: '1' }], discount_percent: '0', settlement_choice: 'unpaid', reviewed_context: preview.reviewed_context, allow_unassigned_credit: true, payment: { amount: '0', method: 'cash' } })
 })
 
 test('a bill cannot be created until the cashier says how the customer paid', async () => {
@@ -114,7 +115,7 @@ test('a bill cannot be created until the cashier says how the customer paid', as
   await userEvent.click(screen.getByLabelText(/^Paid in full/))
   await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
   await screen.findByText(bill.bill_number)
-  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ allow_unassigned_credit: false, payment: { amount: preview.total, method: 'cash' } })
+  expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ settlement_choice: 'full', reviewed_context: preview.reviewed_context, allow_unassigned_credit: false, payment: { amount: preview.total, method: 'cash' } })
 })
 
 test('a failed save keeps an identical body for retry and locks the cart', async () => {
@@ -388,6 +389,8 @@ test('a saved invoice shows what was recorded and the three next steps', async (
   await userEvent.click(screen.getByRole('button', { name: 'New invoice' }))
   expect(await screen.findByLabelText('Scan barcode or search products')).toHaveFocus()
   expect(screen.queryByLabelText('Quantity for Rice')).not.toBeInTheDocument()
+  await addRice()
+  for (const label of ['Paid in full', 'Part paid', 'Not paid yet']) expect(screen.getByLabelText(label)).not.toBeChecked()
 })
 
 test('a business invoice explains it needs the GSTIN instead of asking the server to price it', async () => {
@@ -687,7 +690,7 @@ test('leaving checkout while its save lock is queued never sends from the old pa
 })
 
 for (const restored of [false, true]) {
-  for (const [status, code] of [[422, 'bad_quantity'], [409, 'overpayment'], [409, 'no_free_number']] as const) {
+  for (const [status, code] of [[422, 'bad_quantity'], [409, 'overpayment'], [409, 'no_free_number'], [409, 'checkout_changed']] as const) {
     test(`a lost acknowledgement followed by ${status} ${code} stays frozen${restored ? ' after reload' : ''}`, async () => {
       let count = 0
       const response = ok('POST', '/v1/shops/s1/bills', () => {
@@ -740,4 +743,156 @@ test('a first fresh 422 durably releases the attempt and allows a corrected invo
   expect(writes).toHaveLength(2)
   expect(writes[0]!.headers.get('Idempotency-Key')).not.toBe(writes[1]!.headers.get('Idempotency-Key'))
   expect(writes[1]!.body).toMatchObject({ items: [{ product_uuid: 'p1', quantity: '2' }] })
+})
+
+for (const invalid of ['', 'bad', '-1', '0', '189', '190', '1.001']) {
+  test(`partial settlement rejects ${JSON.stringify(invalid)} without sending or losing input`, async () => {
+    const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+    renderApp('/billing/new')
+    await addRice()
+    await userEvent.click(screen.getByLabelText('Part paid'))
+    const amount = screen.getByLabelText(/^Paid now/)
+    if (invalid) await userEvent.type(amount, invalid)
+    await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Enter the amount paid now|Paid now is required/)
+    expect(amount).toHaveValue(invalid)
+    expect(screen.getByLabelText('Part paid')).toBeChecked()
+    expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+  })
+}
+
+test('changing partial settlement amount or method requires fresh unassigned consent', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '10')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '0')
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+})
+
+test('changed authoritative preview requires settlement review and retains entered fields', async () => {
+  let changed = false
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', () => changed ? { ...preview, total: '190.00', round_off_amount: '1.00' } : preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'UPI-keep')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  changed = true
+  act(() => { focusManager.setFocused(false); focusManager.setFocused(true) })
+  expect(await screen.findByRole('alert')).toHaveTextContent('Review the updated invoice amounts')
+  expect(screen.getByLabelText('Part paid')).not.toBeChecked()
+  expect(screen.getByLabelText('Paid in full')).not.toBeChecked()
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+  expect(screen.getByLabelText('Reference')).toHaveValue('UPI-keep')
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+})
+test('a settings-only reviewed-context change requires settlement review and retains entered fields', async () => {
+  let changed = false
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', () => changed ? { ...preview, reviewed_context: `br1:${'b'.repeat(64)}` } : preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'UPI-keep')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  changed = true
+  act(() => { focusManager.setFocused(false); focusManager.setFocused(true) })
+  expect(await screen.findByRole('alert')).toHaveTextContent('Review the updated invoice amounts')
+  expect(screen.getByLabelText('Part paid')).not.toBeChecked()
+  expect(screen.getByLabelText('Paid in full')).not.toBeChecked()
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+  expect(screen.getByLabelText('Reference')).toHaveValue('UPI-keep')
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+})
+
+for (const reviewed_context of [undefined, 'br2:' + 'a'.repeat(64), 'br1:bad']) {
+  test(`a fresh invoice fails closed for an unsupported review token ${reviewed_context}`, async () => {
+    const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', { ...preview, reviewed_context })])
+    renderApp('/billing/new')
+    await addRice()
+    await userEvent.click(screen.getByLabelText('Part paid'))
+    await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+    await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('cannot confirm the reviewed invoice')
+    expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+    expect(screen.getByLabelText('Part paid')).toBeChecked()
+    expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
+    expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt).toBeNull()
+  })
+}
+
+test('a fresh checkout conflict releases only the rejected attempt and requires review with retained payment fields', async () => {
+  let changed = false
+  const latest = { ...preview, reviewed_context: `br1:${'b'.repeat(64)}`, total: '190.00', round_off_amount: '1.00' }
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', () => changed ? latest : preview), ok('POST', '/v1/shops/s1/bills', () => { changed = true; return { error: { code: 'checkout_changed', message: 'Invoice settings changed' } } }, 409)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'KEEP-REF')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByText(/Invoice settings changed/)
+  await waitFor(() => expect(screen.getByLabelText('Part paid')).not.toBeChecked())
+  expect(screen.getByLabelText('Quantity for Rice')).toBeEnabled()
+  expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt).toBeNull()
+  await waitFor(() => expect(calls.filter(c => c.path.endsWith('/bills/preview')).length).toBeGreaterThan(1))
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+  expect(screen.getByLabelText('Reference')).toHaveValue('KEEP-REF')
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  const writes = calls.filter(c => c.path === '/v1/shops/s1/bills')
+  expect(writes).toHaveLength(2)
+  expect(writes[0]!.body).toMatchObject({ settlement_choice: 'partial', reviewed_context: preview.reviewed_context })
+  expect(writes[1]!.body).toMatchObject({ settlement_choice: 'partial', reviewed_context: latest.reviewed_context, payment: { amount: '100', method: 'upi', reference: 'KEEP-REF' } })
+  expect(writes[0]!.headers.get('Idempotency-Key')).not.toBe(writes[1]!.headers.get('Idempotency-Key'))
+})
+
+test('a restored legacy uncertain invoice retries its exact body without adding new settlement fields', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', { error: { code: 'network', message: 'Lost response' } }, 503)])
+  const first = renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByText(/Lost response/)
+  first.unmount()
+  const key = 'storely.draft.bill.u1.s1'
+  const draft = JSON.parse(localStorage.getItem(key)!)
+  delete draft.data.attempt.body.settlement_choice
+  delete draft.data.attempt.body.reviewed_context
+  localStorage.setItem(key, JSON.stringify(draft))
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills', detail)])
+  renderApp('/billing/new')
+  await userEvent.click(await screen.findByRole('button', { name: 'Retry saving invoice' }))
+  await screen.findByRole('heading', { name: 'Invoice saved' })
+  const write = calls.find(c => c.path === '/v1/shops/s1/bills')!
+  expect(write.body).toEqual(draft.data.attempt.body)
+  expect(write.headers.get('Idempotency-Key')).toBe(draft.data.attempt.key)
+  expect(calls.filter(c => c.path.endsWith('/bills/preview'))).toHaveLength(0)
 })

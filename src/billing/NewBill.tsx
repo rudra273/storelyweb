@@ -7,6 +7,7 @@ import { Alert } from '../components/ui/ui'
 import { describeError } from '../components/useAction'
 import { useAuth } from '../auth/context'
 import { InvoiceDraftError, openInvoiceDraft } from './checkout/invoiceDraftStore'
+import { paymentMinorUnits, validPartialPayment } from './checkout/settlement'
 import { formatMoney, formatQty, isAmount } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
 import { SALES } from '../lib/vocabulary'
@@ -155,6 +156,17 @@ function BillForm({ another }: { another: () => void }) {
   const pricing = lineCount > 0 && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
   const totals = lineCount > 0 && !needsGstin ? preview.data : undefined
   const locked = !!attempt || mutation.isPending || preparing || draftConflict
+  const reviewedCalculation = useRef<string | null>(null)
+  useEffect(() => {
+    if (attempt || !totals || !priceCurrent || preview.isFetching || preview.error) return
+    const calculation = JSON.stringify(totals)
+    if (reviewedCalculation.current !== null && reviewedCalculation.current !== calculation) {
+      setPayment(value => ({ ...value, paid: null }))
+      setAllowUnassigned(false)
+      setPaidError('Review the updated invoice amounts and choose how the customer paid again. Your entered payment details are kept.')
+    }
+    reviewedCalculation.current = calculation
+  }, [totals, priceCurrent, preview.isFetching, preview.error, attempt])
   // A cart the server refused (not enough stock, a whole-unit item): retrying cannot help.
   const cartProblem = !needsGstin && preview.error instanceof ApiError && preview.error.status === 422
   const customPreview = totals?.lines?.filter(l => l.product_uuid === null) ?? []
@@ -175,7 +187,7 @@ function BillForm({ another }: { another: () => void }) {
   const setQuantity = (index: number, quantity: string) => commit(items.map((row, n) => n === index ? { ...row, quantity } : row))
   // The payment options may only just have appeared (the first item), so look after this render.
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
-  const unlinked = !!payment.paid && payment.paid !== 'full' && Number(totals?.total) > 0 && !/\d/.test(customer.customer_phone)
+  const unlinked = !!payment.paid && payment.paid !== 'full' && (paymentMinorUnits(totals?.total ?? '') ?? 0n) > 0n && !/\d/.test(customer.customer_phone)
   const canCreate = !!totals && priceCurrent && !preview.isFetching && !preview.error &&
     lineCount > 0 && (!unlinked || allowUnassigned)
 
@@ -193,7 +205,8 @@ function BillForm({ another }: { another: () => void }) {
     if (!attempt) {
       const total = totals!.total
       if (!payment.paid) { setPaidError('Choose how the customer paid: in full, part or not yet.'); goToPayment(); return }
-      if (payment.paid === 'part' && (!isAmount(payment.amount) || Number(payment.amount) <= 0 || Number(payment.amount) >= Number(total))) return setPaidError(`Enter the amount paid now: more than ₹0 and less than ${formatMoney(total)}.`)
+      if (payment.paid === 'part' && (!validPartialPayment(payment.amount, total))) return setPaidError(`Enter the amount paid now: more than ₹0 and less than ${formatMoney(total)}, with at most two decimal places.`)
+      if (typeof totals!.reviewed_context !== 'string' || !/^br1:[a-f0-9]{64}$/.test(totals!.reviewed_context)) return setPaidError('This server cannot confirm the reviewed invoice. Your payment details are kept. Update or reconnect to a compatible Storely server and review the invoice before saving.')
       paidNow = payment.paid === 'full' ? total : payment.paid === 'part' ? payment.amount : '0'
     }
     setPaidError('')
@@ -203,6 +216,8 @@ function BillForm({ another }: { another: () => void }) {
     const next = attempt ?? {
       body: {
         ...cart,
+        settlement_choice: payment.paid === 'part' ? 'partial' : payment.paid === 'none' ? 'unpaid' : 'full',
+        reviewed_context: totals!.reviewed_context,
         allow_unassigned_credit: unlinked && allowUnassigned,
         payment: { amount: paidNow, method: payment.method, reference: payment.paid === 'none' ? null : reference },
       },
@@ -225,10 +240,17 @@ function BillForm({ another }: { another: () => void }) {
       // Only a first fresh validation rejection proves this invoice did not commit.
       // On a restored/uncertain retry, validation may have changed since the
       // original request: keep its exact key/body frozen until success.
-      if (!attempt && error instanceof ApiError && (error.status === 422 || (error.status === 409 && ['overpayment', 'no_free_number'].includes(error.code)))) {
+      if (!attempt && error instanceof ApiError && (error.status === 422 || (error.status === 409 && ['overpayment', 'no_free_number', 'checkout_changed'].includes(error.code)))) {
         try {
-          await draftStore.save({ ...JSON.parse(draftText) as BillDraft, attempt: null }, { releaseAttempt: true, isActive: () => mounted.current })
+          const checkoutChanged = error.code === 'checkout_changed'
+          await draftStore.save({ ...JSON.parse(draftText) as BillDraft, ...(checkoutChanged ? { paid: null } : {}), attempt: null }, { releaseAttempt: true, isActive: () => mounted.current })
           setAttempt(null)
+          if (checkoutChanged) {
+            setPayment(value => ({ ...value, paid: null }))
+            setAllowUnassigned(false)
+            setPaidError('Review the updated invoice amounts and choose how the customer paid again. Your entered payment details are kept.')
+            void preview.refetch()
+          }
         } catch (storageFailure) { persistenceFailure(storageFailure) }
       }
       if (error instanceof ApiError && error.code === 'unassigned_credit') void preview.refetch()
@@ -287,7 +309,7 @@ function BillForm({ another }: { another: () => void }) {
       </fieldset>
       <aside className="checkout-summary" aria-label="Customer and payment">
         <fieldset className="bare" disabled={locked}>
-          <CustomerPanel customer={customer} onChange={next => { setCustomer(next); setAllowUnassigned(false) }} billType={billType} onBillType={setBillType} errors={shownErrors} open={customerOpen || !!(shownErrors.phone || shownErrors.gstin)} onOpen={setCustomerOpen} disabled={locked} />
+          <CustomerPanel customer={customer} onChange={next => { setCustomer(next); setAllowUnassigned(false) }} billType={billType} onBillType={next => { setBillType(next); setAllowUnassigned(false) }} errors={shownErrors} open={customerOpen || !!(shownErrors.phone || shownErrors.gstin)} onOpen={setCustomerOpen} disabled={locked} />
         </fieldset>
         <section className="card checkout-totals" aria-label="Invoice total" aria-busy={pricing}>
           {!lineCount ? <p className="muted">Totals and payment appear once you add an item.</p> : <>
@@ -300,7 +322,7 @@ function BillForm({ another }: { another: () => void }) {
             <p className="pricing-note muted" role="status">{pricing ? 'Updating total…' : ''}</p>
             <label className="discount">Discount (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" required value={discount} disabled={locked} onChange={e => setDiscount(e.target.value)} /></label>
             {items.some(i => { const line = totals?.lines?.find(l => l.product_uuid === i.product.uuid); return line && i.product.mrp_price != null && Number(line.unit_price) > Number(i.product.mrp_price) }) && <Alert kind="info">A product’s selling price is above its MRP. Check the price before creating the invoice.</Alert>}
-            <PaymentPanel total={totals?.total} value={payment} onChange={next => { if (next.paid !== payment.paid) setAllowUnassigned(false); setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
+            <PaymentPanel total={totals?.total} value={payment} onChange={next => { setAllowUnassigned(false); setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
             {unlinked && !locked && <Alert kind="info">
               <p>Add a customer with a phone number to put this balance on their account. Unassigned balances can be collected from the invoice.</p>
               <button type="button" className="link" onClick={() => setCustomerOpen(true)}>Add a customer with a phone number</button>

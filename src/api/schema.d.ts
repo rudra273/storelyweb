@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -2249,6 +2249,10 @@ export interface components {
             payment: components["schemas"]["Payment"];
             /** Place Of Supply State Code */
             place_of_supply_state_code?: string | null;
+            /** Reviewed Context */
+            reviewed_context?: string | null;
+            /** Settlement Choice */
+            settlement_choice?: ("full" | "partial" | "unpaid") | null;
         };
         /** BillLine */
         BillLine: {
@@ -4304,6 +4308,8 @@ export interface components {
             inter_state: boolean;
             /** Lines */
             lines: components["schemas"]["PreviewLine"][];
+            /** Reviewed Context */
+            reviewed_context: string;
             /** Round Off Amount */
             round_off_amount: string;
             /** Sgst Amount */
@@ -5682,7 +5688,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -5704,7 +5710,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;

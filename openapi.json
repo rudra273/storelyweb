@@ -467,6 +467,34 @@
        }
       ],
       "title": "Place Of Supply State Code"
+     },
+     "reviewed_context": {
+      "anyOf": [
+       {
+        "pattern": "^br1:[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reviewed Context"
+     },
+     "settlement_choice": {
+      "anyOf": [
+       {
+        "enum": [
+         "full",
+         "partial",
+         "unpaid"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Settlement Choice"
      }
     },
     "required": [
@@ -6912,6 +6940,10 @@
       "title": "Lines",
       "type": "array"
      },
+     "reviewed_context": {
+      "title": "Reviewed Context",
+      "type": "string"
+     },
      "round_off_amount": {
       "title": "Round Off Amount",
       "type": "string"
@@ -6934,6 +6966,7 @@
      }
     },
     "required": [
+     "reviewed_context",
      "lines",
      "subtotal",
      "discount_amount",
@@ -11464,7 +11497,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -11473,7 +11506,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -11488,7 +11521,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -11497,7 +11530,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
