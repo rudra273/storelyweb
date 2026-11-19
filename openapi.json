@@ -6106,6 +6106,57 @@
     "title": "PaymentRecorded",
     "type": "object"
    },
+   "PaymentRecoveryOut": {
+    "properties": {
+     "contract_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+     },
+     "request_binding_version": {
+      "anyOf": [
+       {
+        "enum": [
+         1,
+         2
+        ],
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Request Binding Version"
+     },
+     "status": {
+      "enum": [
+       "committed",
+       "not_found"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Uuid"
+     }
+    },
+    "required": [
+     "status",
+     "uuid",
+     "request_binding_version"
+    ],
+    "title": "PaymentRecoveryOut",
+    "type": "object"
+   },
    "PaymentRow": {
     "properties": {
      "amount": {
@@ -11230,7 +11281,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -11239,7 +11290,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -11254,7 +11305,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -11263,7 +11314,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -18327,6 +18378,68 @@
      }
     },
     "summary": "Supplier Payment",
+    "tags": [
+     "catalog",
+     "supplier payments"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/recover": {
+   "post": {
+    "operationId": "recover_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_recover_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "supplier_id",
+      "required": true,
+      "schema": {
+       "title": "Supplier Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierPaymentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentRecoveryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Recover Supplier Payment",
     "tags": [
      "catalog",
      "supplier payments"

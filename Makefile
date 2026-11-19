@@ -70,3 +70,7 @@ e2e-invoice-recovery:
 # Same-origin cross-tab locking; no account or business fixture required.
 e2e-invoice-locks:
 	node e2e/invoice-locks.cjs
+
+# Run-owned premium fixture with two unpaid purchases; see E01 supplier evidence.
+e2e-supplier-payment-recovery:
+	node e2e/supplier-payment-recovery.cjs

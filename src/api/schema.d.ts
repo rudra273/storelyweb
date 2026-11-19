@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -1897,6 +1897,23 @@ export interface paths {
         put?: never;
         /** Supplier Payment */
         post: operations["supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recover Supplier Payment */
+        post: operations["recover_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_recover_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3889,6 +3906,24 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /** PaymentRecoveryOut */
+        PaymentRecoveryOut: {
+            /**
+             * Contract Version
+             * @default 1
+             * @constant
+             */
+            contract_version: 1;
+            /** Request Binding Version */
+            request_binding_version: (1 | 2) | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "committed" | "not_found";
+            /** Uuid */
+            uuid: string | null;
+        };
         /** PaymentRow */
         PaymentRow: {
             /** Amount */
@@ -5466,7 +5501,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -5488,7 +5523,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -9532,6 +9567,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentRecorded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recover_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_recover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecoveryOut"];
                 };
             };
             /** @description Validation Error */

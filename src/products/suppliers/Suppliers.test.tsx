@@ -1,8 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { fakeApi, ok, renderApp, SIGNED_IN } from '../../test-utils'
 
+import { installInvoiceLocks } from '../../billing/checkout/invoiceLocksTestSupport'
+
+beforeEach(() => installInvoiceLocks())
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear() })
 const supplier = { uuid: 'vendor1', name: 'Asha Wholesale', phone: '12345', email: null, gstin: null, address: null, notes: null, balance_due: '100.00', overdue_due: '60.00' }
 const STATEMENT = {
@@ -275,4 +278,76 @@ test('reversing a payment says where it had been applied and sends the reason', 
   await userEvent.type(within(dialog).getByLabelText('Why is this being reversed?'), 'Paid the wrong supplier')
   await userEvent.click(within(dialog).getByRole('button', { name: 'Reverse payment' }))
   await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/pay1/reverse'))?.body).toEqual({ reason: 'Paid the wrong supplier' }))
+})
+
+test('supplier payment storage failure blocks the financial POST', async () => {
+  const calls = setup()
+  renderApp('/suppliers/vendor1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+  await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
+  const original = Storage.prototype.setItem
+  const storage = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (key.startsWith('storely.supplier-payment:')) throw new DOMException('Quota', 'QuotaExceededError')
+    original.call(this, key, value)
+  })
+  try {
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Record payment' }))
+    expect(await screen.findByText(/This attempt was not sent/)).toBeInTheDocument()
+    expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/payments'))).toHaveLength(0)
+    expect(screen.getByLabelText('Amount (₹)')).toBeEnabled()
+  } finally { storage.mockRestore() }
+})
+
+test('lost acknowledgement reload restores the exact selected purchase even from the general payment action', async () => {
+  const firstCalls = setup('owner', false, true)
+  const first = renderApp('/suppliers/vendor1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Pay invoice A-2' }))
+  await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Record payment' }))
+  await screen.findByText('Response interrupted.')
+  const original = firstCalls.find(call => call.method === 'POST' && call.path.endsWith('/payments'))!.body
+  first.unmount()
+  const calls = setup()
+  renderApp('/suppliers/vendor1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+  expect(screen.getByLabelText('Amount (₹)')).toBeDisabled()
+  expect(screen.getByLabelText('Amount (₹)')).toHaveValue('25.50')
+  expect(screen.getByRole('link', { name: 'Review its original purchase' })).toHaveAttribute('href', '/purchases/r2')
+  await userEvent.click(screen.getByRole('button', { name: 'Retry payment' }))
+  await waitFor(() => expect(calls.find(call => call.method === 'POST' && call.path.endsWith('/payments'))?.body).toEqual(original))
+})
+
+for (const [status, code] of [[403, 'premium_required'], [409, 'request_conflict'], [409, 'legacy_payment_intent_unknown'], [422, 'bad_payment']] as const) {
+  test(`a restored supplier payment remains frozen after ${status} ${code}`, async () => {
+    const body = { request_key: 'previously-sent-123', payment_date: '2026-11-19', amount: '25.50', payment_method: 'cash', purchase_uuid: 'r2' }
+    localStorage.setItem('storely.supplier-payment:u1:s1:vendor1:r2', JSON.stringify(body))
+    const calls = fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]), ok('GET', '/v1/shops/s1/suppliers', [supplier]), ok('GET', '/v1/shops/s1/suppliers/vendor1/statement', STATEMENT), ok('POST', '/v1/shops/s1/suppliers/vendor1/payments', { error: { code, message: 'Refused' } }, status)])
+    renderApp('/suppliers/vendor1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Retry payment' }))
+    await waitFor(() => expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/payments'))).toHaveLength(1))
+    expect(screen.getByLabelText('Amount (₹)')).toBeDisabled()
+    expect(JSON.parse(localStorage.getItem('storely.supplier-payment:u1:s1:vendor1:r2')!)).toEqual(body)
+    if (code === 'legacy_payment_intent_unknown') expect(await screen.findByText(/Review the original supplier statement/)).toBeInTheDocument()
+  })
+}
+
+test('a queued supplier payment does not send or repopulate storage after its owner leaves', async () => {
+  const locks = installInvoiceLocks()
+  const calls = setup()
+  const view = renderApp('/suppliers/vendor1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+  await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
+  let release!: () => void
+  let entered!: () => void
+  const ready = new Promise<void>(resolve => { entered = resolve })
+  const held = locks.request('storely.supplier-payment:u1:s1:vendor1', () => new Promise<void>(resolve => { release = resolve; entered() }))
+  await ready
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Record payment' }))
+  view.unmount()
+  release()
+  await held
+  await Promise.resolve()
+  expect(localStorage.getItem('storely.supplier-payment:u1:s1:vendor1')).toBeNull()
+  expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/payments'))).toHaveLength(0)
 })

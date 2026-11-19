@@ -38,6 +38,6 @@ export function clearDraft(kind: string, userId: string, shopId: string): void {
 
 export function clearAllDrafts(): void {
   try {
-    for (const key of Object.keys(localStorage)) if (key.startsWith(PREFIX)) localStorage.removeItem(key)
+    for (const key of Object.keys(localStorage)) if (key.startsWith(PREFIX) || key.startsWith('storely.supplier-payment:')) localStorage.removeItem(key)
   } catch { /* nothing to clear */ }
 }

@@ -1,9 +1,12 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { fakeApi, ok, renderApp, SIGNED_IN } from '../test-utils'
 import { draftKey } from './composer/draft'
 
+import { installInvoiceLocks } from '../billing/checkout/invoiceLocksTestSupport'
+
+beforeEach(() => installInvoiceLocks())
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); localStorage.clear() })
 const PRODUCT = { uuid: 'p1', name: 'Rice', product_code: 'R1', barcode: null, unit_uuid: null, unit_name: 'kg', category_uuid: null, category_name: null, hsn_code: null, gst_percent: null, selling_price: '30', purchase_price: '18', quantity: '10', track_stock: true, low_stock: false, next_expiry: null, reorder_level: null, mrp_price: null, updated_at: '2026-10-01' }
 const RECEIPT = { uuid: 'receipt1', supplier_uuid: null, supplier_name: null, purchase_date: '2026-10-01', invoice_number: null, notes: null, subtotal: '36.00', payment_status: 'not_recorded', created_at: '2026-10-29T00:00:00Z', items: [{ uuid: 'l1', product_uuid: 'p1', product_name: 'Rice', unit_name: 'kg', quantity: '2', unit_cost: '18', amount: '36.00', batch_no: null, expiry_date: null, line_number: 1, movement_uuid: 'm1' }] }
