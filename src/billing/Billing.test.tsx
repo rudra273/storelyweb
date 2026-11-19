@@ -685,3 +685,59 @@ test('leaving checkout while its save lock is queued never sends from the old pa
   await waitFor(() => expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt).toBeNull())
   expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(0)
 })
+
+for (const restored of [false, true]) {
+  for (const [status, code] of [[422, 'bad_quantity'], [409, 'overpayment'], [409, 'no_free_number']] as const) {
+    test(`a lost acknowledgement followed by ${status} ${code} stays frozen${restored ? ' after reload' : ''}`, async () => {
+      let count = 0
+      const response = ok('POST', '/v1/shops/s1/bills', () => {
+        count++
+        response.status = status
+        return { error: count === 1 ? { code: 'network', message: 'Connection interrupted' } : { code, message: 'Retry rejected' } }
+      }, 503)
+      const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), response])
+      const first = renderApp('/billing/new')
+      await addRice()
+      await userEvent.click(screen.getByLabelText(/^Paid in full/))
+      await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+      await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+      await screen.findByText(/Connection interrupted/)
+      const frozen = JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt
+      if (restored) { first.unmount(); renderApp('/billing/new') }
+      await userEvent.click(await screen.findByRole('button', { name: 'Retry saving invoice' }))
+      expect(await screen.findByText(/Retry rejected/)).toHaveTextContent('cart is locked')
+      expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
+      expect(screen.getByLabelText(/^Paid in full/)).toBeDisabled()
+      expect(screen.queryByRole('button', { name: 'Discard draft' })).not.toBeInTheDocument()
+      expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt).toEqual(frozen)
+      await userEvent.click(screen.getByRole('button', { name: 'Retry saving invoice' }))
+      const writes = calls.filter(c => c.path === '/v1/shops/s1/bills')
+      expect(writes).toHaveLength(3)
+      for (const write of writes) {
+        expect(write.body).toEqual(frozen.body)
+        expect(write.headers.get('Idempotency-Key')).toBe(frozen.key)
+      }
+    })
+  }
+}
+
+test('a first fresh 422 durably releases the attempt and allows a corrected invoice with a new key', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', { error: { code: 'bad_quantity', message: 'Check quantity' } }, 422)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText(/^Paid in full/))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  expect(await screen.findByText(/Check quantity/)).toHaveTextContent('Check your cart')
+  expect(screen.getByLabelText('Quantity for Rice')).toBeEnabled()
+  expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.attempt).toBeNull()
+  await userEvent.clear(screen.getByLabelText('Quantity for Rice'))
+  await userEvent.type(screen.getByLabelText('Quantity for Rice'), '2')
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByText(/Check quantity/)
+  const writes = calls.filter(c => c.path === '/v1/shops/s1/bills')
+  expect(writes).toHaveLength(2)
+  expect(writes[0]!.headers.get('Idempotency-Key')).not.toBe(writes[1]!.headers.get('Idempotency-Key'))
+  expect(writes[1]!.body).toMatchObject({ items: [{ product_uuid: 'p1', quantity: '2' }] })
+})

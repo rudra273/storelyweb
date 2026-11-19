@@ -49,6 +49,9 @@ const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
         committed = await response.json()
         return route.abort('failed') // Deliberately lose the response after the real commit.
       }
+      if (requests.length === 2 || requests.length === 3) {
+        return route.fulfill({ status: requests.length === 2 ? 422 : 409, contentType: 'application/json', body: JSON.stringify({ error: { code: requests.length === 2 ? 'bad_quantity' : 'overpayment', message: 'Injected retry validation rejection' } }) })
+      }
       return route.continue()
     })
     await page.evaluate(() => {
@@ -68,13 +71,26 @@ const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
     await page.reload()
     await page.getByText(/was not confirmed before this page closed/).waitFor()
     assert.equal(await page.getByLabel(`Quantity for ${product.name}`, { exact: true }).isDisabled(), true)
+    for (let index = 1; index <= 2; index++) {
+      await page.getByRole('button', { name: 'Retry saving invoice', exact: true }).click()
+      await page.getByText(/Injected retry validation rejection/).waitFor()
+      await page.waitForFunction(() => !document.querySelector('.checkout-submit button').disabled)
+      assert.equal(requests.length, index + 1)
+      assert.deepEqual(requests[index], requests[0], 'Validation rejection retry retains exact key/body')
+      assert.equal(await page.getByLabel(`Quantity for ${product.name}`, { exact: true }).isDisabled(), true)
+      const frozen = await page.evaluate(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => k.startsWith('storely.draft.bill.')))).data.attempt)
+      assert.deepEqual(frozen, { key: requests[0].key, body: requests[0].body })
+      await page.reload()
+      await page.getByText(/was not confirmed before this page closed/).waitFor()
+    }
     await page.getByRole('button', { name: 'Retry saving invoice', exact: true }).click()
     await page.getByText(committed.bill.bill_number, { exact: true }).first().waitFor()
-    assert.deepEqual(requests[1], requests[0], 'Reload retry reuses exact key/body')
+    assert.equal(requests.length, 4)
+    assert.deepEqual(requests[3], requests[0], 'Reload retry reuses exact key/body')
     const final = await context.request.get(`${origin}/v1/shops/${fixture.shop_id}/bills/${committed.bill.uuid}`, { headers: apiHeaders })
     assert.ok(final.ok())
     const stock = await context.request.get(`${origin}/v1/shops/${fixture.shop_id}/products/${fixture.product_uuid}`, { headers: apiHeaders })
     assert.equal(Number((await stock.json()).product.quantity), Number(product.quantity) - 1, 'Lost response retry consumes stock exactly once')
-    process.stdout.write('PASS storage-blocked send, persisted request-before-network, committed/lost-response reload and identical retry with one stock deduction\n')
+    process.stdout.write('PASS storage-blocked send, persisted request-before-network, committed/lost-response reload,422/409 frozen retry and identical final replay with one stock deduction\n')
   } finally { await browser.close() }
 })().catch(error => { process.stderr.write(String(error) + '\n'); process.exitCode = 1 })

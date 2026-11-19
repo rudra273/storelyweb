@@ -6,11 +6,11 @@ afterEach(() => vi.unstubAllGlobals())
 const path = '/v1/shops/s1/capabilities'
 const capability = { contract_version: 1, shop_id: 's1', role: 'owner', features: { operation_lookup: 1, supplier_payment_proof: 1, supplier_payment_binding: 2, product_expected_updated_at: 1 } }
 
-test('known capability supports guarded editing and only a missing route enables the old API fallback', async () => {
+test('known capability supports guarded editing while missing routes and tenant errors fail closed', async () => {
   fakeApi([ok('GET', path, capability)])
   await expect(assertProductEditSupport('s1')).resolves.toBeUndefined()
   fakeApi([ok('GET', path, { error: { code: 'http_404', message: 'Not Found' } }, 404)])
-  await expect(assertProductEditSupport('s1')).resolves.toBeUndefined()
+  await expect(assertProductEditSupport('s1')).rejects.toMatchObject({ code: 'unsupported_edit_contract' })
   fakeApi([ok('GET', path, { error: { code: 'not_found', message: 'No such shop.' } }, 404)])
   await expect(assertProductEditSupport('s1')).rejects.toMatchObject({ code: 'not_found' })
 })

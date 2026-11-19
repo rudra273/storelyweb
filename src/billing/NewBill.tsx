@@ -222,9 +222,10 @@ function BillForm({ another }: { another: () => void }) {
       try { await draftStore.clear({ completed: true }); setStorageError('') } catch (error) { persistenceFailure(error) }
       setDone(result)
     } catch (error) {
-      // A rejected validation has rolled back. An unknown outcome keeps the key
-      // and exact payload so a retry cannot charge or reduce stock twice.
-      if (error instanceof ApiError && (error.status === 422 || (error.status === 409 && ['overpayment', 'no_free_number'].includes(error.code)))) {
+      // Only a first fresh validation rejection proves this invoice did not commit.
+      // On a restored/uncertain retry, validation may have changed since the
+      // original request: keep its exact key/body frozen until success.
+      if (!attempt && error instanceof ApiError && (error.status === 422 || (error.status === 409 && ['overpayment', 'no_free_number'].includes(error.code)))) {
         try {
           await draftStore.save({ ...JSON.parse(draftText) as BillDraft, attempt: null }, { releaseAttempt: true, isActive: () => mounted.current })
           setAttempt(null)

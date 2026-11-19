@@ -6,8 +6,10 @@ export async function assertProductEditSupport(shop: string): Promise<void> {
   let value: unknown
   try { value = await api.get<components['schemas']['CapabilitiesOut']>(`/v1/shops/${shop}/capabilities`) }
   catch (error) {
-    // An older API has no route. Tenant concealment and permission failures are not fallback signals.
-    if (error instanceof ApiError && error.status === 404 && error.code === 'http_404') return
+    // A missing route cannot prove that timestamp comparisons are atomic.
+    if (error instanceof ApiError && error.status === 404 && error.code === 'http_404') {
+      throw new ApiError(409, 'unsupported_edit_contract', 'This server cannot confirm safe product editing. Your changes are kept. Update or reconnect to a compatible Storely server before saving.')
+    }
     throw error
   }
   const record = (data: unknown): data is Record<string, unknown> => !!data && typeof data === 'object' && !Array.isArray(data)

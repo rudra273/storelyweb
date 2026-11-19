@@ -1092,6 +1092,18 @@ test('a future capability refuses a product PATCH while preserving entered value
   expect(patches(calls)).toHaveLength(0)
 })
 
+test('a missing capability route refuses a product PATCH while preserving entered values', async () => {
+  const calls = fakeApi([ok('GET', '/v1/shops/s1/capabilities', { error: { code: 'http_404', message: 'Not Found' } }, 404), ...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, page([{ ...RICE, ...COST }]))])
+  renderApp('/products')
+  await editRice()
+  const reorder = fieldNamed('Reorder level of Basmati Rice')
+  await userEvent.clear(reorder)
+  await userEvent.type(reorder, '20{Enter}')
+  expect(await screen.findByRole('alert')).toHaveTextContent('cannot confirm safe product editing')
+  expect(reorder).toHaveValue('20')
+  expect(patches(calls)).toHaveLength(0)
+})
+
 test('full product edit preserves typed values and explicitly rebases untouched fields to the latest version', async () => {
   const original = { ...RICE, ...COST }
   const latest = { ...original, name: 'Remote Rice', selling_price: '40', purchase_price: '22', updated_at: '2026-11-19T00:00:00Z' }
@@ -1117,4 +1129,20 @@ test('full product edit preserves typed values and explicitly rebases untouched 
   await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }))
   await waitFor(() => expect(patches(calls)).toHaveLength(2))
   expect(patches(calls)[1]?.body).toMatchObject({ name: 'My Rice', selling_price: '40', purchase_price: '22', expected_updated_at: latest.updated_at })
+})
+
+test('full product edit refuses a missing capability route and retains the typed name', async () => {
+  const original = { ...RICE, ...COST }
+  const shown = { price_mode: 'fixed', selling_price: '25.50', pre_gst_selling_price: '25.50', output_gst_amount: '0', purchase_price: '18', purchase_gst_amount: '0', overhead_cost: '1', total_cost: '19', cost_known: true, profit_margin_percent: '0', profit_amount: '6.5', gst_percent: '0', gst_source: 'product', category_name: 'Grains', gst_registered: false }
+  const calls = fakeApi([ok('GET', '/v1/shops/s1/capabilities', { error: { code: 'http_404', message: 'Not Found' } }, 404), ...SIGNED_IN, SHOP('owner'), CATS, UNITS, ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, page([original])), ok('GET', '/v1/shops/s1/products/p1', { product: original, movements: [] }), ok('POST', '/v1/shops/s1/products/price-preview', shown)])
+  renderApp('/products/p1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Edit' }))
+  const dialog = screen.getByRole('dialog', { name: 'Edit product' })
+  const name = within(dialog).getByLabelText('Product name')
+  await userEvent.clear(name)
+  await userEvent.type(name, 'My Rice')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('cannot confirm safe product editing')
+  expect(name).toHaveValue('My Rice')
+  expect(patches(calls)).toHaveLength(0)
 })
