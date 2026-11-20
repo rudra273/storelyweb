@@ -108,3 +108,97 @@ test('a closed owner cannot repopulate cleared storage after its queued save acq
   await expect(write).rejects.toThrow(/checkout was closed/)
   expect(localStorage.getItem(key)).toBeNull()
 })
+
+test('meaningful legacy active work does not silently expire', () => {
+  localStorage.setItem(key, JSON.stringify({ v: 1, savedAt: Date.now() - 90 * 86400000, data: { attempt: null, cash: '200' } }))
+  expect(openInvoiceDraft('u1', 's1').initial?.data).toMatchObject({ cash: '200' })
+})
+
+test('hold and resume atomically swap full editable work without duplicate active copies', async () => {
+  const first = { attempt: null, cash: '200', reference: 'first', consentContext: 'review-first' }
+  const second = { attempt: null, cash: '300', reference: 'second', consentContext: 'review-second' }
+  const store = openInvoiceDraft<typeof first>('u1', 's1')
+  await store.save(first)
+  const writes = vi.spyOn(Storage.prototype, 'setItem')
+  await store.hold(first)
+  expect(writes).toHaveBeenCalledTimes(1)
+  await expect(store.save(first)).rejects.toThrow(/another tab/)
+  let reopened = openInvoiceDraft<typeof first>('u1', 's1')
+  expect(reopened.initial).toBeNull()
+  expect(reopened.initialHeld.map(item => item.data)).toEqual([first])
+  await reopened.save(second)
+  await reopened.resume(reopened.initialHeld[0]!.id, second)
+  reopened = openInvoiceDraft<typeof first>('u1', 's1')
+  expect(reopened.initial?.data).toEqual(first)
+  expect(reopened.initialHeld.map(item => item.data)).toEqual([second])
+  await reopened.clear()
+  reopened = openInvoiceDraft<typeof first>('u1', 's1')
+  expect(reopened.initial).toBeNull()
+  expect(reopened.initialHeld.map(item => item.data)).toEqual([second])
+  await reopened.discardHeld(reopened.initialHeld[0]!.id, null)
+  expect(localStorage.getItem(key)).toBeNull()
+})
+
+test('storage failure leaves active and held records intact for retry', async () => {
+  const store = openInvoiceDraft<{ attempt: null; cash: string }>('u1', 's1')
+  const active = { attempt: null, cash: '200' }
+  await store.save(active)
+  const previous = localStorage.getItem(key)
+  const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Quota', 'QuotaExceededError') })
+  await expect(store.hold(active)).rejects.toThrow(/could not be saved/)
+  expect(localStorage.getItem(key)).toBe(previous)
+  set.mockRestore()
+  await store.hold(active)
+  const reopen = openInvoiceDraft('u1', 's1')
+  const held = localStorage.getItem(key)
+  const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('Quota', 'QuotaExceededError') })
+  await expect(reopen.resume(reopen.initialHeld[0]!.id, null)).rejects.toThrow(/could not be saved/)
+  expect(localStorage.getItem(key)).toBe(held)
+  blocked.mockRestore()
+})
+
+test('concurrent resumes have exactly one winner and stale queued autosave cannot clone held work', async () => {
+  const start = openInvoiceDraft('u1', 's1')
+  await start.hold({ attempt: null })
+  const first = openInvoiceDraft('u1', 's1')
+  const second = openInvoiceDraft('u1', 's1')
+  const id = first.initialHeld[0]!.id
+  const results = await Promise.allSettled([first.resume(id, null), second.resume(id, null)])
+  expect(results.map(result => result.status)).toEqual(['fulfilled', 'rejected'])
+  await expect(first.save({ attempt: null })).rejects.toThrow(/another tab/)
+  const restored = openInvoiceDraft('u1', 's1')
+  expect(restored.initial?.data).toEqual({ attempt: null })
+  expect(restored.initialHeld).toEqual([])
+})
+
+test('uncertain active operations cannot be held, swapped or discarded through held actions', async () => {
+  const start = openInvoiceDraft('u1', 's1')
+  await start.hold({ attempt: null })
+  const store = openInvoiceDraft('u1', 's1')
+  await store.save({ attempt })
+  const previous = localStorage.getItem(key)
+  await expect(store.hold({ attempt })).rejects.toThrow(/unconfirmed/)
+  await expect(store.resume(store.initialHeld[0]!.id, null)).rejects.toThrow(/unconfirmed/)
+  await expect(store.discardHeld(store.initialHeld[0]!.id, null)).rejects.toThrow(/unconfirmed/)
+  expect(localStorage.getItem(key)).toBe(previous)
+})
+
+test('malformed or uncertain held entries fail closed and preserve original storage', () => {
+  for (const held of [[{ id: 'held-operation', savedAt: Date.now(), data: { attempt } }], [{ id: 'held-operation', savedAt: Date.now(), data: null }]]) {
+    const raw = JSON.stringify({ v: 1, savedAt: Date.now(), data: null, held })
+    localStorage.setItem(key, raw)
+    expect(openInvoiceDraft('u1', 's1').initialError?.kind).toBe('unreadable')
+    expect(localStorage.getItem(key)).toBe(raw)
+  }
+})
+
+test('held transitions preserve account/shop ownership and cancel queued work after unmount', async () => {
+  const store = openInvoiceDraft('u1', 's1')
+  await store.save({ attempt: null })
+  const previous = localStorage.getItem(key)
+  await expect(store.hold({ attempt: null }, { isActive: () => false })).rejects.toThrow(/closed/)
+  expect(localStorage.getItem(key)).toBe(previous)
+  await store.hold({ attempt: null })
+  expect(openInvoiceDraft('u2', 's1').initialHeld).toEqual([])
+  expect(openInvoiceDraft('u1', 's2').initialHeld).toEqual([])
+})

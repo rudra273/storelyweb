@@ -46,6 +46,10 @@ interface BillDraft {
   amount: string
   method: PaymentFields['method']
   reference: string
+  cash?: string
+  reviewedContext?: string | null
+  allowUnassigned?: boolean
+  consentContext?: string | null
   attempt: { body: BillInput; key: string } | null
 }
 
@@ -59,10 +63,16 @@ function isBillDraft(value: unknown): value is BillDraft {
   if (!record(value.customer) || !strings(value.customer, Object.keys(BLANK_CUSTOMER)) || !strings(value, ['discount', 'amount', 'method', 'reference'])) return false
   if (!['b2c', 'b2b'].includes(String(value.billType)) || ![null, 'full', 'part', 'none'].includes(value.paid as null | string)) return false
   if (!['cash', 'upi', 'card', 'bank', 'online'].includes(String(value.method))) return false
+  if ((value.cash !== undefined && typeof value.cash !== 'string') || (value.allowUnassigned !== undefined && typeof value.allowUnassigned !== 'boolean')) return false
+  if (['reviewedContext', 'consentContext'].some(key => value[key] !== undefined && value[key] !== null && typeof value[key] !== 'string')) return false
   if (value.attempt === null) return true
   return record(value.attempt) && typeof value.attempt.key === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(value.attempt.key) &&
     record(value.attempt.body) && Array.isArray(value.attempt.body.items) && value.attempt.body.items.length > 0 && value.attempt.body.items.length <= MAX_LINES &&
     record(value.attempt.body.payment) && typeof value.attempt.body.payment.amount === 'string' && typeof value.attempt.body.payment.method === 'string'
+}
+
+function hasInvoiceDraft(draft: BillDraft): boolean {
+  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.discount !== '0' || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.attempt)
 }
 
 function BillForm({ another }: { another: () => void }) {
@@ -94,9 +104,12 @@ function BillForm({ another }: { another: () => void }) {
   const [billType, setBillType] = useState<BillType>(saved?.billType ?? 'b2c')
   const [discount, setDiscount] = useState(saved?.discount ?? '0')
   // No default: the cashier says how the customer paid, so an unpaid invoice is never an accident.
-  const [payment, setPayment] = useState<PaymentFields>({ paid: saved?.paid ?? null, amount: saved?.amount ?? '', method: saved?.method ?? 'cash', reference: saved?.reference ?? '', cash: '' })
+  const [payment, setPayment] = useState<PaymentFields>({ paid: saved?.paid ?? null, amount: saved?.amount ?? '', method: saved?.method ?? 'cash', reference: saved?.reference ?? '', cash: saved?.cash ?? '' })
   const [paidError, setPaidError] = useState('')
-  const [allowUnassigned, setAllowUnassigned] = useState(false)
+  const [allowUnassigned, setAllowUnassigned] = useState(saved?.allowUnassigned ?? false)
+  const [consentContext, setConsentContext] = useState<string | null>(saved?.consentContext ?? null)
+  const [reviewedContext, setReviewedContext] = useState<string | null>(saved?.reviewedContext ?? null)
+  const currentConsentContext = JSON.stringify([customer, billType, payment, reviewedContext])
   const [attempt, setAttempt] = useState<{ body: BillInput; key: string } | null>(saved?.attempt ?? null)
   const [done, setDone] = useState<BillDetail | null>(null)
   const sending = useRef(false)
@@ -106,11 +119,11 @@ function BillForm({ another }: { another: () => void }) {
     mounted.current = true
     return () => { mounted.current = false }
   }, [])
-  const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, attempt } satisfies BillDraft)
+  const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, attempt } satisfies BillDraft)
   useEffect(() => {
     if (done || !userId) return
     const draft = JSON.parse(draftText) as BillDraft
-    const empty = !draft.items.length && !draft.custom.length && !draft.customer.customer_name.trim() && !draft.customer.customer_phone.trim() && !draft.attempt
+    const empty = !hasInvoiceDraft(draft)
     // Storage is coordinated across tabs; the callback only reports an external failure.
     void (empty ? draftStore.clear({ isActive: () => mounted.current }) : draftStore.save(draft, { isActive: () => mounted.current })).catch(persistenceFailure)
   }, [draftText, userId, shop, done, draftStore])
@@ -118,7 +131,7 @@ function BillForm({ another }: { another: () => void }) {
     try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
     commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
-    setAllowUnassigned(false)
+    setAllowUnassigned(false); setConsentContext(null); setReviewedContext(null)
     setStorageError('')
     setRestored(null)
   }
@@ -156,17 +169,20 @@ function BillForm({ another }: { another: () => void }) {
   const pricing = lineCount > 0 && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
   const totals = lineCount > 0 && !needsGstin ? preview.data : undefined
   const locked = !!attempt || mutation.isPending || preparing || draftConflict
-  const reviewedCalculation = useRef<string | null>(null)
+  const observedReview = useRef(saved?.reviewedContext ?? null)
+  const reviewCurrent = !!totals && reviewedContext === (totals.reviewed_context ?? null)
+  const consentCurrent = allowUnassigned && consentContext === currentConsentContext && reviewCurrent
   useEffect(() => {
     if (attempt || !totals || !priceCurrent || preview.isFetching || preview.error) return
-    const calculation = JSON.stringify(totals)
-    if (reviewedCalculation.current !== null && reviewedCalculation.current !== calculation) {
+    const context = totals.reviewed_context ?? null
+    if ((observedReview.current !== null && observedReview.current !== context) || (saved?.paid && !saved.reviewedContext && observedReview.current === null)) {
       setPayment(value => ({ ...value, paid: null }))
       setAllowUnassigned(false)
       setPaidError('Review the updated invoice amounts and choose how the customer paid again. Your entered payment details are kept.')
     }
-    reviewedCalculation.current = calculation
-  }, [totals, priceCurrent, preview.isFetching, preview.error, attempt])
+    if (observedReview.current === null && !saved?.reviewedContext) setReviewedContext(context)
+    observedReview.current = context
+  }, [totals, priceCurrent, preview.isFetching, preview.error, attempt, saved])
   // A cart the server refused (not enough stock, a whole-unit item): retrying cannot help.
   const cartProblem = !needsGstin && preview.error instanceof ApiError && preview.error.status === 422
   const customPreview = totals?.lines?.filter(l => l.product_uuid === null) ?? []
@@ -189,7 +205,7 @@ function BillForm({ another }: { another: () => void }) {
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
   const unlinked = !!payment.paid && payment.paid !== 'full' && (paymentMinorUnits(totals?.total ?? '') ?? 0n) > 0n && !/\d/.test(customer.customer_phone)
   const canCreate = !!totals && priceCurrent && !preview.isFetching && !preview.error &&
-    lineCount > 0 && (!unlinked || allowUnassigned)
+    lineCount > 0 && (!payment.paid || reviewCurrent) && (!unlinked || consentCurrent)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -218,7 +234,7 @@ function BillForm({ another }: { another: () => void }) {
         ...cart,
         settlement_choice: payment.paid === 'part' ? 'partial' : payment.paid === 'none' ? 'unpaid' : 'full',
         reviewed_context: totals!.reviewed_context,
-        allow_unassigned_credit: unlinked && allowUnassigned,
+        allow_unassigned_credit: unlinked && consentCurrent,
         payment: { amount: paidNow, method: payment.method, reference: payment.paid === 'none' ? null : reference },
       },
       key: crypto.randomUUID(),
@@ -262,6 +278,20 @@ function BillForm({ another }: { another: () => void }) {
     try { await draftStore.clear({ completed: true }); another() } catch (error) { persistenceFailure(error) }
   }} /></div>
 
+  const activeDraft = JSON.parse(draftText) as BillDraft
+  const hasDraft = hasInvoiceDraft(activeDraft)
+  async function moveDraft(action: 'hold' | 'resume' | 'discardHeld', id?: string) {
+    if (sending.current || locked) return
+    sending.current = true; setPreparing(true)
+    try {
+      const options = { isActive: () => mounted.current }
+      if (action === 'hold') await draftStore.hold(activeDraft, options)
+      else if (action === 'resume') await draftStore.resume(id!, hasDraft ? activeDraft : null, options)
+      else await draftStore.discardHeld(id!, hasDraft ? activeDraft : null, options)
+      if (mounted.current) another()
+    } catch (error) { persistenceFailure(error) }
+    finally { sending.current = false; if (mounted.current) setPreparing(false) }
+  }
   const canSave = !draftConflict && !preparing && !mutation.isPending && (!!attempt || canCreate)
   const rows: [string, string][] = totals ? ([['Subtotal', totals.subtotal], ['Discount', totals.discount_amount], ['CGST', totals.cgst_amount], ['SGST', totals.sgst_amount], ['IGST', totals.igst_amount], ['Round-off', totals.round_off_amount]] as [string, string][]).filter(([k, v]) => k === 'Subtotal' || Number(v) !== 0) : []
   return <div className="checkout-page">
@@ -271,6 +301,15 @@ function BillForm({ another }: { another: () => void }) {
       {attempt ? 'An invoice you were saving was not confirmed before this page closed. Retry saving to safely finish this same invoice; it will not be created twice.' : `Your unfinished invoice from ${new Date(restored.savedAt).toLocaleString()} was restored.`}
       {!attempt && !draftConflict && <> <button type="button" className="link" onClick={discard}>Discard draft</button></>}
     </Alert>}
+    <div className="actions"><button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button></div>
+    {!!draftStore.initialHeld.length && <section className="card" aria-label="Held invoices">
+      <h2>Held invoices ({draftStore.initialHeld.length})</h2>
+      <p className="muted">Saved in this browser for this account and shop. Resuming holds your current editable invoice in its place.</p>
+      <ul>{draftStore.initialHeld.map(held => <li key={held.id}>
+        <strong>{held.data.customer.customer_name.trim() || 'Walk-in customer'}</strong> · {held.data.items.length + held.data.custom.length} items · {new Date(held.savedAt).toLocaleString()}
+        <div className="actions"><button type="button" disabled={locked} onClick={() => void moveDraft('resume', held.id)}>Resume held invoice</button><button type="button" className="link" disabled={locked} onClick={() => void moveDraft('discardHeld', held.id)}>Discard held invoice</button></div>
+      </li>)}</ul>
+    </section>}
     <form className="checkout-grid" onSubmit={submit}>
       <fieldset className="checkout-main" disabled={locked}>
         <section className="card checkout-items" aria-label="Items">
@@ -322,11 +361,11 @@ function BillForm({ another }: { another: () => void }) {
             <p className="pricing-note muted" role="status">{pricing ? 'Updating total…' : ''}</p>
             <label className="discount">Discount (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" required value={discount} disabled={locked} onChange={e => setDiscount(e.target.value)} /></label>
             {items.some(i => { const line = totals?.lines?.find(l => l.product_uuid === i.product.uuid); return line && i.product.mrp_price != null && Number(line.unit_price) > Number(i.product.mrp_price) }) && <Alert kind="info">A product’s selling price is above its MRP. Check the price before creating the invoice.</Alert>}
-            <PaymentPanel total={totals?.total} value={payment} onChange={next => { setAllowUnassigned(false); setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
+            <PaymentPanel total={totals?.total} value={payment} onChange={next => { setAllowUnassigned(false); setReviewedContext(totals?.reviewed_context ?? null); setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
             {unlinked && !locked && <Alert kind="info">
               <p>Add a customer with a phone number to put this balance on their account. Unassigned balances can be collected from the invoice.</p>
               <button type="button" className="link" onClick={() => setCustomerOpen(true)}>Add a customer with a phone number</button>
-              <label className="check"><input type="checkbox" checked={allowUnassigned} onChange={e => setAllowUnassigned(e.target.checked)} />Keep this balance unassigned</label>
+              <label className="check"><input type="checkbox" disabled={pricing || !reviewCurrent} checked={consentCurrent} onChange={e => { setAllowUnassigned(e.target.checked); setConsentContext(currentConsentContext) }} />Keep this balance unassigned</label>
             </Alert>}
           </>}
         </section>

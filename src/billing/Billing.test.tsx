@@ -24,6 +24,7 @@ async function scan(code: string) {
 async function addRice() {
   await scan('8901')
   await screen.findByLabelText('Quantity for Rice')
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
 }
 const returnLine = { item_uuid: 'i1', product_name: 'Rice', unit: 'kg', sold: '2', already_returned: '0', remaining: '2', returning: '0.5', credit: '94.50', goes_back_to_stock: true }
 const returnReview = { lines: [returnLine], subtotal: '90.00', taxable_amount: '90.00', cgst_amount: '2.25', sgst_amount: '2.25', igst_amount: '0.00', round_off_amount: '0.00', tax_amount: '4.50', credit_total: '94.50', settlement: 'refund', invoice_paid: '0.00', invoice_due: '189.00', invoice_due_after: '189.00', refund_to_customer: '94.50', reduces_invoice_due: '0.00', can_return: true }
@@ -780,7 +781,7 @@ test('changing partial settlement amount or method requires fresh unassigned con
 
 test('changed authoritative preview requires settlement review and retains entered fields', async () => {
   let changed = false
-  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', () => changed ? { ...preview, total: '190.00', round_off_amount: '1.00' } : preview)])
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', () => changed ? { ...preview, reviewed_context: `br1:${'b'.repeat(64)}`, total: '190.00', round_off_amount: '1.00' } : preview)])
   renderApp('/billing/new')
   await addRice()
   await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
@@ -895,4 +896,116 @@ test('a restored legacy uncertain invoice retries its exact body without adding 
   expect(write.body).toEqual(draft.data.attempt.body)
   expect(write.headers.get('Idempotency-Key')).toBe(draft.data.attempt.key)
   expect(calls.filter(c => c.path.endsWith('/bills/preview'))).toHaveLength(0)
+})
+
+test('checkout reload retains raw partial fields, cash and same-context unassigned consent', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  const first = renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), 'two notes')
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), 'bad raw amount')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'KEEP-RAW')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await waitFor(() => expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.allowUnassigned).toBe(true))
+  first.unmount()
+  renderApp('/billing/new')
+  expect(await screen.findByLabelText(/^Paid now/)).toHaveValue('bad raw amount')
+  expect(screen.getByLabelText('Reference')).toHaveValue('KEEP-RAW')
+  await waitFor(() => expect(screen.getByLabelText('Keep this balance unassigned')).toBeChecked())
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'cash')
+  expect(screen.getByLabelText('Cash received')).toHaveValue('two notes')
+})
+
+test('reload with changed reviewed context retains input but renews settlement and consent', async () => {
+  let changed = false
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', () => ({ ...preview, reviewed_context: `br1:${(changed ? 'b' : 'a').repeat(64)}` }))])
+  const first = renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await waitFor(() => expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.allowUnassigned).toBe(true))
+  first.unmount()
+  changed = true
+  renderApp('/billing/new')
+  await screen.findByText(/Review the updated invoice amounts/)
+  expect(screen.getByLabelText('Part paid')).not.toBeChecked()
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+  expect(screen.getByLabelText('Keep this balance unassigned')).not.toBeChecked()
+  expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeDisabled()
+})
+
+test('hold and resume swap complete checkout drafts without overwriting the current cart', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('GET', /^\/v1\/shops\/s1\/customers\?/, []), ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByRole('button', { name: 'Add customer' }))
+  await userEvent.type(screen.getByLabelText('Name'), 'A')
+  await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'A-REF')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await userEvent.click(screen.getByRole('button', { name: 'Hold invoice' }))
+  const held = await screen.findByRole('region', { name: 'Held invoices' })
+  expect(within(held).getByText('A')).toBeInTheDocument()
+  expect(screen.queryByLabelText('Quantity for Rice')).not.toBeInTheDocument()
+  await addRice()
+  await userEvent.click(screen.getByRole('button', { name: 'Add customer' }))
+  await userEvent.type(screen.getByLabelText('Name'), 'B')
+  await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), '300')
+  await userEvent.click(within(screen.getByRole('region', { name: 'Held invoices' })).getByRole('button', { name: 'Resume held invoice' }))
+  expect(await screen.findByLabelText(/^Paid now/)).toHaveValue('100')
+  expect(screen.getByLabelText('Reference')).toHaveValue('A-REF')
+  await waitFor(() => expect(screen.getByLabelText('Keep this balance unassigned')).toBeChecked())
+  const swapped = within(screen.getByRole('region', { name: 'Held invoices' }))
+  expect(swapped.getByText('B')).toBeInTheDocument()
+  expect(swapped.queryByText('A')).not.toBeInTheDocument()
+  expect(swapped.getAllByRole('listitem')).toHaveLength(1)
+  await userEvent.click(swapped.getByRole('button', { name: 'Discard held invoice' }))
+  await waitFor(() => expect(screen.queryByRole('region', { name: 'Held invoices' })).not.toBeInTheDocument())
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('100')
+})
+
+test('failed hold keeps the current checkout fields and succeeds on explicit retry', async () => {
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), '200')
+  const original = Storage.prototype.setItem
+  const storage = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (key.startsWith('storely.draft.bill.') && JSON.parse(value).held?.length) throw new DOMException('Quota', 'QuotaExceededError')
+    original.call(this, key, value)
+  })
+  try {
+    await userEvent.click(screen.getByRole('button', { name: 'Hold invoice' }))
+    await screen.findByText(/could not be saved in this browser/)
+    expect(screen.getByLabelText('Cash received')).toHaveValue('200')
+    expect(screen.getByLabelText('Quantity for Rice')).toBeEnabled()
+    expect(screen.queryByRole('region', { name: 'Held invoices' })).not.toBeInTheDocument()
+  } finally { storage.mockRestore() }
+  await userEvent.click(screen.getByRole('button', { name: 'Hold invoice' }))
+  expect(await screen.findByRole('region', { name: 'Held invoices' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Quantity for Rice')).not.toBeInTheDocument()
+})
+
+test('an uncertain invoice cannot be held as an editable clone', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', { error: { code: 'network', message: 'Lost acknowledgement' } }, 503)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByText(/Lost acknowledgement/)
+  expect(screen.getByRole('button', { name: 'Hold invoice' })).toBeDisabled()
+  expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).held).toEqual([])
+  expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(1)
 })
