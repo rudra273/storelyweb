@@ -64,9 +64,20 @@ const correctedBarcode = 'CHECKOUT-CORRECTED-103'
     await barcode.fill(correctedBarcode)
     const productSave = page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).pathname === productsPath)
     let oldCodeLookups = 0
+    let productPosts = 0
     page.on('request', req => {
+      if (req.method() === 'POST' && new URL(req.url()).pathname === productsPath) productPosts++
       const url = new URL(req.url())
       if (url.pathname === `${productsPath}/lookup` && url.searchParams.get('code') === initialCode) oldCodeLookups++
+    })
+    await page.evaluate(() => {
+      const set = Storage.prototype.setItem
+      Storage.prototype.setItem = function (key, value) {
+        if (key.startsWith('storely.draft.bill.') && JSON.parse(value).data?.items.length > 1) {
+          throw new DOMException('Fixture blocks the returned cart write', 'QuotaExceededError')
+        }
+        return set.call(this, key, value)
+      }
     })
     await editor.getByRole('button', { name: 'Add product', exact: true }).click()
     const response = await productSave
@@ -74,7 +85,16 @@ const correctedBarcode = 'CHECKOUT-CORRECTED-103'
     const { product } = await response.json()
     assert.equal(product.barcode, correctedBarcode)
     await editor.waitFor({ state: 'hidden' })
-    assert.equal(await page.getByLabel('Quantity for Checkout catalog addition', { exact: true }).inputValue(), '1')
+    const newQuantity = page.getByLabel('Quantity for Checkout catalog addition', { exact: true })
+    const retry = page.getByRole('button', { name: 'Retry adding saved product', exact: true })
+    await retry.waitFor()
+    assert.equal(await newQuantity.count(), 0, 'Failed cart persistence did not replace the draft')
+    assert.equal(await originalQuantity.inputValue(), '2')
+    await page.reload()
+    await retry.waitFor()
+    await retry.click()
+    assert.equal(await newQuantity.inputValue(), '1')
+    assert.equal(productPosts, 1, 'Cart recovery does not create the product again')
     assert.equal(await originalQuantity.inputValue(), '2')
     assert.equal(await discount.inputValue(), '10')
     await page.getByText('Product entry customer', { exact: true }).waitFor()
@@ -90,6 +110,6 @@ const correctedBarcode = 'CHECKOUT-CORRECTED-103'
     const stock = await context.request.get(`${origin}${productsPath}/${product.uuid}`, { headers })
     assert.ok(stock.ok())
     assert.equal(Number((await stock.json()).product.quantity), 3, 'Returning from catalog does not post a sale')
-    process.stdout.write('PASS prefilled code, cancelled editor preserves work, edited barcode adds exact saved product once, raw checkout and returned cart survive reload\n')
+    process.stdout.write('PASS prefilled code, cancelled editor preserves work, edited barcode survives failed cart write and reload, exact saved product added once, original checkout retained\n')
   } finally { await browser.close() }
 })().catch(error => { process.stderr.write(String(error) + '\n'); process.exitCode = 1 })
