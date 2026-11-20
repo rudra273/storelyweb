@@ -217,6 +217,7 @@ test('activation selects the new shop while the existing workspace is mounted', 
   const activate = await screen.findByRole('button', { name: 'Activate new web shop' })
   await userEvent.click(screen.getByRole('checkbox', { name: /Create a new empty cloud shop/ }))
   await userEvent.click(activate)
+  expect(await screen.findByRole('heading', { name: 'Hello, Asha' })).toBeInTheDocument()
   expect(await screen.findByRole('combobox', { name: 'Shop' })).toHaveValue(newShop.shop_id)
 })
 

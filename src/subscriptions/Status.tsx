@@ -41,8 +41,8 @@ function ActivateWeb({requestId}:{requestId:string}) {
       if (!userId || activeAccount.current !== userId) return
       if (shop) shop.select(activated.local_shop_id)
       else rememberShop(userId, activated.local_shop_id)
-      await client.invalidateQueries({queryKey:['shops']})
-      if (activeAccount.current === userId) navigate('/')
+      void client.invalidateQueries({queryKey:['shops']})
+      navigate('/')
       void client.invalidateQueries({queryKey:['my-premium-requests']})
     } catch(e) {setError(describeError(e))} finally {setBusy(false)}
   }
