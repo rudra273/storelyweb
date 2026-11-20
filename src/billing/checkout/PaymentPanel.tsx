@@ -20,7 +20,10 @@ function cashChange(received: string, owed: string): string | null {
   const totalPaise = paymentMinorUnits(owed)
   if (cashPaise === null || totalPaise === null || cashPaise <= totalPaise) return null
   const diff = cashPaise - totalPaise
-  return `${diff / 100n}.${String(diff % 100n).padStart(2, '0')}`
+  // Keep the rupee portion as bigint: Number would discard paise for large cash.
+  const fraction = String(diff % 100n).padStart(2, '0')
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .formatToParts(diff / 100n).map(part => part.type === 'fraction' ? fraction : part.value).join('')
 }
 
 /** How the customer paid. Nothing is chosen for the cashier, and picking UPI or card only
@@ -50,7 +53,7 @@ export function PaymentPanel({ total, value, onChange, error, disabled }: {
           : <Field label="Reference" maxLength={100} placeholder="Optional" value={value.reference} onChange={e => set({ reference: e.target.value })} />}
       </div>
       {value.method !== 'cash' && <small className="hint">Records how it was paid. Storely does not collect or confirm this payment.</small>}
-      {change && <p className="change-due" role="status">Change to return <strong>{formatMoney(change)}</strong></p>}
+      {change && <p className="change-due" role="status">Change to return <strong>{change}</strong></p>}
     </>}
     {error && <small id="paid-error" className="field-error" role="alert">{error}</small>}
   </fieldset>

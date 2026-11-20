@@ -1310,3 +1310,19 @@ test('unpaid checkout normalizes payment method to cash and reference to null ev
   expect(sent.settlement_choice).toBe('unpaid')
   expect(sent.payment).toEqual({ amount: '0', method: 'cash', reference: null })
 })
+
+for (const [method, reference, expected] of [['cash', 'UTR-OLD', null], ['upi', '  UTR-001  ', 'UTR-001'], ['card', '  AUTH-002  ', 'AUTH-002'], ['bank', '   ', null], ['online', '  WEB-003  ', 'WEB-003']] as const) {
+  test(`record-payment ${method} uses canonical method and reference normalization`, async () => {
+    const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ok('GET', '/v1/shops/s1/bills/b1', detail), ok('POST', '/v1/shops/s1/bills/b1/payments', detail)])
+    renderApp('/billing/b1')
+    await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+    const dialog = screen.getByRole('dialog', { name: 'Record payment' })
+    const selector = within(dialog).getByLabelText('Payment method')
+    expect(within(selector).getAllByRole('option').map(option => [(option as HTMLOptionElement).value, option.textContent])).toEqual([['cash', 'Cash'], ['upi', 'UPI'], ['card', 'Card'], ['bank', 'Bank transfer'], ['online', 'Online']])
+    await userEvent.selectOptions(selector, method === 'cash' ? 'upi' : method)
+    await userEvent.type(within(dialog).getByLabelText('Reference'), reference)
+    if (method === 'cash') await userEvent.selectOptions(selector, 'cash')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Record payment' }))
+    await waitFor(() => expect(calls.find(call => call.path.endsWith('/payments'))?.body).toMatchObject({ method, reference: expected }))
+  })
+}

@@ -52,7 +52,7 @@ export function BillAction({ action, detail, close }: { action: BillActionKind; 
     if (sending.current || uncertainCancel) return
     if ((action === 'cancel' || action === 'return') && reason.trim().length < 3) { setReasonError(action === 'cancel' ? 'Say why this is being voided, so the record explains it later.' : 'Say why the items are coming back.'); return }
     setReasonError('')
-    const body = action === 'payment' ? { amount, method, reference: reference || null, notes: reason || null } : action === 'cancel' ? { reason: reason.trim() } : { quantities: Object.fromEntries(Object.entries(quantities).filter(([, q]) => Number(q) > 0)), settlement, refund_method: method, reason: reason.trim() || null }
+    const body = action === 'payment' ? { amount, method, reference: method === 'cash' ? null : reference.trim() || null, notes: reason || null } : action === 'cancel' ? { reason: reason.trim() } : { quantities: Object.fromEntries(Object.entries(quantities).filter(([, q]) => Number(q) > 0)), settlement, refund_method: method, reason: reason.trim() || null }
     const next = attempt ?? { body, key: action === 'cancel' ? undefined : crypto.randomUUID() }
     if (action !== 'cancel') setAttempt(next)
     sending.current = true
