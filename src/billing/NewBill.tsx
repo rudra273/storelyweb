@@ -301,17 +301,17 @@ function BillForm({ another }: { another: () => void }) {
       {attempt ? 'An invoice you were saving was not confirmed before this page closed. Retry saving to safely finish this same invoice; it will not be created twice.' : `Your unfinished invoice from ${new Date(restored.savedAt).toLocaleString()} was restored.`}
       {!attempt && !draftConflict && <> <button type="button" className="link" onClick={discard}>Discard draft</button></>}
     </Alert>}
-    <div className="actions"><button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button></div>
-    {!!draftStore.initialHeld.length && <section className="card" aria-label="Held invoices">
-      <h2>Held invoices ({draftStore.initialHeld.length})</h2>
-      <p className="muted">Saved in this browser for this account and shop. Resuming holds your current editable invoice in its place.</p>
-      <ul>{draftStore.initialHeld.map(held => <li key={held.id}>
-        <strong>{held.data.customer.customer_name.trim() || 'Walk-in customer'}</strong> · {held.data.items.length + held.data.custom.length} items · {new Date(held.savedAt).toLocaleString()}
-        <div className="actions"><button type="button" disabled={locked} onClick={() => void moveDraft('resume', held.id)}>Resume held invoice</button><button type="button" className="link" disabled={locked} onClick={() => void moveDraft('discardHeld', held.id)}>Discard held invoice</button></div>
-      </li>)}</ul>
-    </section>}
     <form className="checkout-grid" onSubmit={submit}>
       <fieldset className="checkout-main" disabled={locked}>
+        <div className="actions"><button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button></div>
+        {!!draftStore.initialHeld.length && <section className="card" aria-label="Held invoices">
+          <h2>Held invoices ({draftStore.initialHeld.length})</h2>
+          <p className="muted">Saved in this browser for this account and shop. Resuming holds your current editable invoice in its place.</p>
+          <ul>{draftStore.initialHeld.map(held => <li key={held.id}>
+            <strong>{held.data.customer.customer_name.trim() || 'Walk-in customer'}</strong> · {held.data.items.length + held.data.custom.length} items · {new Date(held.savedAt).toLocaleString()}
+            <div className="actions"><button type="button" disabled={locked} onClick={() => void moveDraft('resume', held.id)}>Resume held invoice</button><button type="button" className="link" disabled={locked} onClick={() => void moveDraft('discardHeld', held.id)}>Discard held invoice</button></div>
+          </li>)}</ul>
+        </section>}
         <section className="card checkout-items" aria-label="Items">
           <ScanBox status={scanStatus} onStatus={setScanStatus} disabled={locked} onProduct={addProduct} onUnknown={setUnknown} onDone={goToPayment} />
           {unknown && <div className="unknown-code" role="alert">
