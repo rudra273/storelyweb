@@ -1179,3 +1179,134 @@ test('staff scanning an unknown barcode cannot open product creation', async () 
   expect(screen.getByText('Ask the owner to add this product to the list.')).toBeInTheDocument()
   expect(screen.queryByLabelText(/^Quantity for/)).not.toBeInTheDocument()
 })
+
+for (const [method, label, rawRef, expectedRef] of [
+  ['cash', 'Cash', null, null],
+  ['upi', 'UPI', '  UTR-101  ', 'UTR-101'],
+  ['card', 'Card', '  AUTH-202  ', 'AUTH-202'],
+  ['bank', 'Bank transfer', '   ', null],
+  ['online', 'Online', '', null],
+] as const) {
+  test(`checkout Paid by supports ${label} (${method}) and submits trimmed/nullable reference`, async () => {
+    const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', detail)])
+    renderApp('/billing/new')
+    await addRice()
+    await userEvent.click(screen.getByLabelText('Paid in full'))
+    const paidBy = screen.getByLabelText('Paid by')
+    expect(within(paidBy).getAllByRole('option').map(o => [(o as HTMLOptionElement).value, o.textContent])).toEqual([
+      ['cash', 'Cash'],
+      ['upi', 'UPI'],
+      ['card', 'Card'],
+      ['bank', 'Bank transfer'],
+      ['online', 'Online'],
+    ])
+    await userEvent.selectOptions(paidBy, label)
+    expect(paidBy).toHaveValue(method)
+    if (method === 'cash') {
+      expect(screen.queryByLabelText('Reference')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Cash received')).toBeInTheDocument()
+      expect(screen.queryByText(/Storely does not collect/)).not.toBeInTheDocument()
+    } else {
+      const refInput = screen.getByLabelText('Reference')
+      expect(refInput).toHaveAttribute('maxlength', '100')
+      expect(screen.getByText(/Storely does not collect or confirm this payment/)).toBeInTheDocument()
+      if (rawRef) await userEvent.type(refInput, rawRef)
+    }
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+    await screen.findByRole('heading', { name: 'Invoice saved' })
+    const sent = calls.find(c => c.path === '/v1/shops/s1/bills')?.body as { payment: { amount: string; method: string; reference: string | null } }
+    expect(sent.payment).toEqual({ amount: preview.total, method, reference: expectedRef })
+  })
+}
+
+test('switching Paid by from UPI with reference to Cash hides reference, persists exact cash change across reload, and sends cash with null reference', async () => {
+  const paidDetail = { ...detail, bill: { ...bill, customer_name: 'Walk-in customer', paid_amount: '189.00', balance_due: '0.00', payment_status: 'paid' } }
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', paidDetail)])
+  const first = renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'UTR-999')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'cash')
+  expect(screen.queryByLabelText('Reference')).not.toBeInTheDocument()
+  const cashInput = screen.getByLabelText('Cash received')
+  await userEvent.type(cashInput, '200.001')
+  expect(screen.queryByText(/Change to return/)).not.toBeInTheDocument()
+  await userEvent.clear(cashInput)
+  await userEvent.type(cashInput, '200.50')
+  expect(await screen.findByText(/Change to return/)).toHaveTextContent('Change to return ₹11.50')
+  await waitFor(() => expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data).toMatchObject({ method: 'cash', cash: '200.50', reviewedContext: preview.reviewed_context }))
+  first.unmount()
+
+  renderApp('/billing/new')
+  expect(await screen.findByLabelText('Paid by')).toHaveValue('cash')
+  expect(screen.getByLabelText('Cash received')).toHaveValue('200.50')
+  expect(screen.queryByLabelText('Reference')).not.toBeInTheDocument()
+  expect(await screen.findByText(/Change to return/)).toHaveTextContent('Change to return ₹11.50')
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByRole('heading', { name: 'Invoice saved' })
+  const write = calls.find(c => c.path === '/v1/shops/s1/bills')!
+  expect((write.body as { payment: unknown }).payment).toEqual({ amount: preview.total, method: 'cash', reference: null })
+  expect(JSON.stringify(write.body)).not.toContain('UTR-999')
+  expect(JSON.stringify(write.body)).not.toContain('200.50')
+})
+
+test('partial checkout completion shows summary and actions, and New invoice clears cart, settlement, method, cash received, and reference', async () => {
+  const partialBill = { ...detail, bill: { ...bill, customer_name: 'Walk-in customer', total_amount: '189.00', paid_amount: '100.00', balance_due: '89.00', payment_status: 'partial' } }
+  fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', partialBill)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), '250')
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '100')
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'bank')
+  await userEvent.type(screen.getByLabelText('Reference'), 'NEFT-777')
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+
+  const completion = (await screen.findByRole('heading', { name: 'Invoice saved' })).closest('section')!
+  expect(within(completion).getByText(bill.bill_number)).toBeInTheDocument()
+  expect(within(completion).getByText('Walk-in customer')).toBeInTheDocument()
+  expect(within(completion).getByText('Total').closest('div')).toHaveTextContent('Total₹189.00')
+  expect(within(completion).getByText('Received').closest('div')).toHaveTextContent('Received₹100.00')
+  expect(within(completion).getByText('Balance due').closest('div')).toHaveTextContent('Balance due₹89.00')
+  expect(within(completion).getByRole('link', { name: 'Print' })).toHaveAttribute('href', '/billing/b1?print=1')
+  expect(within(completion).getByRole('link', { name: 'View invoice' })).toHaveAttribute('href', '/billing/b1')
+
+  await userEvent.click(within(completion).getByRole('button', { name: 'New invoice' }))
+  expect(await screen.findByLabelText('Scan barcode or search products')).toHaveFocus()
+  expect(screen.queryByLabelText('Quantity for Rice')).not.toBeInTheDocument()
+  expect(localStorage.getItem('storely.draft.bill.u1.s1')).toBeNull()
+
+  await addRice()
+  for (const label of ['Paid in full', 'Part paid', 'Not paid yet']) expect(screen.getByLabelText(label)).not.toBeChecked()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  expect(screen.getByLabelText('Paid by')).toHaveValue('cash')
+  expect(screen.getByLabelText('Cash received')).toHaveValue('')
+  expect(screen.queryByText(/Change to return/)).not.toBeInTheDocument()
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'bank')
+  expect(screen.getByLabelText('Reference')).toHaveValue('')
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('')
+})
+
+test('unpaid checkout normalizes payment method to cash and reference to null even after non-cash selection', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/bills', detail)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.selectOptions(screen.getByLabelText('Paid by'), 'upi')
+  await userEvent.type(screen.getByLabelText('Reference'), 'UTR-SKIP')
+  await userEvent.click(screen.getByLabelText('Not paid yet'))
+  await userEvent.click(screen.getByLabelText('Keep this balance unassigned'))
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+  await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+  await screen.findByRole('heading', { name: 'Invoice saved' })
+  const sent = calls.find(c => c.path === '/v1/shops/s1/bills')?.body as { settlement_choice: string; payment: unknown }
+  expect(sent.settlement_choice).toBe('unpaid')
+  expect(sent.payment).toEqual({ amount: '0', method: 'cash', reference: null })
+})

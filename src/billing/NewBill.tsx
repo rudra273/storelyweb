@@ -235,14 +235,14 @@ function BillForm({ another }: { another: () => void }) {
     setPaidError('')
     sending.current = true
     setPreparing(true)
-    const reference = payment.method === 'cash' ? null : payment.reference || null
+    const reference = payment.method === 'cash' ? null : payment.reference.trim() || null
     const next = attempt ?? {
       body: {
         ...cart,
         settlement_choice: payment.paid === 'part' ? 'partial' : payment.paid === 'none' ? 'unpaid' : 'full',
         reviewed_context: totals!.reviewed_context,
         allow_unassigned_credit: unlinked && consentCurrent,
-        payment: { amount: paidNow, method: payment.method, reference: payment.paid === 'none' ? null : reference },
+        payment: { amount: paidNow, method: payment.paid === 'none' ? 'cash' : payment.method, reference: payment.paid === 'none' ? null : reference },
       },
       key: crypto.randomUUID(),
     }

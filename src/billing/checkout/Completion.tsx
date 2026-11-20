@@ -8,10 +8,12 @@ import type { BillDetail } from '../queries'
 export function Completion({ detail, onAnother }: { detail: BillDetail; onAnother: () => void }) {
   const b = detail.bill
   const due = Number(b.balance_due) > 0
+  const customer = [b.customer_name?.trim() || 'Walk-in customer', b.customer_phone].filter(Boolean).join(' · ')
   return <section className="card completion" aria-labelledby="completion-title">
     <p className="completion-mark" aria-hidden="true">✓</p>
     <h2 id="completion-title" tabIndex={-1} ref={el => el?.focus()}>Invoice saved</h2>
     <p className="completion-number">{b.bill_number}</p>
+    <p className="muted">{customer}</p>
     <dl className="completion-figures">
       <div><dt>Total</dt><dd>{formatMoney(b.total_amount)}</dd></div>
       <div><dt>Received</dt><dd>{formatMoney(b.paid_amount)}</dd></div>

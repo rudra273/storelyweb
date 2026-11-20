@@ -1,5 +1,6 @@
 import { Field } from '../../components/ui/ui'
-import { balanceAfter, changeToReturn, formatMoney } from '../../lib/money'
+import { balanceAfter, formatMoney } from '../../lib/money'
+import { paymentMinorUnits } from './settlement'
 import type { BillInput } from '../queries'
 
 export type Method = BillInput['payment']['method']
@@ -13,6 +14,15 @@ const METHODS: { value: Method; label: string }[] = [
 
 export interface PaymentFields { paid: Paid | null; amount: string; method: Method; reference: string; cash: string }
 
+/** Exact paise change for a valid 2-decimal rupee amount strictly above total; counter-only. */
+function cashChange(received: string, owed: string): string | null {
+  const cashPaise = paymentMinorUnits(received)
+  const totalPaise = paymentMinorUnits(owed)
+  if (cashPaise === null || totalPaise === null || cashPaise <= totalPaise) return null
+  const diff = cashPaise - totalPaise
+  return `${diff / 100n}.${String(diff % 100n).padStart(2, '0')}`
+}
+
 /** How the customer paid. Nothing is chosen for the cashier, and picking UPI or card only
  * records how it was paid: Storely does not take or confirm the payment. */
 export function PaymentPanel({ total, value, onChange, error, disabled }: {
@@ -23,7 +33,7 @@ export function PaymentPanel({ total, value, onChange, error, disabled }: {
   disabled: boolean
 }) {
   const set = (patch: Partial<PaymentFields>) => onChange({ ...value, ...patch })
-  const change = value.paid === 'full' && value.method === 'cash' && total ? changeToReturn(value.cash, total) : null
+  const change = value.paid === 'full' && value.method === 'cash' && total ? cashChange(value.cash, total) : null
   const left = value.paid === 'part' && total ? balanceAfter(total, value.amount) : null
   return <fieldset className="payment-choice" disabled={disabled} aria-invalid={error ? true : undefined} aria-describedby={error ? 'paid-error' : undefined}>
     <legend className="required-label">Payment</legend>
