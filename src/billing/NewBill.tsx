@@ -14,7 +14,7 @@ import { useDebounced } from '../lib/useDebounced'
 import { SALES } from '../lib/vocabulary'
 import { gstinProblem, phoneProblem } from '../lib/validate'
 import { ProductForm } from '../products/components/ProductForm'
-import type { Product } from '../products/queries'
+import type { Product, ProductDetail } from '../products/queries'
 import { useShop } from '../shops/context'
 import { can } from '../permissions'
 import { CustomItemEditor, type CustomLine } from './CustomItem'
@@ -51,6 +51,7 @@ interface BillDraft {
   reviewedContext?: string | null
   allowUnassigned?: boolean
   consentContext?: string | null
+  pendingCatalogProduct?: Product | null
   attempt: { body: BillInput; key: string } | null
 }
 
@@ -66,6 +67,7 @@ function isBillDraft(value: unknown): value is BillDraft {
   if (!['cash', 'upi', 'card', 'bank', 'online'].includes(String(value.method))) return false
   if ((value.cash !== undefined && typeof value.cash !== 'string') || (value.allowUnassigned !== undefined && typeof value.allowUnassigned !== 'boolean')) return false
   if (['reviewedContext', 'consentContext'].some(key => value[key] !== undefined && value[key] !== null && typeof value[key] !== 'string')) return false
+  if (value.pendingCatalogProduct !== undefined && value.pendingCatalogProduct !== null && (!record(value.pendingCatalogProduct) || !strings(value.pendingCatalogProduct, ['uuid', 'name', 'selling_price', 'quantity']))) return false
   if (value.attempt === null) return true
   return record(value.attempt) && typeof value.attempt.key === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(value.attempt.key) &&
     record(value.attempt.body) && Array.isArray(value.attempt.body.items) && value.attempt.body.items.length > 0 && value.attempt.body.items.length <= MAX_LINES &&
@@ -73,7 +75,7 @@ function isBillDraft(value: unknown): value is BillDraft {
 }
 
 function hasInvoiceDraft(draft: BillDraft): boolean {
-  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.discount !== '0' || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.attempt)
+  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.discount !== '0' || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.pendingCatalogProduct || draft.attempt)
 }
 
 function BillForm({ another }: { another: () => void }) {
@@ -95,6 +97,7 @@ function BillForm({ another }: { another: () => void }) {
   const [custom, setCustom] = useState<CustomLine[]>(saved?.custom ?? [])
   const [addingCustom, setAddingCustom] = useState(false)
   const [creating, setCreating] = useState<string | null>(null)
+  const [pendingCatalogProduct, setPendingCatalogProduct] = useState<Product | null>(saved?.pendingCatalogProduct ?? null)
   const [unknown, setUnknown] = useState<string | null>(null)
   const [scanStatus, setScanStatus] = useState<Status>(READY)
   const [items, setItems] = useState<CartItem[]>(saved?.items ?? [])
@@ -121,21 +124,21 @@ function BillForm({ another }: { another: () => void }) {
     mounted.current = true
     return () => { mounted.current = false }
   }, [])
-  const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, attempt } satisfies BillDraft)
+  const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, pendingCatalogProduct, attempt } satisfies BillDraft)
   useEffect(() => {
-    if (done || !userId) return
+    if (done || !userId || creating || preparing) return
     const draft = JSON.parse(draftText) as BillDraft
     const empty = !hasInvoiceDraft(draft)
     // Storage is coordinated across tabs; the callback only reports an external failure.
     void (empty ? draftStore.clear({ isActive: () => mounted.current }) : draftStore.save(draft, { isActive: () => mounted.current })).catch(persistenceFailure)
-  }, [draftText, userId, shop, done, draftStore])
+  }, [draftText, userId, shop, done, draftStore, creating, preparing])
   async function discard() {
     try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
     commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
     setAllowUnassigned(false); setConsentContext(null); setReviewedContext(null)
     setStorageError('')
-    setRestored(null)
+    setRestored(null); setPendingCatalogProduct(null)
   }
   const mutation = useBillingMutation(createBill)
 
@@ -193,9 +196,9 @@ function BillForm({ another }: { another: () => void }) {
   const customPreview = totals?.lines?.filter(l => l.product_uuid === null) ?? []
 
   const note = (text: string, kind: Status['kind'] = 'ok'): Status => ({ kind, text })
-  function addProduct(product: Product, fromEditor = false): Status {
+  function addProduct(product: Product): Status {
     const owner = checkoutOwner.current
-    if (!mounted.current || owner.userId !== userId || owner.shop !== shop || owner.uncertain || owner.conflict || (owner.blocked && !fromEditor) || (fromEditor && !owner.allowed)) return note('This invoice is no longer available for adding products.', 'error')
+    if (!mounted.current || owner.userId !== userId || owner.shop !== shop || owner.uncertain || owner.conflict || owner.blocked) return note('This invoice is no longer available for adding products.', 'error')
     setUnknown(null)
     const current = itemsNow.current
     const existing = current.some(i => i.product.uuid === product.uuid)
@@ -211,7 +214,7 @@ function BillForm({ another }: { another: () => void }) {
   // The payment options may only just have appeared (the first item), so look after this render.
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
   const unlinked = !!payment.paid && payment.paid !== 'full' && (paymentMinorUnits(totals?.total ?? '') ?? 0n) > 0n && !/\d/.test(customer.customer_phone)
-  const canCreate = !!totals && priceCurrent && !preview.isFetching && !preview.error &&
+  const canCreate = !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
     lineCount > 0 && (!payment.paid || reviewCurrent) && (!unlinked || consentCurrent)
 
   async function submit(e: FormEvent) {
@@ -301,7 +304,7 @@ function BillForm({ another }: { another: () => void }) {
   }
   async function openProduct(code: string) {
     const barcode = barcodeForCreation(code)
-    if (!barcode || locked || sending.current || !canCreateProduct) return
+    if (!barcode || locked || sending.current || !canCreateProduct || pendingCatalogProduct) return
     const ownsCheckout = () => mounted.current && checkoutOwner.current.userId === userId && checkoutOwner.current.shop === shop && checkoutOwner.current.allowed && !checkoutOwner.current.uncertain && !checkoutOwner.current.conflict
     sending.current = true; setPreparing(true)
     try {
@@ -310,11 +313,66 @@ function BillForm({ another }: { another: () => void }) {
     } catch (error) { persistenceFailure(error) }
     finally { sending.current = false; if (mounted.current) setPreparing(false) }
   }
+  async function receiveCatalogProduct(product: Product, refresh = false) {
+    const ownsCheckout = () => mounted.current && checkoutOwner.current.userId === userId && checkoutOwner.current.shop === shop && checkoutOwner.current.allowed && !checkoutOwner.current.uncertain && !checkoutOwner.current.conflict
+    if (sending.current || !ownsCheckout()) return
+    // A product is already committed in the catalogue. Retry only its cart handoff.
+    if (!refresh && outOfStock(product)) {
+      setScanStatus(note(`${product.name} is out of stock, so it cannot be sold. Receive stock first.`, 'error'))
+      setUnknown(null); setCreating(null)
+      return
+    }
+    sending.current = true; setPreparing(true); setPendingCatalogProduct(product)
+    try {
+      if (refresh) {
+        const id = product.uuid
+        product = (await api.get<ProductDetail>(`/v1/shops/${shop}/products/${encodeURIComponent(id)}`)).product
+        if (product.uuid !== id) throw new Error('The catalogue returned a different product. Keep this saved product and retry after refreshing the catalogue.')
+        if (!ownsCheckout()) return
+        setPendingCatalogProduct(product)
+      }
+      // Keep exact identity recoverable even if the subsequent larger cart write fails.
+      await draftStore.save({ ...activeDraft, pendingCatalogProduct: product }, { isActive: ownsCheckout })
+      if (outOfStock(product)) throw new Error(`${product.name} is out of stock, so it cannot be sold. Receive stock first.`)
+      if (!activeDraft.items.some(line => line.product.uuid === product.uuid) && activeDraft.items.length + activeDraft.custom.length >= MAX_LINES) {
+        setStorageError(`The product is saved in the catalogue. This invoice already has ${MAX_LINES} lines. Remove a line, then retry adding the saved product.`)
+        return
+      }
+      const next = addOrIncrement(activeDraft.items, product)
+      await draftStore.save({ ...activeDraft, items: next.items, pendingCatalogProduct: null }, { isActive: ownsCheckout })
+      if (!ownsCheckout()) return
+      commit(next.items); setPendingCatalogProduct(null); setUnknown(null); setStorageError('')
+      const warning = stockProblem(product, next.quantity)
+      setScanStatus(note(warning ? `${product.name} × ${formatQty(next.quantity)}. ${warning}` : next.added ? `Added ${product.name}` : `${product.name} × ${formatQty(next.quantity)}`, warning ? 'warn' : 'ok'))
+    } catch (error) {
+      if (mounted.current) {
+        persistenceFailure(error)
+        setStorageError(`The product was saved in the catalogue, but it has not been added to this invoice. ${error instanceof Error ? error.message : 'Restore browser storage and retry adding the saved product.'}`)
+      }
+    } finally {
+      sending.current = false
+      if (mounted.current) { setCreating(null); setPreparing(false) }
+    }
+  }
+  async function leaveCatalogProduct() {
+    if (sending.current || locked) return
+    sending.current = true; setPreparing(true)
+    try {
+      await draftStore.save({ ...activeDraft, pendingCatalogProduct: null }, { isActive: () => mounted.current })
+      if (mounted.current) { setPendingCatalogProduct(null); setUnknown(null); setStorageError(''); setScanStatus(note('The saved product remains in the catalogue.')) }
+    } catch (error) { persistenceFailure(error) }
+    finally { sending.current = false; if (mounted.current) setPreparing(false) }
+  }
   const canSave = !creating && !draftConflict && !preparing && !mutation.isPending && (!!attempt || canCreate)
   const rows: [string, string][] = totals ? ([['Subtotal', totals.subtotal], ['Discount', totals.discount_amount], ['CGST', totals.cgst_amount], ['SGST', totals.sgst_amount], ['IGST', totals.igst_amount], ['Round-off', totals.round_off_amount]] as [string, string][]).filter(([k, v]) => k === 'Subtotal' || Number(v) !== 0) : []
   return <div className="checkout-page">
     <PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">← Back to {SALES.invoices.toLowerCase()}</Link>} />
     {storageError && <Alert>{storageError}</Alert>}
+    {pendingCatalogProduct && <Alert kind="info">
+      <p><strong>{pendingCatalogProduct.name}</strong> is saved in the catalogue. It has not been added to this invoice.</p>
+      <button type="button" disabled={locked || !canCreateProduct} onClick={() => void receiveCatalogProduct(pendingCatalogProduct, true)}>Retry adding saved product</button>{' '}
+      <button type="button" className="link" disabled={locked} onClick={() => void leaveCatalogProduct()}>Continue without adding product</button>
+    </Alert>}
     {restored && <Alert kind="info">
       {attempt ? 'An invoice you were saving was not confirmed before this page closed. Retry saving to safely finish this same invoice; it will not be created twice.' : `Your unfinished invoice from ${new Date(restored.savedAt).toLocaleString()} was restored.`}
       {!attempt && !draftConflict && <> <button type="button" className="link" onClick={discard}>Discard draft</button></>}
@@ -335,7 +393,7 @@ function BillForm({ another }: { another: () => void }) {
           {unknown && <div className="unknown-code" role="alert">
             <p>No product has the barcode or code <code>{unknown}</code>.</p>
             <div className="actions">
-              {canCreateProduct && barcodeForCreation(unknown) && <button type="button" onClick={() => void openProduct(unknown)}>Create product with this barcode</button>}
+              {canCreateProduct && !pendingCatalogProduct && barcodeForCreation(unknown) && <button type="button" onClick={() => void openProduct(unknown)}>Create product with this barcode</button>}
               {canCustom && <button type="button" onClick={() => setAddingCustom(true)}>Add as item not in the list</button>}
               <button type="button" className="link" onClick={() => setUnknown(null)}>Dismiss</button>
             </div>
@@ -392,11 +450,6 @@ function BillForm({ another }: { another: () => void }) {
       </aside>
     </form>
     {addingCustom && <CustomItemEditor onClose={() => setAddingCustom(false)} onAdd={line => { setCustom([...custom, line]); setAddingCustom(false); setUnknown(null) }} />}
-    {creating && <ProductForm startingBarcode={creating} onClose={() => setCreating(null)} onSaved={(_id, savedProduct) => {
-      const owner = checkoutOwner.current
-      if (!mounted.current || owner.userId !== userId || owner.shop !== shop || !owner.allowed || owner.uncertain || owner.conflict) return
-      setScanStatus(addProduct(savedProduct, true))
-      setCreating(null)
-    }} />}
+    {creating && <ProductForm startingBarcode={creating} onClose={() => setCreating(null)} onSaved={(_id, savedProduct) => receiveCatalogProduct(savedProduct)} />}
   </div>
 }

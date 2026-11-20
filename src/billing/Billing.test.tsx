@@ -1326,3 +1326,98 @@ for (const [method, reference, expected] of [['cash', 'UTR-OLD', null], ['upi', 
     await waitFor(() => expect(calls.find(call => call.path.endsWith('/payments'))?.body).toMatchObject({ method, reference: expected }))
   })
 }
+
+test('saved catalogue product survives failed invoice handoff and reload without a second catalogue POST', async () => {
+  const calls = fakeApi([...entryRoutes(), ok('GET', '/v1/shops/s1/products/lookup?code=000', { error: { code: 'no_such_code', message: 'No such code' } }, 404), ok('POST', '/v1/shops/s1/products', { product: ENTRY_PRODUCT, movements: [] }), ok('GET', '/v1/shops/s1/products/created-exact', { product: ENTRY_PRODUCT, movements: [] })])
+  const first = renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), '200')
+  const dialog = await openUnknownProduct()
+  await enterScannedProduct(dialog)
+  const original = Storage.prototype.setItem
+  const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (key.startsWith('storely.draft.bill.') && JSON.parse(value).data?.items?.some((line: { product: { uuid: string } }) => line.product.uuid === ENTRY_PRODUCT.uuid)) throw new DOMException('Quota', 'QuotaExceededError')
+    original.call(this, key, value)
+  })
+  try {
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+    await screen.findByRole('button', { name: 'Retry adding saved product' })
+    expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+    expect(screen.getByLabelText('Cash received')).toHaveValue('200')
+    expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.pendingCatalogProduct.uuid).toBe(ENTRY_PRODUCT.uuid)
+    first.unmount()
+    renderApp('/billing/new')
+    expect(await screen.findByRole('button', { name: 'Retry adding saved product' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
+  } finally { blocked.mockRestore() }
+  await userEvent.click(screen.getByRole('button', { name: 'Retry adding saved product' }))
+  expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue(1)
+  expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.items.map((line: { product: { uuid: string } }) => line.product.uuid)).toEqual(['p1', ENTRY_PRODUCT.uuid])
+  expect(screen.queryByRole('button', { name: 'Retry adding saved product' })).not.toBeInTheDocument()
+  expect(calls.filter(call => call.method === 'POST' && call.path === '/v1/shops/s1/products')).toHaveLength(1)
+})
+
+for (const leave of [false, true]) {
+  test(`catalogue return waits for durable handoff ${leave ? 'and cannot write after checkout unmount' : 'before closing the editor'}`, async () => {
+    let release!: () => void
+    const calls = fakeApi([...entryRoutes(), ok('GET', '/v1/shops/s1/products/lookup?code=000', { error: { code: 'no_such_code', message: 'No such code' } }, 404), ok('POST', '/v1/shops/s1/products', () => {
+      void navigator.locks.request('storely.draft.bill.u1.s1', () => new Promise<void>(resolve => { release = resolve }))
+      return { product: ENTRY_PRODUCT, movements: [] }
+    })])
+    const app = renderApp('/billing/new')
+    await addRice()
+    const dialog = await openUnknownProduct()
+    await enterScannedProduct(dialog)
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+    try {
+      expect(await within(dialog).findByRole('button', { name: 'Saving…' })).toBeDisabled()
+      expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
+      expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.items.map((line: { product: { uuid: string } }) => line.product.uuid)).toEqual(['p1'])
+      if (leave) app.unmount()
+    } finally { release() }
+    if (leave) {
+      await navigator.locks.request('storely.draft.bill.u1.s1', () => {})
+      expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.items.map((line: { product: { uuid: string } }) => line.product.uuid)).toEqual(['p1'])
+    } else {
+      expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue(1)
+      expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
+    }
+    expect(calls.filter(call => call.method === 'POST' && call.path === '/v1/shops/s1/products')).toHaveLength(1)
+  })
+}
+
+for (const result of ['available', 'deleted', 'empty', 'wrong-identity'] as const) {
+  test(`pending catalogue return refreshes exact identity before retry: ${result}`, async () => {
+    const latest = { ...ENTRY_PRODUCT, name: 'Current Salt', selling_price: '15.00', quantity: result === 'empty' ? '0' : '2', uuid: result === 'wrong-identity' ? 'another-product' : ENTRY_PRODUCT.uuid }
+    const calls = fakeApi([...entryRoutes(), ok('GET', '/v1/shops/s1/products/created-exact', result === 'deleted' ? { error: { code: 'not_found', message: 'The product was deleted' } } : { product: latest, movements: [] }, result === 'deleted' ? 404 : 200)])
+    const first = renderApp('/billing/new')
+    await addRice()
+    first.unmount()
+    const key = 'storely.draft.bill.u1.s1'
+    const draft = JSON.parse(localStorage.getItem(key)!)
+    draft.data.pendingCatalogProduct = ENTRY_PRODUCT
+    localStorage.setItem(key, JSON.stringify(draft))
+    renderApp('/billing/new')
+    await userEvent.click(await screen.findByRole('button', { name: 'Retry adding saved product' }))
+    if (result === 'available') {
+      expect(await screen.findByLabelText('Quantity for Current Salt')).toHaveValue(1)
+      const persisted = JSON.parse(localStorage.getItem(key)!).data
+      expect(persisted.items[1].product).toMatchObject({ uuid: ENTRY_PRODUCT.uuid, selling_price: '15.00', quantity: '2' })
+      expect(persisted.pendingCatalogProduct).toBeNull()
+    } else {
+      await screen.findByText(/The product was saved in the catalogue, but it has not been added/)
+      expect(screen.queryByLabelText('Quantity for Current Salt')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+      expect(JSON.parse(localStorage.getItem(key)!).data.pendingCatalogProduct.uuid).toBe(ENTRY_PRODUCT.uuid)
+      await userEvent.click(screen.getByRole('button', { name: 'Continue without adding product' }))
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Retry adding saved product' })).not.toBeInTheDocument())
+      expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+    }
+    expect(calls.filter(call => call.path === '/v1/shops/s1/products/created-exact')).toHaveLength(1)
+    expect(calls.filter(call => call.method === 'POST' && call.path === '/v1/shops/s1/products')).toHaveLength(0)
+  })
+}
