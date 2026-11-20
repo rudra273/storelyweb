@@ -20,7 +20,7 @@ import { useDirtyClose } from '../../lib/dirty'
 
 /** Add a product (no `product`) or edit one. Stock is never typed in on edit: it is changed
  * with "Adjust stock", so the history always explains the number. */
-export function ProductForm({ product, startingBarcode, onClose, onSaved }: { product?: Product; startingBarcode?: string; onClose: () => void; onSaved: (id: string) => void }) {
+export function ProductForm({ product, startingBarcode, onClose, onSaved }: { product?: Product; startingBarcode?: string; onClose: () => void; onSaved: (id: string, savedProduct: Product) => void }) {
   const sending = useRef(false)
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
@@ -154,7 +154,7 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
         try { return await save.mutateAsync({ id: baseline?.uuid, body, retryKey: product ? undefined : retryKey(body) }) }
         catch (failure) { if (failure instanceof ApiError && failure.code === 'changed_elsewhere') { setStale(true); setLatest(null) }; throw failure }
       })
-      if (saved) { if (keepsDraft) clearDraft('product', userId, shopId); onSaved(saved.product.uuid) }
+      if (saved && mounted.current) { if (keepsDraft) clearDraft('product', userId, shopId); onSaved(saved.product.uuid, saved.product) }
       else setFocusTick(t => t + 1)
     } finally { sending.current = false }
   }

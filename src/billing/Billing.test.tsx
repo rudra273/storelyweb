@@ -19,7 +19,8 @@ const CHECKOUT = [products, lookup, ok('GET', '/v1/shops/s1/categories', [])]
 
 /** Scans a barcode the way a keyboard-wedge scanner does: the code, then Enter. */
 async function scan(code: string) {
-  await userEvent.type(await screen.findByLabelText('Scan barcode or search products'), `${code}{Enter}`)
+  const escaped = code.replace(/[{[]/g, '$&$&')
+  await userEvent.type(await screen.findByLabelText('Scan barcode or search products'), `${escaped}{Enter}`)
 }
 async function addRice() {
   await scan('8901')
@@ -1008,4 +1009,173 @@ test('an uncertain invoice cannot be held as an editable clone', async () => {
   expect(screen.getByRole('button', { name: 'Hold invoice' })).toBeDisabled()
   expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).held).toEqual([])
   expect(calls.filter(c => c.path === '/v1/shops/s1/bills')).toHaveLength(1)
+})
+
+const ENTRY_PRODUCT = { ...product, uuid: 'created-exact', name: 'New Salt', barcode: 'edited-code', selling_price: '12.00', quantity: '4', track_stock: true }
+const ENTRY_PRICE = { price_mode: 'fixed', selling_price: '12', pre_gst_selling_price: '12', output_gst_amount: '0', purchase_price: null, purchase_gst_amount: '0', overhead_cost: '0', total_cost: null, cost_known: false, profit_margin_percent: null, profit_amount: null, gst_percent: '0', gst_source: 'shop', category_name: null, gst_registered: false }
+function entryRoutes() {
+  return [...SIGNED_IN, SHOP('owner'), lookup, ok('GET', '/v1/shops/s1/categories', []), ok('GET', '/v1/shops/s1/units', []), ok('GET', '/v1/shops/s1/suppliers', []), ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [], total: 0, next_cursor: null }), ok('POST', '/v1/shops/s1/bills/preview', preview), ok('POST', '/v1/shops/s1/products/price-preview', ENTRY_PRICE)]
+}
+async function openUnknownProduct() {
+  await scan('000')
+  await userEvent.click(await screen.findByRole('button', { name: 'Create product with this barcode' }))
+  return screen.findByRole('dialog', { name: 'Add product' })
+}
+async function enterScannedProduct(dialog: HTMLElement) {
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'New Salt')
+  await userEvent.clear(within(dialog).getByLabelText('Barcode'))
+  await userEvent.type(within(dialog).getByLabelText('Barcode'), 'edited-code')
+  await userEvent.type(within(dialog).getByLabelText('Selling price (₹)'), '12')
+  await userEvent.type(within(dialog).getByLabelText('Opening stock'), '4')
+}
+
+test('barcode product creation adds the exact saved result even when its barcode was edited', async () => {
+  let created = false
+  const calls = fakeApi([ok('GET', '/v1/shops/s1/products/lookup?code=000', () => created ? product : { error: { code: 'no_such_code', message: 'No such code' } }, 404), ...entryRoutes(), ok('POST', '/v1/shops/s1/products', () => { created = true; return { product: ENTRY_PRODUCT, movements: [] } })])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), '200')
+  const dialog = await openUnknownProduct()
+  expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.cash).toBe('200')
+  expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
+  await enterScannedProduct(dialog)
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue(1)
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(calls.filter(c => c.path === '/v1/shops/s1/products/lookup?code=000')).toHaveLength(1)
+  expect(calls.find(c => c.method === 'POST' && c.path === '/v1/shops/s1/products')?.body).toMatchObject({ barcode: 'edited-code', name: 'New Salt' })
+  expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
+})
+
+test('checkout is durably retained before opening a scanned product and storage failure blocks the editor', async () => {
+  fakeApi([...entryRoutes(), ok('GET', '/v1/shops/s1/products/lookup?code=000', { error: { code: 'no_such_code', message: 'No such code' } }, 404)])
+  renderApp('/billing/new')
+  await addRice()
+  await userEvent.click(screen.getByLabelText('Paid in full'))
+  await userEvent.type(screen.getByLabelText('Cash received'), '200')
+  await scan('000')
+  const create = await screen.findByRole('button', { name: 'Create product with this barcode' })
+  const original = Storage.prototype.setItem
+  const blocked = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (key.startsWith('storely.draft.bill.')) throw new DOMException('Blocked', 'QuotaExceededError')
+    original.call(this, key, value)
+  })
+  try {
+    await userEvent.click(create)
+    await screen.findByText(/could not be saved in this browser/)
+    expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Cash received')).toHaveValue('200')
+  } finally { blocked.mockRestore() }
+  await userEvent.click(create)
+  const dialog = await screen.findByRole('dialog', { name: 'Add product' })
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+  expect(screen.getByLabelText('Cash received')).toHaveValue('200')
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+})
+
+test('failed scanned product creation keeps editor fields and cancel retains the invoice', async () => {
+  const calls = fakeApi([...entryRoutes(), ok('GET', '/v1/shops/s1/products/lookup?code=000', { error: { code: 'no_such_code', message: 'No such code' } }, 404), ok('POST', '/v1/shops/s1/products', { error: { code: 'unavailable', message: 'Try product save again' } }, 503)])
+  renderApp('/billing/new')
+  await addRice()
+  const dialog = await openUnknownProduct()
+  await enterScannedProduct(dialog)
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent('Try product save again')
+  expect(within(dialog).getByLabelText('Barcode')).toHaveValue('edited-code')
+  expect(within(dialog).getByLabelText('Product name')).toHaveValue('New Salt')
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(calls.filter(c => c.path === '/v1/shops/s1/products/lookup?code=000')).toHaveLength(1)
+})
+
+for (const code of ['https://storely.app/product', '{"type":"product"}', '12345678-1234-1234-1234-1234567890ab']) {
+  test(`unknown internal payload ${code} cannot become a new barcode`, async () => {
+    fakeApi([...entryRoutes(), ok('GET', /^\/v1\/shops\/s1\/products\/lookup\?/, { error: { code: 'no_such_code', message: 'No such code' } }, 404)])
+    renderApp('/billing/new')
+    await scan(code)
+    await screen.findByText(/No product has the barcode or code/, { selector: '.unknown-code p' })
+    expect(screen.queryByRole('button', { name: 'Create product with this barcode' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add as item not in the list' })).toBeInTheDocument()
+  })
+}
+
+test('partial name search requires explicit selection and never creates a barcode', async () => {
+  fakeApi([
+    ...SIGNED_IN,
+    SHOP('owner'),
+    ok('GET', '/v1/shops/s1/products/lookup?code=Ric', { error: { code: 'no_such_code', message: 'No such code' } }, 404),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [product], next_cursor: null, total: 1 }),
+    ok('GET', '/v1/shops/s1/categories', []),
+  ])
+  renderApp('/billing/new')
+  await scan('Ric')
+  const status = await screen.findByText('1 products match “Ric”. Choose one below.')
+  expect(status).toHaveClass('scan-status', 'scan-warn')
+  expect(screen.getByLabelText('Scan barcode or search products')).toHaveValue('Ric')
+  expect(screen.queryByLabelText('Quantity for Rice')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create product with this barcode' })).not.toBeInTheDocument()
+  const picker = await screen.findByLabelText('Matching products')
+  expect(await within(picker).findByRole('button', { name: /Rice/ })).toBeInTheDocument()
+})
+
+test('ambiguous code conflict shows an error status without offering barcode creation', async () => {
+  const clash = ok('GET', '/v1/shops/s1/products/lookup?code=7', { error: { code: 'ambiguous_code', message: 'More than one product uses this barcode or code. Fix the catalogue.' } }, 409)
+  fakeApi([...SIGNED_IN, SHOP('owner'), clash, ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [], next_cursor: null, total: 0 }), ok('GET', '/v1/shops/s1/categories', [])])
+  renderApp('/billing/new')
+  await scan('7')
+  const status = await screen.findByText('More than one product uses this barcode or code. Fix the catalogue.')
+  expect(status).toHaveClass('scan-status', 'scan-error')
+  expect(screen.queryByRole('button', { name: 'Create product with this barcode' })).not.toBeInTheDocument()
+  expect(screen.queryByLabelText(/^Quantity for/)).not.toBeInTheDocument()
+})
+
+test('zero-stock tracked product created from checkout closes editor, reports out-of-stock, and keeps existing cart and raw fields', async () => {
+  const zeroStockProduct = { ...product, uuid: 'created-zero', name: 'Zero Salt', barcode: '000', selling_price: '12.00', quantity: '0', track_stock: true }
+  fakeApi([
+    ok('GET', '/v1/shops/s1/products/lookup?code=000', { error: { code: 'no_such_code', message: 'No such code' } }, 404),
+    ...entryRoutes(),
+    ok('POST', '/v1/shops/s1/products', { product: zeroStockProduct, movements: [] }),
+  ])
+  renderApp('/billing/new')
+  await addRice()
+  const riceQty = screen.getByLabelText('Quantity for Rice')
+  await userEvent.clear(riceQty)
+  await userEvent.type(riceQty, '2')
+  const discount = screen.getByLabelText('Discount (%)')
+  await userEvent.clear(discount)
+  await userEvent.type(discount, '10')
+  await userEvent.click(screen.getByLabelText('Part paid'))
+  await userEvent.type(screen.getByLabelText(/^Paid now/), '50.001')
+  const dialog = await openUnknownProduct()
+  await userEvent.type(within(dialog).getByLabelText('Product name'), 'Zero Salt')
+  await userEvent.type(within(dialog).getByLabelText('Selling price (₹)'), '12')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument())
+  const status = await screen.findByText('Zero Salt is out of stock, so it cannot be sold. Receive stock first.')
+  expect(status).toHaveClass('scan-status', 'scan-error')
+  expect(screen.queryByLabelText('Quantity for Zero Salt')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Create product with this barcode' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(2)
+  expect(screen.getByLabelText('Quantity for Rice')).toBeEnabled()
+  expect(screen.getByLabelText('Discount (%)')).toHaveValue(10)
+  expect(screen.getByLabelText(/^Paid now/)).toHaveValue('50.001')
+})
+
+test('staff scanning an unknown barcode cannot open product creation', async () => {
+  fakeApi([
+    ...SIGNED_IN,
+    SHOP('staff'),
+    ok('GET', '/v1/shops/s1/products/lookup?code=000', { error: { code: 'no_such_code', message: 'No product has this barcode or code.' } }, 404),
+    ok('GET', /^\/v1\/shops\/s1\/products\?/, { items: [], next_cursor: null, total: 0 }),
+    ok('GET', '/v1/shops/s1/categories', []),
+  ])
+  renderApp('/billing/new')
+  await scan('000')
+  const note = await screen.findByText(/No product has the barcode or code/, { selector: '.unknown-code p' })
+  expect(note).toHaveTextContent('000')
+  expect(screen.queryByRole('button', { name: 'Create product with this barcode' })).not.toBeInTheDocument()
+  expect(screen.getByText('Ask the owner to add this product to the list.')).toBeInTheDocument()
+  expect(screen.queryByLabelText(/^Quantity for/)).not.toBeInTheDocument()
 })

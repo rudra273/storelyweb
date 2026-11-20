@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ApiError, api } from '../../api/client'
 import { describeError } from '../../components/useAction'
 import { formatMoney } from '../../lib/money'
@@ -25,6 +25,16 @@ export function ScanBox({ status, onStatus, onProduct, onUnknown, onDone, disabl
   disabled: boolean
 }) {
   const shop = useShop().current?.shop_id ?? ''
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  const scope = useRef({ shop, disabled, generation: 0 })
+  useLayoutEffect(() => {
+    if (scope.current.shop !== shop || scope.current.disabled !== disabled) {
+      scope.current = { shop, disabled, generation: scope.current.generation + 1 }
+    }
+  }, [shop, disabled])
+  const active = (generation: number) => mounted.current && !scope.current.disabled && scope.current.generation === generation
+  const inputRevision = useRef(0)
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
   const [text, setText] = useState('')
@@ -37,40 +47,52 @@ export function ScanBox({ status, onStatus, onProduct, onUnknown, onDone, disabl
   const searching = search.trim() !== '' || category !== ''
   const results = useProducts({ q: search.trim(), category, low: false, expiring: false, noCode: false, out: false, sort: 'name', dir: 'asc', page: 0 })
 
-  async function resolve(code: string) {
+  async function resolve(code: string, raw: string, generation: number, revision: number) {
+    if (!active(generation)) return
     const base = `/v1/shops/${shop}/products`
     try {
-      setStatus(onProduct(await api.get<Product>(`${base}/lookup?code=${encodeURIComponent(code)}`), 'scan'))
+      const product = await api.get<Product>(`${base}/lookup?code=${encodeURIComponent(code)}`)
+      if (active(generation)) setStatus(onProduct(product, 'scan'))
     } catch (error) {
+      if (!active(generation)) return
       if (!(error instanceof ApiError) || error.status !== 404) {
         setStatus({ kind: 'error', text: describeError(error) })
         return
       }
-      // Not an exact code: a one-match name search is still a clear answer.
       try {
         const found = await api.get<ProductPage>(`${base}?q=${encodeURIComponent(code)}&limit=6`)
-        if (found.items.length === 1) setStatus(onProduct(found.items[0]!, 'pick'))
-        else if (found.items.length > 1) setStatus({ kind: 'warn', text: `${found.total} products match “${code}”. Choose one below.` })
-        else { setStatus({ kind: 'warn', text: `No product has the barcode or code ${code}.` }); onUnknown(code) }
+        if (!active(generation)) return
+        // A partial/fuzzy name is a suggestion, never a scanned identity.
+        if (found.items.length === 1 && found.total === 1 && found.items[0]!.name.trim().toLowerCase() === code.toLowerCase()) setStatus(onProduct(found.items[0]!, 'pick'))
+        else if (found.items.length > 0) {
+          setStatus({ kind: 'warn', text: `${found.total} products match “${code}”. Choose one below.` })
+          // Never overwrite text from a later scan or manual entry.
+          if (inputRevision.current === revision) setText(code)
+        } else { setStatus({ kind: 'warn', text: `No product has the barcode or code ${code}.` }); onUnknown(raw) }
       } catch (searchError) {
-        setStatus({ kind: 'error', text: describeError(searchError) })
+        if (active(generation)) setStatus({ kind: 'error', text: describeError(searchError) })
       }
     }
   }
 
   function keyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (!active(scope.current.generation)) return
     if (e.key === 'Escape' && text) { setText(''); setStatus({ kind: 'ready', text: 'Cleared' }); return }
     if (e.key !== 'Enter') return
     e.preventDefault()
     const code = text.trim()
     // Wait for scans still being looked up, so "scan, scan, Enter" lands on the finished cart.
-    if (!code) { queue.current = queue.current.then(onDone); return }
+    if (!code) { const generation = scope.current.generation; queue.current = queue.current.then(() => { if (active(generation)) onDone() }); return }
     setText('')
     setStatus({ kind: 'ready', text: `Looking up ${code}…` })
-    queue.current = queue.current.then(() => resolve(code))
+    const generation = scope.current.generation
+    const revision = ++inputRevision.current
+    queue.current = queue.current.then(() => resolve(code, text, generation, revision))
   }
 
   function pick(product: Product) {
+    if (!active(scope.current.generation)) return
+    inputRevision.current++
     setStatus(onProduct(product, 'pick'))
     setText('')
     input.current?.focus()
@@ -81,7 +103,7 @@ export function ScanBox({ status, onStatus, onProduct, onUnknown, onDone, disabl
       <label htmlFor={id}>Scan barcode or search products</label>
       <input ref={input} id={id} type="text" autoFocus autoComplete="off" autoCapitalize="off" spellCheck={false} disabled={disabled}
         placeholder="Scan, or type a name or code" aria-describedby={`${id}-help ${id}-status`}
-        value={text} onChange={e => setText(e.target.value)} onKeyDown={keyDown} />
+        value={text} onChange={e => { inputRevision.current++; setText(e.target.value) }} onKeyDown={keyDown} />
       <span className="scan-mode" title="A USB or Bluetooth barcode scanner types the code like a keyboard"><span className="scan-dot" aria-hidden="true" />Scanner ready</span>
     </div>
     <p id={`${id}-status`} className={`scan-status scan-${status.kind}`} role="status" aria-live="polite">{status.text}</p>

@@ -1,5 +1,5 @@
 import { PageHeader } from '../components/ui/workspace'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { ApiError, api } from '../api/client'
@@ -7,6 +7,7 @@ import { Alert } from '../components/ui/ui'
 import { describeError } from '../components/useAction'
 import { useAuth } from '../auth/context'
 import { InvoiceDraftError, openInvoiceDraft } from './checkout/invoiceDraftStore'
+import { barcodeForCreation } from './checkout/barcode'
 import { paymentMinorUnits, validPartialPayment } from './checkout/settlement'
 import { formatMoney, formatQty, isAmount } from '../lib/money'
 import { useDebounced } from '../lib/useDebounced'
@@ -90,6 +91,7 @@ function BillForm({ another }: { another: () => void }) {
   const saved = restored?.data
   const canCustom = can(role, 'billing.custom')
   const canCreateProduct = can(role, 'products.edit')
+  const checkoutOwner = useRef({ userId, shop, allowed: canCreateProduct, blocked: false, uncertain: false, conflict: false })
   const [custom, setCustom] = useState<CustomLine[]>(saved?.custom ?? [])
   const [addingCustom, setAddingCustom] = useState(false)
   const [creating, setCreating] = useState<string | null>(null)
@@ -168,7 +170,10 @@ function BillForm({ another }: { another: () => void }) {
   })
   const pricing = lineCount > 0 && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
   const totals = lineCount > 0 && !needsGstin ? preview.data : undefined
-  const locked = !!attempt || mutation.isPending || preparing || draftConflict
+  const locked = !!attempt || mutation.isPending || preparing || draftConflict || !!creating
+  useLayoutEffect(() => {
+    checkoutOwner.current = { userId, shop, allowed: canCreateProduct, blocked: locked, uncertain: !!attempt, conflict: draftConflict }
+  }, [userId, shop, canCreateProduct, locked, attempt, draftConflict])
   const observedReview = useRef(saved?.reviewedContext ?? null)
   const reviewCurrent = !!totals && reviewedContext === (totals.reviewed_context ?? null)
   const consentCurrent = allowUnassigned && consentContext === currentConsentContext && reviewCurrent
@@ -188,7 +193,9 @@ function BillForm({ another }: { another: () => void }) {
   const customPreview = totals?.lines?.filter(l => l.product_uuid === null) ?? []
 
   const note = (text: string, kind: Status['kind'] = 'ok'): Status => ({ kind, text })
-  function addProduct(product: Product): Status {
+  function addProduct(product: Product, fromEditor = false): Status {
+    const owner = checkoutOwner.current
+    if (!mounted.current || owner.userId !== userId || owner.shop !== shop || owner.uncertain || owner.conflict || (owner.blocked && !fromEditor) || (fromEditor && !owner.allowed)) return note('This invoice is no longer available for adding products.', 'error')
     setUnknown(null)
     const current = itemsNow.current
     const existing = current.some(i => i.product.uuid === product.uuid)
@@ -292,7 +299,18 @@ function BillForm({ another }: { another: () => void }) {
     } catch (error) { persistenceFailure(error) }
     finally { sending.current = false; if (mounted.current) setPreparing(false) }
   }
-  const canSave = !draftConflict && !preparing && !mutation.isPending && (!!attempt || canCreate)
+  async function openProduct(code: string) {
+    const barcode = barcodeForCreation(code)
+    if (!barcode || locked || sending.current || !canCreateProduct) return
+    const ownsCheckout = () => mounted.current && checkoutOwner.current.userId === userId && checkoutOwner.current.shop === shop && checkoutOwner.current.allowed && !checkoutOwner.current.uncertain && !checkoutOwner.current.conflict
+    sending.current = true; setPreparing(true)
+    try {
+      await draftStore.save(activeDraft, { isActive: ownsCheckout })
+      if (ownsCheckout()) setCreating(barcode)
+    } catch (error) { persistenceFailure(error) }
+    finally { sending.current = false; if (mounted.current) setPreparing(false) }
+  }
+  const canSave = !creating && !draftConflict && !preparing && !mutation.isPending && (!!attempt || canCreate)
   const rows: [string, string][] = totals ? ([['Subtotal', totals.subtotal], ['Discount', totals.discount_amount], ['CGST', totals.cgst_amount], ['SGST', totals.sgst_amount], ['IGST', totals.igst_amount], ['Round-off', totals.round_off_amount]] as [string, string][]).filter(([k, v]) => k === 'Subtotal' || Number(v) !== 0) : []
   return <div className="checkout-page">
     <PageHeader eyebrow="SALES / INVOICES" title={SALES.newInvoice} actions={<Link className="button secondary" to="/billing">← Back to {SALES.invoices.toLowerCase()}</Link>} />
@@ -313,11 +331,11 @@ function BillForm({ another }: { another: () => void }) {
           </li>)}</ul>
         </section>}
         <section className="card checkout-items" aria-label="Items">
-          <ScanBox status={scanStatus} onStatus={setScanStatus} disabled={locked} onProduct={addProduct} onUnknown={setUnknown} onDone={goToPayment} />
+          <ScanBox status={scanStatus} onStatus={setScanStatus} disabled={locked} onProduct={product => addProduct(product)} onUnknown={setUnknown} onDone={goToPayment} />
           {unknown && <div className="unknown-code" role="alert">
             <p>No product has the barcode or code <code>{unknown}</code>.</p>
             <div className="actions">
-              {canCreateProduct && <button type="button" onClick={() => setCreating(unknown)}>Create product with this barcode</button>}
+              {canCreateProduct && barcodeForCreation(unknown) && <button type="button" onClick={() => void openProduct(unknown)}>Create product with this barcode</button>}
               {canCustom && <button type="button" onClick={() => setAddingCustom(true)}>Add as item not in the list</button>}
               <button type="button" className="link" onClick={() => setUnknown(null)}>Dismiss</button>
             </div>
@@ -374,10 +392,11 @@ function BillForm({ another }: { another: () => void }) {
       </aside>
     </form>
     {addingCustom && <CustomItemEditor onClose={() => setAddingCustom(false)} onAdd={line => { setCustom([...custom, line]); setAddingCustom(false); setUnknown(null) }} />}
-    {creating && <ProductForm startingBarcode={creating} onClose={() => setCreating(null)} onSaved={async () => {
-      const code = creating
+    {creating && <ProductForm startingBarcode={creating} onClose={() => setCreating(null)} onSaved={(_id, savedProduct) => {
+      const owner = checkoutOwner.current
+      if (!mounted.current || owner.userId !== userId || owner.shop !== shop || !owner.allowed || owner.uncertain || owner.conflict) return
+      setScanStatus(addProduct(savedProduct, true))
       setCreating(null)
-      try { setScanStatus(addProduct(await api.get<Product>(`/v1/shops/${shop}/products/lookup?code=${encodeURIComponent(code)}`))) } catch { /* the new product can still be found by search */ }
     }} />}
   </div>
 }
