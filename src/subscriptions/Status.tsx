@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Outlet, useNavigate } from 'react-router'
 import { api } from '../api/client'
 import type { components } from '../api/schema'
-import { useShop } from '../shops/context'
+import { ShopContext, useShop } from '../shops/context'
+import { useAuth } from '../auth/context'
 import { rememberShop } from '../shops/selection'
 import { useShopAccess } from './context'
 import { Alert, Card, Empty, Loading } from '../components/ui/ui'
@@ -26,13 +27,22 @@ function ActivateWeb({requestId}:{requestId:string}) {
   const [error,setError]=useState<string|null>(null)
   const client=useQueryClient()
   const navigate=useNavigate()
+  const userId = useAuth().user?.id ?? ''
+  const shop = useContext(ShopContext)
+  const activeAccount = useRef(userId)
+  useEffect(() => {
+    activeAccount.current = userId
+    return () => { activeAccount.current = '' }
+  }, [userId])
   async function activate() {
     setBusy(true);setError(null)
     try {
       const activated = await api.post<components['schemas']['RequestOut']>(`/v1/me/premium-requests/${requestId}/activate`,{confirm_new_shop:true})
-      rememberShop(activated.local_shop_id)
+      if (!userId || activeAccount.current !== userId) return
+      if (shop) shop.select(activated.local_shop_id)
+      else rememberShop(userId, activated.local_shop_id)
       await client.invalidateQueries({queryKey:['shops']})
-      navigate('/')
+      if (activeAccount.current === userId) navigate('/')
       void client.invalidateQueries({queryKey:['my-premium-requests']})
     } catch(e) {setError(describeError(e))} finally {setBusy(false)}
   }

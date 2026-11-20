@@ -1,6 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
+import { BLANK_CUSTOMER } from './billing/checkout/customerFields'
+import { installInvoiceLocks } from './billing/checkout/invoiceLocksTestSupport'
 import { SIGNED_IN, PAID_SHOP, fakeApi, ok, renderApp } from './test-utils'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -196,4 +198,80 @@ test('the public delete-account page asks a signed-out visitor to sign in first'
   expect(await screen.findByRole('heading', { name: 'Delete your account' })).toBeInTheDocument()
   expect(await screen.findByLabelText('Password')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeInTheDocument()
+})
+
+test('activation selects the new shop while the existing workspace is mounted', async () => {
+  const oldShop = { shop_id: 's1', name: 'Existing shop', role: 'owner' }
+  const newShop = { shop_id: 'new-shop', name: 'Activated shop', role: 'owner' }
+  let activated = false
+  fakeApi([
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', () => activated ? [oldShop, newShop] : [oldShop]),
+    ok('GET', '/v1/me/premium-requests', [{ id: 'web', shop_name: newShop.name, status: 'approved', channel: 'web', request_kind: 'new_cloud' }]),
+    ok('POST', '/v1/me/premium-requests/web/activate', () => {
+      activated = true
+      return { local_shop_id: newShop.shop_id }
+    }),
+  ])
+  renderApp('/subscription')
+  const activate = await screen.findByRole('button', { name: 'Activate new web shop' })
+  await userEvent.click(screen.getByRole('checkbox', { name: /Create a new empty cloud shop/ }))
+  await userEvent.click(activate)
+  expect(await screen.findByRole('combobox', { name: 'Shop' })).toHaveValue(newShop.shop_id)
+})
+
+test('the workspace remembers each account’s shop separately', async () => {
+  const shops = [
+    { shop_id: 's1', name: 'First shop', role: 'owner' },
+    { shop_id: 's2', name: 'Second shop', role: 'staff' },
+  ]
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', shops)])
+  const firstAccount = renderApp('/subscription')
+  const selector = await screen.findByRole('combobox', { name: 'Shop' })
+  await userEvent.selectOptions(selector, 's2')
+  expect(selector).toHaveValue('s2')
+  firstAccount.unmount()
+  fakeApi([
+    ok('GET', '/v1/me', { id: 'u2', email: 'second@example.test', email_verified: true }),
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', shops),
+  ])
+  const secondAccount = renderApp('/subscription')
+  expect(await screen.findByRole('combobox', { name: 'Shop' })).toHaveValue('s1')
+  secondAccount.unmount()
+  fakeApi([...SIGNED_IN, ok('GET', '/v1/shops', shops)])
+  renderApp('/subscription')
+  expect(await screen.findByRole('combobox', { name: 'Shop' })).toHaveValue('s2')
+})
+
+
+test('switching shops restores only that shop’s invoice draft and role', async () => {
+  installInvoiceLocks()
+  const shops = [
+    { shop_id: 's1', name: 'First shop', role: 'owner' },
+    { shop_id: 's2', name: 'Second shop', role: 'staff' },
+  ]
+  for (const [shop, name, quantity] of [['s1', 'First draft item', '2'], ['s2', 'Second draft item', '3']]) {
+    localStorage.setItem(`storely.draft.bill.u1.${shop}`, JSON.stringify({ v: 1, savedAt: Date.now(), data: {
+      items: [{ product: { uuid: shop + '-product', name, selling_price: '20', quantity: '10' }, quantity }],
+      custom: [], customer: BLANK_CUSTOMER, billType: 'b2c', discount: '0', paid: null,
+      amount: '', method: 'cash', reference: '', attempt: null,
+    } }))
+  }
+  fakeApi([
+    ...SIGNED_IN, ok('GET', '/v1/shops', shops),
+    ok('GET', /^\/v1\/shops\/s[12]\/categories$/, []),
+    ok('POST', /^\/v1\/shops\/s[12]\/bills\/preview$/, { total: '40', subtotal: '40' }),
+  ])
+  renderApp('/billing/new')
+  expect(await screen.findByLabelText('Quantity for First draft item')).toHaveValue(2)
+  const picker = screen.getByRole('combobox', { name: 'Shop' })
+  await userEvent.selectOptions(picker, 's2')
+  expect(await screen.findByLabelText('Quantity for Second draft item')).toHaveValue(3)
+  expect(screen.queryByLabelText('Quantity for First draft item')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '+ Item not in the list' })).not.toBeInTheDocument()
+  await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Shop' }), 's1')
+  expect(await screen.findByLabelText('Quantity for First draft item')).toHaveValue(2)
+  expect(screen.queryByLabelText('Quantity for Second draft item')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '+ Item not in the list' })).toBeInTheDocument()
 })

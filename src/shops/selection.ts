@@ -1,8 +1,12 @@
 const KEY = 'storely.shop'
-// A convenience shop ID, never an access token or business data.
-export function remembered(): string | null {
-  try { return localStorage.getItem(KEY) } catch { return null }
+
+// Each account remembers its own selection. Membership comes from the API.
+export function remembered(userId: string): string | null {
+  if (!userId) return null
+  try { return localStorage.getItem(`${KEY}.${userId}`) } catch { return null }
 }
-export function rememberShop(shopId: string) {
-  try { localStorage.setItem(KEY,shopId) } catch { /* selection remains session-local */ }
+
+export function rememberShop(userId: string, shopId: string) {
+  if (!userId) return
+  try { localStorage.setItem(`${KEY}.${userId}`, shopId) } catch { /* selection remains session-local */ }
 }
