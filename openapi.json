@@ -3910,6 +3910,11 @@
       "title": "Invoice Title",
       "type": "string"
      },
+     "low_stock_threshold": {
+      "default": "5",
+      "title": "Low Stock Threshold",
+      "type": "string"
+     },
      "paper_size": {
       "title": "Paper Size",
       "type": "string"
@@ -4160,6 +4165,22 @@
        }
       ],
       "title": "Invoice Title"
+     },
+     "low_stock_threshold": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Low Stock Threshold"
      },
      "paper_size": {
       "anyOf": [

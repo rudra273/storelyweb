@@ -3363,6 +3363,11 @@ export interface components {
             gst_scheme: "regular" | "composition" | "unregistered";
             /** Invoice Title */
             invoice_title: string;
+            /**
+             * Low Stock Threshold
+             * @default 5
+             */
+            low_stock_threshold: string;
             /** Paper Size */
             paper_size: string;
             /** Revision */
@@ -3413,6 +3418,8 @@ export interface components {
             gst_scheme?: ("regular" | "composition" | "unregistered") | null;
             /** Invoice Title */
             invoice_title?: string | null;
+            /** Low Stock Threshold */
+            low_stock_threshold?: number | string | null;
             /** Paper Size */
             paper_size?: ("a4" | "a5" | "80mm" | "58mm") | null;
             /** Round Off Total */
