@@ -11248,6 +11248,25 @@
     "title": "TermsIn",
     "type": "object"
    },
+   "ThemePreference": {
+    "additionalProperties": false,
+    "properties": {
+     "theme": {
+      "enum": [
+       "system",
+       "light",
+       "dark"
+      ],
+      "title": "Theme",
+      "type": "string"
+     }
+    },
+    "required": [
+     "theme"
+    ],
+    "title": "ThemePreference",
+    "type": "object"
+   },
    "TokenOut": {
     "properties": {
      "access_token": {
@@ -15955,6 +15974,98 @@
     "summary": "Get Operation Status",
     "tags": [
      "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/preferences/theme": {
+   "get": {
+    "operationId": "get_theme_v1_shops__shop_id__preferences_theme_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ThemePreference"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Theme",
+    "tags": [
+     "preferences"
+    ]
+   },
+   "put": {
+    "operationId": "put_theme_v1_shops__shop_id__preferences_theme_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ThemePreference"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ThemePreference"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Theme",
+    "tags": [
+     "preferences"
     ]
    }
   },
