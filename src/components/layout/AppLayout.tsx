@@ -8,6 +8,7 @@ import { useShop } from '../../shops/context'
 import { shopLabel } from '../../shops/label'
 import { useShopAccess } from '../../subscriptions/context'
 import { OfflineBanner } from '../ui/states'
+import { WorkspaceThemeBinding } from '../../theme/WorkspaceThemeBinding'
 import { AccountMenu } from './AccountMenu'
 import { NavIcon } from './NavIcon'
 
@@ -45,7 +46,7 @@ export function AppLayout() {
   const currentLabel = current ? shopLabel(current, shops) : ''
 
   return (
-    <div className="shell" data-compact={compact}><a className="skip-link" href="#main-content">Skip to content</a>
+    <div className="shell" data-compact={compact}><WorkspaceThemeBinding /><a className="skip-link" href="#main-content">Skip to content</a>
       <aside className="sidebar" data-open={open}>
         <div className="sidebar-top">
           <span className="brand"><img className="brand-mark" src="/storely-icon.png" alt="" /><span className="brand-word"><span>Store<span className="brand-accent">ly</span></span><span className="brand-dot">.</span></span></span>
