@@ -17,6 +17,7 @@ import { Link, useSearchParams } from 'react-router'
 import { PaperSheet } from './PaperSheet'
 import { useBillingQuery, type BillDetail, type InvoiceSettings } from '../queries'
 
+import { lowStockThresholdProblem } from './lowStockThreshold'
 import { pricingSettingsProblems, PRICING_SETTING_KEYS } from './pricingDefaults'
 import { assertSettingsRevisionSupport, rebaseSettings, requireSettingsRevision, settingsChanges, settingsReview } from './settingsRevision'
 
@@ -137,11 +138,13 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     event.preventDefault()
     if (sending.current || stale) return
     const found: Record<string, string> = pricingSettingsProblems(baseline, draft)
+    const thresholdProblem = lowStockThresholdProblem(baseline, draft)
+    if (thresholdProblem) found.low_stock_threshold = thresholdProblem
     if (!draft.shop_name.trim()) found.shop_name = 'Enter the shop name.'
     const checks: [string, string | null][] = [['shop_phone', shopPhoneProblem(draft.shop_phone ?? '')], ['shop_email', emailProblem(draft.shop_email ?? '')], ['shop_gstin', gstinProblem(draft.shop_gstin ?? '')], ['upi_id', upiProblem(draft.upi_id ?? '')]]
     for (const [key, problem] of checks) if (problem) found[key] = problem
     setProblems(found)
-    if (Object.keys(found).length) { if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
+    if (Object.keys(found).length) { if (found.low_stock_threshold) setTab('shop'); else if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
     setError(null)
     const change = settingsChanges(baseline, draft)
     if (!Object.keys(change).length) { setDone(true); return }
@@ -165,8 +168,8 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
       setBaseline(result)
       setDone(true)
       client.setQueryData(['invoice-settings', shop, 'invoice-settings'], result)
-      const keys = ['bill-preview', ...(PRICING_SETTING_KEYS.some(key => key in change) ? ['price-preview', 'products', 'product'] : [])]
-      await Promise.all(keys.map(key => client.invalidateQueries({ queryKey: [key, shop] })))
+      const keys = new Set(['bill-preview', ...(PRICING_SETTING_KEYS.some(key => key in change) ? ['price-preview', 'products', 'product'] : []), ...('low_stock_threshold' in change ? ['products', 'product', 'report'] : [])])
+      await Promise.all([...keys].map(key => client.invalidateQueries({ queryKey: [key, shop] })))
     }
   }
 
@@ -190,6 +193,8 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               <Field label="Email" type="email" maxLength={254} error={err('shop_email')} value={draft.shop_email ?? ''} onChange={text('shop_email')} />
               <Field label="GSTIN" maxLength={15} placeholder="27ABCDE1234F1Z5" error={err('shop_gstin')} value={draft.shop_gstin ?? ''} onChange={text('shop_gstin')} hint="15 characters, starting with your state code." />
             </div>
+            <h3>Stock alerts</h3>
+            <Field label="Default low-stock threshold" inputMode="decimal" value={draft.low_stock_threshold ?? '5'} onChange={e => set('low_stock_threshold', e.target.value)} error={err('low_stock_threshold')} hint="Used when a product has no reorder level. Tracked stock at or below this threshold is low. Zero is valid. Use up to four decimal places." />
           </section>
 
           <section className="card wide" {...show('shop')}>

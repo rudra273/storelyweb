@@ -231,3 +231,71 @@ test('invalid pricing submitted from another tab reveals and focuses the retaine
   expect(margin).toHaveValue('101')
   expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(0)
 })
+
+const STOCK_SETTINGS = { ...PRICING_SETTINGS, low_stock_threshold: '5' }
+for (const invalid of ['', '-0', '.5', '1e1', '10.00001', '1000000000']) {
+  test(`invalid low-stock threshold ${JSON.stringify(invalid)} reveals Shop details and retains input`, async () => {
+    const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', STOCK_SETTINGS)])
+    renderApp('/settings')
+    const threshold = await screen.findByLabelText('Default low-stock threshold')
+    await userEvent.clear(threshold)
+    if (invalid) await userEvent.type(threshold, invalid)
+    await userEvent.click(screen.getByRole('tab', { name: 'Pricing & tax' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Shop details' })).toHaveAttribute('aria-selected', 'true'))
+    expect(threshold).toHaveFocus()
+    expect(threshold).toHaveAttribute('aria-invalid', 'true')
+    expect(threshold).toHaveValue(invalid)
+    expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(0)
+  })
+}
+
+test('zero low-stock threshold saves exactly and invalidates scoped inventory and dashboard reports', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', STOCK_SETTINGS), ok('PATCH', '/v1/shops/s1/invoice-settings', { ...STOCK_SETTINGS, revision: 's1:8', low_stock_threshold: '0.0000' })])
+  renderApp('/settings')
+  const threshold = await screen.findByLabelText('Default low-stock threshold')
+  await userEvent.clear(threshold)
+  await userEvent.type(threshold, '0')
+  const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries').mockResolvedValue()
+  try {
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    await waitFor(() => expect(calls.find(call => call.method === 'PATCH')?.body).toEqual({ low_stock_threshold: '0', expected_revision: 's1:7' }))
+    expect(threshold).toHaveValue('0.0000')
+    expect(invalidate.mock.calls.map(([filter]) => filter?.queryKey)).toEqual([['bill-preview', 's1'], ['products', 's1'], ['product', 's1'], ['report', 's1']])
+  } finally { invalidate.mockRestore() }
+})
+
+test('untouched legacy threshold does not block unrelated settings changes', async () => {
+  const legacy = { ...STOCK_SETTINGS, low_stock_threshold: '5.123456789012345678' }
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', legacy), ok('PATCH', '/v1/shops/s1/invoice-settings', { ...legacy, footer_text: 'Keep legacy stock threshold' })])
+  renderApp('/settings')
+  expect(await screen.findByLabelText('Default low-stock threshold')).toHaveValue(legacy.low_stock_threshold)
+  await userEvent.click(screen.getByRole('tab', { name: 'Invoice appearance' }))
+  await userEvent.clear(screen.getByLabelText('Footer'))
+  await userEvent.type(screen.getByLabelText('Footer'), 'Keep legacy stock threshold')
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await waitFor(() => expect(calls.find(call => call.method === 'PATCH')?.body).toEqual({ footer_text: 'Keep legacy stock threshold', expected_revision: 's1:7' }))
+})
+
+test('stale low-stock settings keep local value and explicitly rebase only that field', async () => {
+  const latest = { ...STOCK_SETTINGS, revision: 's1:8', low_stock_threshold: '15', shop_phone: '9876543210' }
+  let remote = false
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', () => remote ? latest : STOCK_SETTINGS), ok('PATCH', '/v1/shops/s1/invoice-settings', () => { remote = true; return { error: { code: 'settings_changed', message: 'Stock settings changed elsewhere' } } }, 409)])
+  renderApp('/settings')
+  const threshold = await screen.findByLabelText('Default low-stock threshold')
+  await userEvent.clear(threshold)
+  await userEvent.type(threshold, '10')
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await screen.findByText('Stock settings changed elsewhere')
+  expect(threshold).toHaveValue('10')
+  expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled()
+  await userEvent.click(screen.getByRole('button', { name: 'Review latest settings' }))
+  const review = await screen.findByRole('region', { name: 'Latest settings review' })
+  expect(within(review).getByRole('rowheader', { name: 'Default low-stock threshold' }).closest('tr')).toHaveTextContent('1510')
+  await userEvent.click(within(review).getByRole('button', { name: 'Keep my edits with latest settings' }))
+  expect(threshold).toHaveValue('10')
+  expect(screen.getByRole('textbox', { name: 'Phone' })).toHaveValue('9876543210')
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await waitFor(() => expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(2))
+  expect(calls.filter(call => call.method === 'PATCH')[1]?.body).toEqual({ low_stock_threshold: '10', expected_revision: 's1:8' })
+})

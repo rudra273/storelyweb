@@ -5,7 +5,7 @@ import type { InvoiceSettings } from '../queries'
 type Change = components['schemas']['InvoiceSettingsIn']
 export const SETTINGS_FIELDS = [
   ['shop_name', 'Shop name'], ['shop_address', 'Address'], ['shop_phone', 'Phone'], ['shop_email', 'Email'], ['shop_gstin', 'GSTIN'],
-  ['gst_scheme', 'GST registration'], ['default_gst_percent', 'Default GST'], ['default_profit_margin_percent', 'Default margin'], ['default_overhead_cost', 'Default overhead'],
+  ['low_stock_threshold', 'Default low-stock threshold'], ['gst_scheme', 'GST registration'], ['default_gst_percent', 'Default GST'], ['default_profit_margin_percent', 'Default margin'], ['default_overhead_cost', 'Default overhead'],
   ['invoice_title', 'Invoice title'], ['footer_text', 'Footer'], ['paper_size', 'Default paper'], ['upi_id', 'UPI ID'], ['terms_text', 'Terms'], ['bank_details', 'Bank details'],
   ['round_off_total', 'Round off total'], ['shop_logo', 'Shop logo'], ['digital_signature', 'Signature'],
 ] as const
