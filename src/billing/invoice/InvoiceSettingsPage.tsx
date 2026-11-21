@@ -17,6 +17,7 @@ import { Link, useSearchParams } from 'react-router'
 import { PaperSheet } from './PaperSheet'
 import { useBillingQuery, type BillDetail, type InvoiceSettings } from '../queries'
 
+import { pricingSettingsProblems, PRICING_SETTING_KEYS } from './pricingDefaults'
 import { assertSettingsRevisionSupport, rebaseSettings, requireSettingsRevision, settingsChanges, settingsReview } from './settingsRevision'
 
 type Change = components['schemas']['InvoiceSettingsIn']
@@ -135,12 +136,12 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   async function save(event: FormEvent) {
     event.preventDefault()
     if (sending.current || stale) return
-    const found: Record<string, string> = {}
+    const found: Record<string, string> = pricingSettingsProblems(baseline, draft)
     if (!draft.shop_name.trim()) found.shop_name = 'Enter the shop name.'
     const checks: [string, string | null][] = [['shop_phone', shopPhoneProblem(draft.shop_phone ?? '')], ['shop_email', emailProblem(draft.shop_email ?? '')], ['shop_gstin', gstinProblem(draft.shop_gstin ?? '')], ['upi_id', upiProblem(draft.upi_id ?? '')]]
     for (const [key, problem] of checks) if (problem) found[key] = problem
     setProblems(found)
-    if (Object.keys(found).length) { setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
+    if (Object.keys(found).length) { if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
     setError(null)
     const change = settingsChanges(baseline, draft)
     if (!Object.keys(change).length) { setDone(true); return }
@@ -164,7 +165,8 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
       setBaseline(result)
       setDone(true)
       client.setQueryData(['invoice-settings', shop, 'invoice-settings'], result)
-      await client.invalidateQueries({ queryKey: ['bill-preview', shop] })
+      const keys = ['bill-preview', ...(PRICING_SETTING_KEYS.some(key => key in change) ? ['price-preview', 'products', 'product'] : [])]
+      await Promise.all(keys.map(key => client.invalidateQueries({ queryKey: [key, shop] })))
     }
   }
 
@@ -212,9 +214,9 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               {draft.gst_scheme !== saved.gst_scheme && <Alert kind="info">This changes how new bills are taxed and priced. Bills already made keep their tax.</Alert>}
             </fieldset>
             <div className="form-grid">
-              <Field label="Default GST %" inputMode="decimal" value={draft.default_gst_percent ?? '18'} onChange={e => set('default_gst_percent', e.target.value)} hint="Used for products and categories with no GST rate of their own." />
-              <Field label="Default profit margin %" inputMode="decimal" value={draft.default_profit_margin_percent ?? '0'} onChange={e => set('default_profit_margin_percent', e.target.value)} />
-              <Field label="Default overhead cost (₹)" inputMode="decimal" value={draft.default_overhead_cost ?? '0'} onChange={e => set('default_overhead_cost', e.target.value)} />
+              <Field label="Default GST %" inputMode="decimal" value={draft.default_gst_percent ?? '18'} onChange={e => set('default_gst_percent', e.target.value)} error={err('default_gst_percent')} hint="Used when the product and category have no GST rate. Supported rates: 0, 0.25, 3, 5, 12, 18, 28 and 40%." />
+              <Field label="Default profit margin %" inputMode="decimal" value={draft.default_profit_margin_percent ?? '0'} onChange={e => set('default_profit_margin_percent', e.target.value)} error={err('default_profit_margin_percent')} hint="Added to total cost when product and category margins are unset. From 0 to 100%, with up to three decimal places." />
+              <Field label="Default overhead cost (₹)" inputMode="decimal" value={draft.default_overhead_cost ?? '0'} onChange={e => set('default_overhead_cost', e.target.value)} error={err('default_overhead_cost')} hint="Per unit, when product and category overheads are unset. Up to two decimal places." />
             </div>
             <label className="check"><input type="checkbox" checked={draft.round_off_total} onChange={e => set('round_off_total', e.target.checked)} />Round totals to the nearest rupee (new bills)</label>
             <Alert kind="info">Changing these affects new invoices only. Issued invoices keep their saved prices, tax and totals.</Alert>

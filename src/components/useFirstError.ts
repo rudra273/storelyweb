@@ -6,7 +6,7 @@ export function useFirstError<T extends HTMLElement = HTMLFormElement>() {
   const ref = useRef<T>(null)
   const [tick, setTick] = useState(0)
   useEffect(() => {
-    if (tick) ref.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    if (tick) [...ref.current?.querySelectorAll<HTMLElement>('[aria-invalid="true"]') ?? []].find(field => !field.closest('[hidden]'))?.focus()
   }, [tick])
   return { ref, focusFirstError: () => setTick(t => t + 1) }
 }

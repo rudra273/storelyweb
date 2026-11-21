@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { focusManager } from '@tanstack/react-query'
+import { focusManager, QueryClient } from '@tanstack/react-query'
 import { SIGNED_IN, fakeApi, ok, renderApp } from '../../test-utils'
 
 afterEach(() => { vi.unstubAllGlobals(); focusManager.setFocused(undefined) })
@@ -148,4 +148,86 @@ test('a failed background refresh keeps the mounted settings editor and dirty in
   expect(await screen.findByText(/Latest settings could not be refreshed/)).toBeInTheDocument()
   expect(screen.getByLabelText('Footer')).toBe(footer)
   expect(footer).toHaveValue('My unsaved footer')
+})
+
+const PRICING_SETTINGS = { ...SETTINGS, default_gst_percent: '18', default_profit_margin_percent: '0', default_overhead_cost: '0.00' }
+for (const [label, field, invalid] of [['Default GST %', 'default_gst_percent', '7'], ['Default profit margin %', 'default_profit_margin_percent', '1.2345'], ['Default overhead cost (₹)', 'default_overhead_cost', '0.001']] as const) {
+  test(`invalid edited pricing default ${field} is refused locally and retains input`, async () => {
+    const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', PRICING_SETTINGS), ok('PATCH', '/v1/shops/s1/invoice-settings', PRICING_SETTINGS)])
+    renderApp('/settings?tab=pricing')
+    const input = await screen.findByLabelText(label)
+    await userEvent.clear(input)
+    await userEvent.type(input, invalid)
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'))
+    expect(input).toHaveValue(invalid)
+    expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(0)
+  })
+}
+
+test('untouched legacy nonstandard and high-precision defaults stay exact and do not block unrelated settings', async () => {
+  const legacy = { ...PRICING_SETTINGS, default_gst_percent: '7.123456789012345678', default_profit_margin_percent: '123.123456789012345678', default_overhead_cost: '999999999999.123456789012345678' }
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', legacy), ok('PATCH', '/v1/shops/s1/invoice-settings', { ...legacy, footer_text: 'Legacy values retained' })])
+  renderApp('/settings?tab=pricing')
+  expect(await screen.findByLabelText('Default GST %')).toHaveValue(legacy.default_gst_percent)
+  expect(screen.getByLabelText('Default profit margin %')).toHaveValue(legacy.default_profit_margin_percent)
+  expect(screen.getByLabelText('Default overhead cost (₹)')).toHaveValue(legacy.default_overhead_cost)
+  await userEvent.click(screen.getByRole('tab', { name: 'Invoice appearance' }))
+  await userEvent.clear(screen.getByLabelText('Footer'))
+  await userEvent.type(screen.getByLabelText('Footer'), 'Legacy values retained')
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await waitFor(() => expect(calls.find(call => call.method === 'PATCH')?.body).toEqual({ footer_text: 'Legacy values retained', expected_revision: 's1:7' }))
+})
+
+test('valid edited pricing defaults preserve significant decimal precision in the guarded request', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', PRICING_SETTINGS), ok('PATCH', '/v1/shops/s1/invoice-settings', { ...PRICING_SETTINGS, revision: 's1:8', default_gst_percent: '0.25', default_profit_margin_percent: '1.234', default_overhead_cost: '12.34' })])
+  renderApp('/settings?tab=pricing')
+  for (const [label, value] of [['Default GST %', '0.2500'], ['Default profit margin %', '1.2340'], ['Default overhead cost (₹)', '12.3400']]) {
+    const input = await screen.findByLabelText(label!)
+    await userEvent.clear(input)
+    await userEvent.type(input, value!)
+  }
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await waitFor(() => expect(calls.find(call => call.method === 'PATCH')?.body).toEqual({ default_gst_percent: '0.2500', default_profit_margin_percent: '1.2340', default_overhead_cost: '12.3400', expected_revision: 's1:7' }))
+})
+
+
+test('saving pricing defaults invalidates cached product calculations and checkout review', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', PRICING_SETTINGS), ok('PATCH', '/v1/shops/s1/invoice-settings', { ...PRICING_SETTINGS, default_profit_margin_percent: '12.345', revision: 's1:8' })])
+  renderApp('/settings?tab=pricing')
+  const margin = await screen.findByLabelText('Default profit margin %')
+  await userEvent.clear(margin)
+  await userEvent.type(margin, '12.345')
+  const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries').mockResolvedValue()
+  try {
+    await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+    await waitFor(() => expect(invalidate).toHaveBeenCalledTimes(4))
+    expect(invalidate.mock.calls.map(([filter]) => filter?.queryKey)).toEqual([['bill-preview', 's1'], ['price-preview', 's1'], ['products', 's1'], ['product', 's1']])
+  } finally { invalidate.mockRestore() }
+})
+
+test('server pricing validation is shown beside the retained edited default', async () => {
+  fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', PRICING_SETTINGS), ok('PATCH', '/v1/shops/s1/invoice-settings', { error: { code: 'validation_error', message: 'Check this value', fields: [{ field: 'default_overhead_cost', message: 'Use two decimal places.' }] } }, 422)])
+  renderApp('/settings?tab=pricing')
+  const overhead = await screen.findByLabelText('Default overhead cost (₹)')
+  await userEvent.clear(overhead)
+  await userEvent.type(overhead, '1.25')
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await waitFor(() => expect(overhead).toHaveAttribute('aria-invalid', 'true'))
+  expect(overhead).toHaveValue('1.25')
+})
+
+
+test('invalid pricing submitted from another tab reveals and focuses the retained default', async () => {
+  const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/invoice-settings', PRICING_SETTINGS)])
+  renderApp('/settings?tab=pricing')
+  const margin = await screen.findByLabelText('Default profit margin %')
+  await userEvent.clear(margin)
+  await userEvent.type(margin, '101')
+  await userEvent.click(screen.getByRole('tab', { name: 'Invoice appearance' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Save settings' }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: 'Pricing & tax' })).toHaveAttribute('aria-selected', 'true'))
+  expect(margin).toHaveFocus()
+  expect(margin).toHaveValue('101')
+  expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(0)
 })

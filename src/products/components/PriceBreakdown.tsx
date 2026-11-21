@@ -37,8 +37,8 @@ export function PriceBreakdown({ preview, pending, error }: { preview: PricePrev
       </dl>
       {!p.cost_known && <p className="muted">Add a cost price to see profit.</p>}
       <small className="muted">{p.gst_registered
-        ? 'Your shop is GST-registered: GST you pay on purchases is claimed back, and GST is charged on bills.'
-        : 'Your shop is not GST-registered: GST you pay on purchases is part of your cost, and no GST is added to bills.'}</small>
+        ? 'GST is charged on invoices. The pricing calculation excludes purchase GST from cost.'
+        : 'GST is not charged on invoices. The pricing calculation includes purchase GST in cost.'}</small>
     </div>
   )
 }
