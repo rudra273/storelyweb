@@ -739,6 +739,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shop Audit Events
+         * @description Business audit log for financial records, catalog, customers and settings.
+         */
+        get: operations["shop_audit_events_v1_shops__shop_id__audit_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills": {
         parameters: {
             query?: never;
@@ -835,6 +855,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Credit Note Preview
+         * @description What returning these quantities would credit, priced by the code that saves the return.
+         */
+        post: operations["credit_note_preview_v1_shops__shop_id__bills__bill_id__credit_note_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/{bill_id}/payments": {
         parameters: {
             query?: never;
@@ -846,6 +886,48 @@ export interface paths {
         put?: never;
         /** Add Payment */
         post: operations["add_payment_v1_shops__shop_id__bills__bill_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/{bill_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bill Pdf
+         * @description The invoice or credit note as a PDF, drawn now from the saved figures and the shop's
+         *     invoice settings. `paper` overrides the shop's saved paper for this file only. Nothing is
+         *     stored: the file exists only in this response.
+         */
+        get: operations["bill_pdf_v1_shops__shop_id__bills__bill_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shop Capabilities
+         * @description Negotiate supported contracts without opening paid business-data access.
+         */
+        get: operations["shop_capabilities_v1_shops__shop_id__capabilities_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -933,7 +1015,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Customer */
+        /**
+         * Get Customer
+         * @description The customer with pages of bills and payments and totals across the entire account.
+         */
         get: operations["get_customer_v1_shops__shop_id__customers__customer_id__get"];
         put?: never;
         post?: never;
@@ -967,6 +1052,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/customers/{customer_id}/payments/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Customer Payment */
+        post: operations["preview_customer_payment_v1_shops__shop_id__customers__customer_id__payments_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/customers/{customer_id}/statement.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Customer Statement */
+        get: operations["customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/entitlement": {
         parameters: {
             query?: never;
@@ -994,7 +1113,10 @@ export interface paths {
         /** List Expenses */
         get: operations["list_expenses_v1_shops__shop_id__expenses_get"];
         put?: never;
-        /** Create Expense */
+        /**
+         * Create Expense
+         * @description Record an expense. Send an Idempotency-Key and a retry returns the same expense.
+         */
         post: operations["create_expense_v1_shops__shop_id__expenses_post"];
         delete?: never;
         options?: never;
@@ -1080,6 +1202,58 @@ export interface paths {
         patch: operations["edit_invoice_settings_v1_shops__shop_id__invoice_settings_patch"];
         trace?: never;
     };
+    "/v1/shops/{shop_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enqueue Report */
+        post: operations["enqueue_report_v1_shops__shop_id__jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job Status */
+        get: operations["job_status_v1_shops__shop_id__jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        /** Cancel Job */
+        delete: operations["cancel_job_v1_shops__shop_id__jobs__job_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/jobs/{job_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job Result */
+        get: operations["job_result_v1_shops__shop_id__jobs__job_id__result_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/members": {
         parameters: {
             query?: never;
@@ -1118,6 +1292,26 @@ export interface paths {
         patch: operations["change_role_v1_shops__shop_id__members__member_id__patch"];
         trace?: never;
     };
+    "/v1/shops/{shop_id}/operations/{operation_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Operation Status
+         * @description Check whether an idempotent write with `operation_key` has already committed.
+         */
+        get: operations["get_operation_status_v1_shops__shop_id__operations__operation_key__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/products": {
         parameters: {
             query?: never;
@@ -1128,8 +1322,34 @@ export interface paths {
         /** List Products */
         get: operations["list_products_v1_shops__shop_id__products_get"];
         put?: never;
-        /** Create Product */
+        /**
+         * Create Product
+         * @description Add a product. Send an Idempotency-Key and a retry returns the same product.
+         */
         post: operations["create_product_v1_shops__shop_id__products_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Many Products
+         * @description Review (dry_run, the default) or apply one change to many products. The server decides
+         *     which products the scope means, reports what would change and what is left alone and why,
+         *     and applies all of it in one transaction or none. Applying with `expected` (the review's
+         *     counts) is refused if the products no longer match what was reviewed.
+         */
+        post: operations["change_many_products_v1_shops__shop_id__products_bulk_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1174,6 +1394,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/products/label-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Label Data
+         * @description What a printed label needs for the products in a scope, as they are now.
+         */
+        post: operations["label_data_v1_shops__shop_id__products_label_data_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup Product
+         * @description The one product whose barcode or code is exactly `code`: what a scanner sends.
+         */
+        get: operations["lookup_product_v1_shops__shop_id__products_lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/products/price-preview": {
         parameters: {
             query?: never;
@@ -1188,6 +1448,26 @@ export interface paths {
          * @description The price a product would sell at, worked out exactly as billing will.
          */
         post: operations["price_preview_v1_shops__shop_id__products_price_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/stock-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stock Summary
+         * @description How many products are low, out of stock, expiring soon or without a code.
+         */
+        get: operations["stock_summary_v1_shops__shop_id__products_stock_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1211,6 +1491,26 @@ export interface paths {
         head?: never;
         /** Edit Product */
         patch: operations["edit_product_v1_shops__shop_id__products__product_id__patch"];
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/products/{product_id}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product Ledger
+         * @description The product's full stock history, newest first, a page at a time.
+         */
+        get: operations["product_ledger_v1_shops__shop_id__products__product_id__movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/shops/{shop_id}/products/{product_id}/stock-adjustments": {
@@ -1282,6 +1582,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/invoice-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice Check
+         * @description Whether this supplier invoice number is already recorded, before the purchase is saved.
+         */
+        get: operations["invoice_check_v1_shops__shop_id__purchase_receipts_invoice_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/purchase-receipts/native": {
         parameters: {
             query?: never;
@@ -1299,6 +1619,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Receipt
+         * @description The total, amount paid and balance this purchase would be saved with.
+         */
+        post: operations["preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Purchase Summary
+         * @description Purchases and payments in the dates chosen, plus what is owed and overdue today.
+         */
+        get: operations["purchase_summary_v1_shops__shop_id__purchase_receipts_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}": {
         parameters: {
             query?: never;
@@ -1310,6 +1670,46 @@ export interface paths {
         get: operations["receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/payment-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Payment Terms
+         * @description Record what is owed on a purchase saved without payment terms.
+         */
+        post: operations["record_payment_terms_v1_shops__shop_id__purchase_receipts__receipt_id__payment_terms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse Receipt
+         * @description Correct a posted purchase: its stock goes back out and it is no longer owed.
+         */
+        post: operations["reverse_receipt_v1_shops__shop_id__purchase_receipts__receipt_id__reverse_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1575,6 +1975,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recover Supplier Payment */
+        post: operations["recover_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_recover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/{payment_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse Supplier Payment
+         * @description Cancel a recorded payment: what it paid is owed again. Repeats are safe.
+         */
+        post: operations["reverse_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments__payment_id__reverse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/suppliers/{supplier_id}/statement": {
         parameters: {
             query?: never;
@@ -1710,6 +2147,8 @@ export interface components {
             customer_name: string;
             /** Customer Phone */
             customer_phone: string | null;
+            /** Customer Uuid */
+            customer_uuid?: string | null;
             /** Total */
             total: string;
         };
@@ -1717,6 +2156,48 @@ export interface components {
         AndroidWebClaimIn: {
             /** Shop Id */
             shop_id: string;
+        };
+        /** Archive */
+        Archive: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "archive";
+        };
+        /** AssignCodes */
+        AssignCodes: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "assign_codes";
+        };
+        /** AuditEventOut */
+        AuditEventOut: {
+            /** Action */
+            action: string;
+            /** Actor */
+            actor: string | null;
+            /** Created At */
+            created_at: string;
+            /** Details */
+            details: string | null;
+            /** Device Id */
+            device_id: string | null;
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Uuid */
+            entity_uuid: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /** AuditPageOut */
+        AuditPageOut: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["AuditEventOut"][];
         };
         /** BillDetail */
         BillDetail: {
@@ -1732,6 +2213,8 @@ export interface components {
         };
         /** BillIn */
         BillIn: {
+            /** Allow Unassigned Credit */
+            allow_unassigned_credit?: boolean | null;
             /**
              * Bill Type
              * @default b2c
@@ -1766,6 +2249,10 @@ export interface components {
             payment: components["schemas"]["Payment"];
             /** Place Of Supply State Code */
             place_of_supply_state_code?: string | null;
+            /** Reviewed Context */
+            reviewed_context?: string | null;
+            /** Settlement Choice */
+            settlement_choice?: ("full" | "partial" | "unpaid") | null;
         };
         /** BillLine */
         BillLine: {
@@ -1882,6 +2369,118 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /**
+         * BulkExpected
+         * @description What the review showed. If the products have changed since, the apply is refused.
+         */
+        BulkExpected: {
+            /** Fingerprint */
+            fingerprint?: string | null;
+            /** Matched */
+            matched: number;
+            /** Will Change */
+            will_change: number;
+        };
+        /**
+         * BulkFilter
+         * @description The catalogue filter a selection was made under; the server re-runs it.
+         */
+        BulkFilter: {
+            /** Category */
+            category?: string | null;
+            /** Expiring Days */
+            expiring_days?: number | null;
+            /**
+             * Low Stock
+             * @default false
+             */
+            low_stock: boolean;
+            /**
+             * No Code
+             * @default false
+             */
+            no_code: boolean;
+            /**
+             * Out Of Stock
+             * @default false
+             */
+            out_of_stock: boolean;
+            /** Q */
+            q?: string | null;
+        };
+        /** BulkIn */
+        BulkIn: {
+            /** Action */
+            action: components["schemas"]["SetCategory"] | components["schemas"]["SetReorderLevel"] | components["schemas"]["PriceChange"] | components["schemas"]["Archive"] | components["schemas"]["AssignCodes"];
+            /**
+             * Dry Run
+             * @default true
+             */
+            dry_run: boolean;
+            expected?: components["schemas"]["BulkExpected"] | null;
+            scope: components["schemas"]["BulkScope"];
+        };
+        /** BulkOut */
+        BulkOut: {
+            /** Action */
+            action: string;
+            /** Applied */
+            applied: boolean;
+            /** Below Cost */
+            below_cost: number | null;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Matched */
+            matched: number;
+            /** Missing */
+            missing: number;
+            /** Notes */
+            notes: string[];
+            /**
+             * Replayed
+             * @default false
+             */
+            replayed: boolean;
+            /** Sample */
+            sample: components["schemas"]["BulkSample"][];
+            /** Skipped */
+            skipped: components["schemas"]["BulkSkipped"][];
+            /** Skipped Total */
+            skipped_total: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Will Change */
+            will_change: number;
+        };
+        /** BulkSample */
+        BulkSample: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Name */
+            name: string;
+            /** Uuid */
+            uuid: string;
+        };
+        /**
+         * BulkScope
+         * @description Exactly one of: the products picked (ids), or every product a filter matches.
+         */
+        BulkScope: {
+            filter?: components["schemas"]["BulkFilter"] | null;
+            /** Ids */
+            ids?: string[] | null;
+        };
+        /** BulkSkipped */
+        BulkSkipped: {
+            /** Name */
+            name: string | null;
+            /** Reason */
+            reason: string;
+            /** Uuid */
+            uuid: string;
+        };
         /** CancelIn */
         CancelIn: {
             /** Reason */
@@ -1900,6 +2499,23 @@ export interface components {
             unit_name: string | null;
             /** Uuid */
             uuid: string;
+        };
+        /** CapabilitiesOut */
+        CapabilitiesOut: {
+            /**
+             * Contract Version
+             * @default 1
+             * @constant
+             */
+            contract_version: 1;
+            features: components["schemas"]["ContractFeatures"];
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "owner" | "admin" | "staff";
+            /** Shop Id */
+            shop_id: string;
         };
         /** CartIn */
         CartIn: {
@@ -1999,6 +2615,42 @@ export interface components {
             /** Category */
             category: string;
         };
+        /**
+         * ContractFeatures
+         * @description Service support versions, never a substitute for per-command authorization.
+         */
+        ContractFeatures: {
+            /**
+             * Operation Lookup
+             * @default 1
+             * @constant
+             */
+            operation_lookup: 1;
+            /**
+             * Product Expected Updated At
+             * @default 1
+             * @constant
+             */
+            product_expected_updated_at: 1;
+            /**
+             * Settings Revision
+             * @default 1
+             * @constant
+             */
+            settings_revision: 1;
+            /**
+             * Supplier Payment Binding
+             * @default 2
+             * @constant
+             */
+            supplier_payment_binding: 2;
+            /**
+             * Supplier Payment Proof
+             * @default 1
+             * @constant
+             */
+            supplier_payment_proof: 1;
+        };
         /** CreditNoteIn */
         CreditNoteIn: {
             /** Quantities */
@@ -2019,6 +2671,19 @@ export interface components {
              * @enum {string}
              */
             settlement: "refund" | "adjust";
+        };
+        /** CustomerAllocation */
+        CustomerAllocation: {
+            /** Amount */
+            amount: string;
+            /** Bill Number */
+            bill_number: string;
+            /** Bill Uuid */
+            bill_uuid: string;
+            /** Due After */
+            due_after: string;
+            /** Due Before */
+            due_before: string;
         };
         /** CustomerBill */
         CustomerBill: {
@@ -2045,9 +2710,19 @@ export interface components {
         CustomerDetail: {
             /** Bills */
             bills: components["schemas"]["CustomerBill"][];
+            /**
+             * Bills Has More
+             * @default false
+             */
+            bills_has_more: boolean;
             customer: components["schemas"]["CustomerRow"];
             /** Payments */
             payments: components["schemas"]["CustomerPayment"][];
+            /**
+             * Payments Has More
+             * @default false
+             */
+            payments_has_more: boolean;
         };
         /**
          * CustomerFields
@@ -2127,6 +2802,10 @@ export interface components {
             owing_customers: number;
             /** Total Due */
             total_due: string;
+            /** Unassigned Bills */
+            unassigned_bills: number;
+            /** Unassigned Due */
+            unassigned_due: string;
         };
         /** CustomerPayment */
         CustomerPayment: {
@@ -2146,6 +2825,17 @@ export interface components {
             received_at: string;
             /** Uuid */
             uuid: string;
+        };
+        /** CustomerPaymentPreview */
+        CustomerPaymentPreview: {
+            /** Allocations */
+            allocations: components["schemas"]["CustomerAllocation"][];
+            /** Due After */
+            due_after: string;
+            /** Due Before */
+            due_before: string;
+            /** Review Key */
+            review_key: string;
         };
         /** CustomerRow */
         CustomerRow: {
@@ -2425,6 +3115,16 @@ export interface components {
             cash_total: string;
             /** Categories */
             categories: string[];
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /**
+             * Has More
+             * @default false
+             */
+            has_more: boolean;
             /** Items */
             items: components["schemas"]["ExpenseOut"][];
             /** Total */
@@ -2538,6 +3238,8 @@ export interface components {
             more_errors: number;
             /** Possible Duplicate */
             possible_duplicate: boolean;
+            /** Previous Import At */
+            previous_import_at?: string | null;
             /** Rows Read */
             rows_read: number;
             /** Skipped */
@@ -2601,10 +3303,53 @@ export interface components {
             /** Role */
             role: string;
         };
+        /** InvoiceCheck */
+        InvoiceCheck: {
+            existing: components["schemas"]["InvoiceMatch"] | null;
+        };
+        /**
+         * InvoiceMatch
+         * @description A purchase already recorded under the same supplier invoice number.
+         */
+        InvoiceMatch: {
+            /** Invoice Number */
+            invoice_number: string | null;
+            /**
+             * Payment Status
+             * @enum {string}
+             */
+            payment_status: "not_recorded" | "unpaid" | "partial" | "paid";
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Total */
+            total: string | null;
+            /** Uuid */
+            uuid: string;
+        };
         /** InvoiceSettings */
         InvoiceSettings: {
             /** Bank Details */
             bank_details: string | null;
+            /**
+             * Default Gst Percent
+             * @default 18
+             */
+            default_gst_percent: string;
+            /**
+             * Default Overhead Cost
+             * @default 0
+             */
+            default_overhead_cost: string;
+            /**
+             * Default Profit Margin Percent
+             * @default 0
+             */
+            default_profit_margin_percent: string;
             /** Digital Signature */
             digital_signature?: string | null;
             /** Footer Text */
@@ -2618,8 +3363,15 @@ export interface components {
             gst_scheme: "regular" | "composition" | "unregistered";
             /** Invoice Title */
             invoice_title: string;
+            /**
+             * Low Stock Threshold
+             * @default 5
+             */
+            low_stock_threshold: string;
             /** Paper Size */
             paper_size: string;
+            /** Revision */
+            revision: string;
             /** Round Off Total */
             round_off_total: boolean;
             /** Shop Address */
@@ -2650,16 +3402,26 @@ export interface components {
         InvoiceSettingsIn: {
             /** Bank Details */
             bank_details?: string | null;
+            /** Default Gst Percent */
+            default_gst_percent?: number | string | null;
+            /** Default Overhead Cost */
+            default_overhead_cost?: number | string | null;
+            /** Default Profit Margin Percent */
+            default_profit_margin_percent?: number | string | null;
             /** Digital Signature */
             digital_signature?: string | null;
+            /** Expected Revision */
+            expected_revision?: string | null;
             /** Footer Text */
             footer_text?: string | null;
             /** Gst Scheme */
             gst_scheme?: ("regular" | "composition" | "unregistered") | null;
             /** Invoice Title */
             invoice_title?: string | null;
+            /** Low Stock Threshold */
+            low_stock_threshold?: number | string | null;
             /** Paper Size */
-            paper_size?: ("a4" | "a5") | null;
+            paper_size?: ("a4" | "a5" | "80mm" | "58mm") | null;
             /** Round Off Total */
             round_off_total?: boolean | null;
             /** Shop Address */
@@ -2683,6 +3445,79 @@ export interface components {
             /** Upi Id */
             upi_id?: string | null;
         };
+        /** JobIn */
+        JobIn: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "stock_valuation_csv_v1";
+            /** Request Key */
+            request_key: string;
+        };
+        /** JobOut */
+        JobOut: {
+            /** Attempts */
+            attempts: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error Code */
+            error_code: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "stock_valuation_csv_v1";
+            /**
+             * Next Attempt At
+             * Format: date-time
+             */
+            next_attempt_at: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "ready" | "running" | "retry" | "succeeded" | "failed" | "cancelled";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** KpiComparison */
+        KpiComparison: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** Text */
+            text: string;
+        };
+        /** KpiComparisons */
+        KpiComparisons: {
+            collected?: components["schemas"]["KpiComparison"] | null;
+            expenses?: components["schemas"]["KpiComparison"] | null;
+            gross_profit?: components["schemas"]["KpiComparison"] | null;
+            /** Previous From */
+            previous_from: string;
+            /** Previous To */
+            previous_to: string;
+            revenue?: components["schemas"]["KpiComparison"] | null;
+        };
         /** Kpis */
         Kpis: {
             /** Average Order Value */
@@ -2693,12 +3528,18 @@ export interface components {
             by_payment_method: components["schemas"]["MethodTotal"][];
             /** Collected */
             collected: string;
+            comparisons?: components["schemas"]["KpiComparisons"] | null;
             /** Daily */
             daily: components["schemas"]["DailyPoint"][];
             /** Discount Rate Percent */
             discount_rate_percent: string;
             /** Expenses */
             expenses: string;
+            /**
+             * Expenses By Category
+             * @default []
+             */
+            expenses_by_category: components["schemas"]["ExpenseCategory"][];
             /** Gross Margin Percent */
             gross_margin_percent: string;
             /** Gross Profit */
@@ -2724,10 +3565,104 @@ export interface components {
             top_by_revenue: components["schemas"]["TopProduct"][];
             /** Top By Units */
             top_by_units: components["schemas"]["TopUnits"][];
+            /**
+             * Uncosted Item Count
+             * @default 0
+             */
+            uncosted_item_count: number;
             /** Unpaid Count */
             unpaid_count: number;
             /** Unpaid Total */
             unpaid_total: string;
+        };
+        /** LabelProduct */
+        LabelProduct: {
+            /** Barcode */
+            barcode: string | null;
+            /** Name */
+            name: string;
+            /** Product Code */
+            product_code: string | null;
+            /** Selling Price */
+            selling_price: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** LabelScopeIn */
+        LabelScopeIn: {
+            scope: components["schemas"]["BulkScope"];
+        };
+        /** LedgerEntry */
+        LedgerEntry: {
+            /** Balance After */
+            balance_after: string;
+            /** Batch No */
+            batch_no: string | null;
+            /** Created At */
+            created_at: string;
+            /** Expiry Date */
+            expiry_date: string | null;
+            /** Notes */
+            notes: string | null;
+            /** Quantity Delta */
+            quantity_delta: string;
+            /** Reason */
+            reason: string | null;
+            source: components["schemas"]["LedgerSource"] | null;
+            /** Type */
+            type: string;
+            /** Unit Cost */
+            unit_cost?: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** LedgerEntryOut */
+        LedgerEntryOut: {
+            /** Balance */
+            balance: string;
+            /** Credit */
+            credit: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Debit */
+            debit: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "purchase" | "payment" | "purchase_reversal" | "payment_reversal";
+            /** Method */
+            method: string | null;
+            /** Reference */
+            reference: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** LedgerPage */
+        LedgerPage: {
+            /** Items */
+            items: components["schemas"]["LedgerEntry"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+            /** On Hand */
+            on_hand: string | null;
+            /** Total */
+            total: number;
+        };
+        /** LedgerSource */
+        LedgerSource: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "bill" | "credit_note" | "purchase" | "purchase_reversal" | "phone_purchase";
+            /** Label */
+            label: string;
+            /** Uuid */
+            uuid: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -3070,6 +4005,30 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /** OperationStatusOut */
+        OperationStatusOut: {
+            /**
+             * Contract Version
+             * @default 1
+             * @constant
+             */
+            contract_version: 1;
+            /** Created At */
+            created_at: string | null;
+            /** Key */
+            key: string;
+            /** Operation Kind */
+            operation_kind: ("idempotent_write" | "purchase_receipt" | "supplier_payment") | null;
+            /** Result Kind */
+            result_kind: ("purchase_receipt" | "supplier_payment") | null;
+            /** Result Uuid */
+            result_uuid: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "committed" | "not_found";
+        };
         /** PasswordChangeIn */
         PasswordChangeIn: {
             /** Current Password */
@@ -3105,6 +4064,20 @@ export interface components {
             /** Reference */
             reference?: string | null;
         };
+        /** PaymentAllocationOut */
+        PaymentAllocationOut: {
+            /** Amount */
+            amount: string;
+            /** Invoice Number */
+            invoice_number: string | null;
+            /**
+             * Purchase Date
+             * Format: date
+             */
+            purchase_date: string;
+            /** Purchase Uuid */
+            purchase_uuid: string;
+        };
         /** PaymentIn */
         PaymentIn: {
             /** Amount */
@@ -3124,6 +4097,24 @@ export interface components {
         PaymentRecorded: {
             /** Uuid */
             uuid: string;
+        };
+        /** PaymentRecoveryOut */
+        PaymentRecoveryOut: {
+            /**
+             * Contract Version
+             * @default 1
+             * @constant
+             */
+            contract_version: 1;
+            /** Request Binding Version */
+            request_binding_version: (1 | 2) | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "committed" | "not_found";
+            /** Uuid */
+            uuid: string | null;
         };
         /** PaymentRow */
         PaymentRow: {
@@ -3324,6 +4315,8 @@ export interface components {
             inter_state: boolean;
             /** Lines */
             lines: components["schemas"]["PreviewLine"][];
+            /** Reviewed Context */
+            reviewed_context: string;
             /** Round Off Amount */
             round_off_amount: string;
             /** Sgst Amount */
@@ -3352,6 +4345,21 @@ export interface components {
             /** Unit Price */
             unit_price: string;
         };
+        /** PriceChange */
+        PriceChange: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "percent" | "amount";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "price_change";
+            /** Value */
+            value: number | string;
+        };
         /** PricePreviewIn */
         PricePreviewIn: {
             /** Category Uuid */
@@ -3376,6 +4384,8 @@ export interface components {
         PricePreviewOut: {
             /** Category Name */
             category_name: string | null;
+            /** Cost Known */
+            cost_known: boolean;
             /** Gst Percent */
             gst_percent: string;
             /** Gst Registered */
@@ -3397,7 +4407,7 @@ export interface components {
              */
             price_mode: "fixed" | "formula";
             /** Profit Amount */
-            profit_amount: string;
+            profit_amount: string | null;
             /** Profit Margin Percent */
             profit_margin_percent: string;
             /** Purchase Gst Amount */
@@ -3523,6 +4533,8 @@ export interface components {
             barcode?: string | null;
             /** Category Uuid */
             category_uuid?: string | null;
+            /** Expected Updated At */
+            expected_updated_at?: string | null;
             /** Gst Percent */
             gst_percent?: number | string | null;
             /** Hsn Code */
@@ -3578,6 +4590,11 @@ export interface components {
             net_profit: string;
             /** Sales */
             sales: string;
+            /**
+             * Sales Without Cost
+             * @default 0
+             */
+            sales_without_cost: string;
         };
         /** PullIn */
         PullIn: {
@@ -3617,6 +4634,10 @@ export interface components {
             imported: boolean;
             /** Product Name */
             product_name: string;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Purchase Uuid */
+            purchase_uuid?: string | null;
             /** Quantity */
             quantity: string;
             /** Supplier */
@@ -3625,6 +4646,30 @@ export interface components {
             unit: string | null;
             /** Unit Cost */
             unit_cost: string;
+        };
+        /**
+         * PurchaseSummary
+         * @description Purchase flows for the chosen dates, and balances owed today.
+         */
+        PurchaseSummary: {
+            /** Overdue */
+            overdue: string;
+            /** Overdue Purchases */
+            overdue_purchases: number;
+            /** Payable */
+            payable: string;
+            /** Payments Made */
+            payments_made: string;
+            /** Purchase Value */
+            purchase_value: string;
+            /** Purchases */
+            purchases: number;
+            /** Suppliers Owed */
+            suppliers_owed: number;
+            /** Unrecorded Purchases */
+            unrecorded_purchases: number;
+            /** Unrecorded Stock Cost */
+            unrecorded_stock_cost: string;
         };
         /** Purchases */
         Purchases: {
@@ -3838,6 +4883,10 @@ export interface components {
              * Format: date
              */
             purchase_date: string;
+            /** Reversal Reason */
+            reversal_reason?: string | null;
+            /** Reversed At */
+            reversed_at?: string | null;
             /** Subtotal */
             subtotal: string;
             /** Supplier Name */
@@ -3871,6 +4920,71 @@ export interface components {
             reference: string | null;
             /** Uuid */
             uuid: string;
+        };
+        /** ReceiptPreview */
+        ReceiptPreview: {
+            /** Balance Due */
+            balance_due: string;
+            /** Charges Amount */
+            charges_amount: string;
+            /** Discount Amount */
+            discount_amount: string;
+            /** Paid Now */
+            paid_now: string;
+            /** Payment Recorded */
+            payment_recorded: boolean;
+            /** Subtotal */
+            subtotal: string;
+            /** Tax Amount */
+            tax_amount: string;
+            /** Total */
+            total: string;
+        };
+        /**
+         * ReceiptPreviewIn
+         * @description What a purchase would total before it is saved. Only the figures that change money.
+         */
+        ReceiptPreviewIn: {
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: number | string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /** Items */
+            items: components["schemas"]["ReceiptStock"][];
+            /**
+             * Paid In Full
+             * @default false
+             */
+            paid_in_full: boolean;
+            /** Paid Now */
+            paid_now?: number | string | null;
+            /**
+             * Record Payment Terms
+             * @default false
+             */
+            record_payment_terms: boolean;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
+        };
+        /** ReceiptStock */
+        ReceiptStock: {
+            /** Batch No */
+            batch_no?: string | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Cost */
+            unit_cost: number | string;
         };
         /** RefreshIn */
         RefreshIn: {
@@ -3950,6 +5064,80 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** ReturnPreview */
+        ReturnPreview: {
+            /** Can Return */
+            can_return: boolean;
+            /** Cgst Amount */
+            cgst_amount: string;
+            /** Credit Total */
+            credit_total: string;
+            /** Igst Amount */
+            igst_amount: string;
+            /** Invoice Due */
+            invoice_due: string;
+            /** Invoice Due After */
+            invoice_due_after: string;
+            /** Invoice Paid */
+            invoice_paid: string;
+            /** Lines */
+            lines: components["schemas"]["ReturnPreviewLine"][];
+            /** Reduces Invoice Due */
+            reduces_invoice_due: string;
+            /** Refund To Customer */
+            refund_to_customer: string;
+            /** Round Off Amount */
+            round_off_amount: string;
+            /** Settlement */
+            settlement: string;
+            /** Sgst Amount */
+            sgst_amount: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Tax Amount */
+            tax_amount: string;
+            /** Taxable Amount */
+            taxable_amount: string;
+        };
+        /** ReturnPreviewIn */
+        ReturnPreviewIn: {
+            /** Quantities */
+            quantities?: {
+                [key: string]: number | string;
+            };
+            /**
+             * Settlement
+             * @default refund
+             * @enum {string}
+             */
+            settlement: "refund" | "adjust";
+        };
+        /** ReturnPreviewLine */
+        ReturnPreviewLine: {
+            /** Already Returned */
+            already_returned: string;
+            /** Credit */
+            credit: string;
+            /** Goes Back To Stock */
+            goes_back_to_stock: boolean;
+            /** Item Uuid */
+            item_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Remaining */
+            remaining: string;
+            /** Returning */
+            returning: string;
+            /** Sold */
+            sold: string;
+            /** Unit */
+            unit: string | null;
+        };
+        /** ReversalIn */
+        ReversalIn: {
+            /** Reason */
+            reason: string;
+        };
         /** ReviewIn */
         ReviewIn: {
             /** Approved Email */
@@ -4007,6 +5195,26 @@ export interface components {
              */
             last_used_at: string;
         };
+        /** SetCategory */
+        SetCategory: {
+            /** Category Uuid */
+            category_uuid: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set_category";
+        };
+        /** SetReorderLevel */
+        SetReorderLevel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set_reorder_level";
+            /** Value */
+            value: number | string | null;
+        };
         /** SettleIn */
         SettleIn: {
             /** Amount */
@@ -4019,6 +5227,13 @@ export interface components {
             method: "cash" | "upi" | "card" | "bank" | "online";
             /** Reference */
             reference?: string | null;
+            /** Review Key */
+            review_key?: string | null;
+        };
+        /** SettlePreviewIn */
+        SettlePreviewIn: {
+            /** Amount */
+            amount: number | string;
         };
         /** ShopCreatedOut */
         ShopCreatedOut: {
@@ -4086,6 +5301,19 @@ export interface components {
             /** Status */
             status: string;
         };
+        /** StockSummary */
+        StockSummary: {
+            /** All */
+            all: number;
+            /** Expiring */
+            expiring: number;
+            /** Low */
+            low: number;
+            /** No Code */
+            no_code: number;
+            /** Out */
+            out: number;
+        };
         /** StockValuation */
         StockValuation: {
             /** Gst Registered */
@@ -4107,6 +5335,8 @@ export interface components {
             gst_percent: string;
             /** Name */
             name: string;
+            /** Product Uuid */
+            product_uuid?: string | null;
             /** Quantity */
             quantity: string;
             /** Sale Value */
@@ -4164,6 +5394,11 @@ export interface components {
             name: string;
             /** Notes */
             notes: string | null;
+            /**
+             * Overdue Due
+             * @default 0
+             */
+            overdue_due: string;
             /** Phone */
             phone: string | null;
             /** Uuid */
@@ -4200,6 +5435,8 @@ export interface components {
              * @enum {string}
              */
             payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /** Purchase Uuid */
+            purchase_uuid?: string | null;
             /** Reference */
             reference?: string | null;
             /** Request Key */
@@ -4207,6 +5444,11 @@ export interface components {
         };
         /** SupplierPaymentOut */
         SupplierPaymentOut: {
+            /**
+             * Allocations
+             * @default []
+             */
+            allocations: components["schemas"]["PaymentAllocationOut"][];
             /** Amount */
             amount: string;
             /** Notes */
@@ -4220,6 +5462,10 @@ export interface components {
             payment_method: string;
             /** Reference */
             reference: string | null;
+            /** Reversal Reason */
+            reversal_reason?: string | null;
+            /** Reversed At */
+            reversed_at?: string | null;
             /** Uuid */
             uuid: string;
         };
@@ -4240,6 +5486,10 @@ export interface components {
              * Format: date
              */
             purchase_date: string;
+            /** Reversal Reason */
+            reversal_reason?: string | null;
+            /** Reversed At */
+            reversed_at?: string | null;
             /** Total */
             total: string | null;
             /** Uuid */
@@ -4249,10 +5499,20 @@ export interface components {
         SupplierStatementOut: {
             /** Balance Due */
             balance_due: string;
+            /** Ledger */
+            ledger: components["schemas"]["LedgerEntryOut"][];
+            /** Overdue */
+            overdue: string;
+            /** Paid Total */
+            paid_total: string;
             /** Payments */
             payments: components["schemas"]["SupplierPaymentOut"][];
+            /** Purchased Total */
+            purchased_total: string;
             /** Purchases */
             purchases: components["schemas"]["SupplierPurchaseOut"][];
+            /** Unrecorded Purchases */
+            unrecorded_purchases: number;
         };
         /** TaxRate */
         TaxRate: {
@@ -4286,6 +5546,44 @@ export interface components {
             total_tax: string;
             /** Total Taxable */
             total_taxable: string;
+        };
+        /**
+         * TermsIn
+         * @description Payment terms for a purchase that was saved without them.
+         */
+        TermsIn: {
+            /**
+             * Charges Amount
+             * @default 0
+             */
+            charges_amount: number | string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Paid In Full
+             * @default false
+             */
+            paid_in_full: boolean;
+            /** Paid Now */
+            paid_now?: number | string | null;
+            /** Payment Date */
+            payment_date?: string | null;
+            /**
+             * Payment Method
+             * @default cash
+             * @enum {string}
+             */
+            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
         };
         /** TokenOut */
         TokenOut: {
@@ -5795,6 +7093,42 @@ export interface operations {
             };
         };
     };
+    shop_audit_events_v1_shops__shop_id__audit_events_get: {
+        parameters: {
+            query?: {
+                entity_type?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_bills_v1_shops__shop_id__bills_get: {
         parameters: {
             query?: {
@@ -5804,6 +7138,7 @@ export interface operations {
                 kind?: ("invoice" | "credit_note") | null;
                 q?: string | null;
                 cancelled?: boolean;
+                unassigned_credit?: boolean;
                 limit?: number;
                 cursor?: string | null;
             };
@@ -6013,6 +7348,42 @@ export interface operations {
             };
         };
     };
+    credit_note_preview_v1_shops__shop_id__bills__bill_id__credit_note_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_payment_v1_shops__shop_id__bills__bill_id__payments_post: {
         parameters: {
             query?: never;
@@ -6038,6 +7409,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bill_pdf_v1_shops__shop_id__bills__bill_id__pdf_get: {
+        parameters: {
+            query?: {
+                paper?: ("A4" | "A5" | "80mm" | "58mm") | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice as a PDF. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shop_capabilities_v1_shops__shop_id__capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesOut"];
                 };
             };
             /** @description Validation Error */
@@ -6219,7 +7655,9 @@ export interface operations {
     create_customer_v1_shops__shop_id__customers_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path: {
                 shop_id: string;
             };
@@ -6289,7 +7727,10 @@ export interface operations {
     };
     get_customer_v1_shops__shop_id__customers__customer_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                bills_offset?: number;
+                payments_offset?: number;
+            };
             header?: never;
             path: {
                 shop_id: string;
@@ -6393,6 +7834,72 @@ export interface operations {
             };
         };
     };
+    preview_customer_payment_v1_shops__shop_id__customers__customer_id__payments_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettlePreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerPaymentPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     entitlement_v1_shops__shop_id__entitlement_get: {
         parameters: {
             query?: never;
@@ -6430,6 +7937,9 @@ export interface operations {
                 start: string;
                 end: string;
                 category?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path: {
@@ -6462,7 +7972,9 @@ export interface operations {
     create_expense_v1_shops__shop_id__expenses_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path: {
                 shop_id: string;
             };
@@ -6722,6 +8234,137 @@ export interface operations {
             };
         };
     };
+    enqueue_report_v1_shops__shop_id__jobs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_status_v1_shops__shop_id__jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_v1_shops__shop_id__jobs__job_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_result_v1_shops__shop_id__jobs__job_id__result_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_members_v1_shops__shop_id__members_get: {
         parameters: {
             query?: never;
@@ -6819,6 +8462,40 @@ export interface operations {
             };
         };
     };
+    get_operation_status_v1_shops__shop_id__operations__operation_key__get: {
+        parameters: {
+            query?: {
+                operation_kind?: ("idempotent_write" | "purchase_receipt" | "supplier_payment") | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+                operation_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_products_v1_shops__shop_id__products_get: {
         parameters: {
             query?: {
@@ -6826,6 +8503,8 @@ export interface operations {
                 category?: string | null;
                 low_stock?: boolean;
                 expiring_days?: number | null;
+                no_code?: boolean;
+                out_of_stock?: boolean;
                 sort?: "name" | "price" | "quantity" | "updated" | "code";
                 direction?: "asc" | "desc";
                 limit?: number;
@@ -6862,7 +8541,9 @@ export interface operations {
     create_product_v1_shops__shop_id__products_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path: {
                 shop_id: string;
             };
@@ -6881,6 +8562,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProductDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_many_products_v1_shops__shop_id__products_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkOut"];
                 };
             };
             /** @description Validation Error */
@@ -6933,6 +8651,7 @@ export interface operations {
                 filename: string;
                 dry_run?: boolean;
                 allow_duplicate?: boolean;
+                stop_on_errors?: boolean;
             };
             header?: never;
             path: {
@@ -6949,6 +8668,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    label_data_v1_shops__shop_id__products_label_data_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelScopeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelProduct"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_product_v1_shops__shop_id__products_lookup_get: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductOut"];
                 };
             };
             /** @description Validation Error */
@@ -6984,6 +8771,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PricePreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stock_summary_v1_shops__shop_id__products_stock_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockSummary"];
                 };
             };
             /** @description Validation Error */
@@ -7097,6 +8915,44 @@ export interface operations {
             };
         };
     };
+    product_ledger_v1_shops__shop_id__products__product_id__movements_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                type?: ("purchase" | "sale" | "adjustment" | "return" | "void" | "stocktake") | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     adjust_stock_v1_shops__shop_id__products__product_id__stock_adjustments_post: {
         parameters: {
             query?: never;
@@ -7138,6 +8994,12 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                supplier?: string | null;
+                q?: string | null;
+                status?: ("not_recorded" | "unpaid" | "partial" | "paid" | "open") | null;
+                overdue?: boolean;
+                from?: string | null;
+                to?: string | null;
             };
             header?: never;
             path: {
@@ -7269,6 +9131,41 @@ export interface operations {
             };
         };
     };
+    invoice_check_v1_shops__shop_id__purchase_receipts_invoice_check_get: {
+        parameters: {
+            query: {
+                supplier: string;
+                invoice_number: string;
+                purchase_date: string;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceCheck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post: {
         parameters: {
             query?: never;
@@ -7304,6 +9201,76 @@ export interface operations {
             };
         };
     };
+    preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purchase_summary_v1_shops__shop_id__purchase_receipts_summary_get: {
+        parameters: {
+            query?: {
+                supplier?: string | null;
+                from?: string | null;
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get: {
         parameters: {
             query?: never;
@@ -7315,6 +9282,78 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_payment_terms_v1_shops__shop_id__purchase_receipts__receipt_id__payment_terms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reverse_receipt_v1_shops__shop_id__purchase_receipts__receipt_id__reverse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -7879,6 +9918,79 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecorded"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recover_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_recover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentRecoveryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reverse_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments__payment_id__reverse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                supplier_id: string;
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -121,3 +121,37 @@ test('bill retries keep the same idempotency key when an expired token is refres
   expect(header(call(2), 'Idempotency-Key')).toBe('stable-bill-key')
   expect(call(0).init.body).toBe(call(2).init.body)
 })
+
+test('server error responses expose X-Request-ID and error.request_id on ApiError', async () => {
+  mockFetch(() =>
+    reply(
+      500,
+      { error: { code: 'internal_error', message: 'Something went wrong.', request_id: 'req-body-1' } },
+      { 'X-Request-ID': 'req-hdr-1' },
+    ),
+  )
+  const err = await api.get('/v1/me').catch((e: ApiError) => e)
+  expect(err).toBeInstanceOf(ApiError)
+  expect((err as ApiError).requestId).toBe('req-body-1')
+
+  mockFetch(() => new Response('<html>Bad Gateway</html>', { status: 502, headers: { 'X-Request-ID': 'req-hdr-2' } }))
+  const proxyErr = await api.get('/v1/me').catch((e: ApiError) => e)
+  expect((proxyErr as ApiError).requestId).toBe('req-hdr-2')
+})
+
+test('requests respect caller cancellation and timeout budgets', async () => {
+  const ac = new AbortController()
+  ac.abort()
+  await expect(api.get('/v1/me', { signal: ac.signal })).rejects.toMatchObject({ name: 'AbortError' })
+
+  const { request } = await import('./client')
+  mockFetch(c => new Promise((_resolve, reject) => {
+    c.init.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+  }))
+  await expect(api.get('/v1/me', { timeoutMs: 10 })).rejects.toMatchObject({ status: 408, code: 'timeout' })
+  await expect(request('POST', '/v1/shops/s1/bills', { body: {}, timeoutMs: 10 })).rejects.toMatchObject({
+    status: 408,
+    code: 'timeout',
+    message: expect.stringContaining('Check whether it saved'),
+  })
+})

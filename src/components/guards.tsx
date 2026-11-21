@@ -1,8 +1,9 @@
-import { Navigate, Outlet, useLocation } from 'react-router'
+import { Link, Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../auth/context'
 import { can, type Capability } from '../permissions'
 import { useShop } from '../shops/context'
-import { Alert, Loading } from './ui'
+import { Alert, Loading } from './ui/ui'
+import { PageHeader } from './ui/workspace'
 
 /** Everything inside needs a signed-in visitor. */
 export function RequireAuth() {
@@ -30,8 +31,9 @@ export function RequireCapability({ needs }: { needs: Capability }) {
   if (!can(role, needs)) {
     return (
       <div>
-        <h1>No access</h1>
+        <PageHeader eyebrow="PERMISSIONS" title="No access" />
         <Alert kind="info">Your role in this shop does not include this page. Ask the shop owner if you need it.</Alert>
+        <p><Link className="button secondary" to="/">Back to dashboard</Link></p>
       </div>
     )
   }

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { components } from '../api/schema'
 import { ApiError, api, request } from '../api/client'
 import { downloadFile } from '../lib/download'
@@ -14,6 +14,13 @@ export type Supplier = S['SupplierOut']
 export type ImportReport = S['ImportReport']
 export type PriceInput = S['PricePreviewIn']
 export type PricePreview = S['PricePreviewOut']
+export type BulkResult = S['BulkOut']
+export type BulkScope = S['BulkScope']
+export type BulkAction = S['SetCategory'] | S['SetReorderLevel'] | S['PriceChange'] | S['Archive'] | S['AssignCodes']
+export type LabelProduct = S['LabelProduct']
+export type StockSummary = S['StockSummary']
+export type LedgerEntry = S['LedgerEntry']
+export type LedgerPage = S['LedgerPage']
 
 /** GST slabs offered for products and categories. */
 export const GST_RATES = ['0', '0.25', '3', '5', '12', '18', '28', '40']
@@ -33,6 +40,10 @@ export interface ProductQuery {
   category: string
   low: boolean
   expiring: boolean
+  /** Products with neither a barcode nor a code of their own. */
+  noCode: boolean
+  /** Tracked products with nothing on the shelf. */
+  out: boolean
   sort: 'name' | 'price' | 'quantity' | 'updated' | 'code'
   dir: 'asc' | 'desc'
   page: number
@@ -50,10 +61,12 @@ export function useProducts(query: ProductQuery) {
   if (query.category) params.set('category', query.category)
   if (query.low) params.set('low_stock', 'true')
   if (query.expiring) params.set('expiring_days', '30')
+  if (query.noCode) params.set('no_code', 'true')
+  if (query.out) params.set('out_of_stock', 'true')
   if (query.page > 0) params.set('cursor', String(query.page * PAGE_SIZE))
   return useQuery({
     queryKey: ['products', shop, params.toString()],
-    queryFn: () => api.get<ProductPage>(`/v1/shops/${shop}/products?${params}`),
+    queryFn: ({ signal }) => api.get<ProductPage>(`/v1/shops/${shop}/products?${params}`, { signal }),
     enabled: !!shop,
     placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === shop ? previous : undefined,
   })
@@ -63,7 +76,7 @@ export function useProduct(id: string | undefined) {
   const shop = useShopId()
   return useQuery({
     queryKey: ['product', shop, id],
-    queryFn: () => api.get<ProductDetail>(`/v1/shops/${shop}/products/${id}`),
+    queryFn: ({ signal }) => api.get<ProductDetail>(`/v1/shops/${shop}/products/${id}`, { signal }),
     enabled: !!shop && !!id,
   })
 }
@@ -106,10 +119,11 @@ export function useProductMutation<TIn, TOut>(run: (shop: string, input: TIn) =>
   })
 }
 
-export const saveProduct = (shop: string, input: { id?: string; body: Record<string, unknown> }) =>
+// `retryKey` makes a repeated Add product (after a lost response) return the same product.
+export const saveProduct = (shop: string, input: { id?: string; body: Record<string, unknown>; retryKey?: string }) =>
   input.id
     ? api.patch<ProductDetail>(`/v1/shops/${shop}/products/${input.id}`, input.body)
-    : api.post<ProductDetail>(`/v1/shops/${shop}/products`, input.body)
+    : request<ProductDetail>('POST', `/v1/shops/${shop}/products`, { body: input.body, idempotencyKey: input.retryKey })
 
 export const removeProduct = (shop: string, id: string) => api.delete<void>(`/v1/shops/${shop}/products/${id}?confirm=true`)
 
@@ -121,8 +135,8 @@ export const adjustStock = (shop: string, input: { id: string; delta: string; re
   })
 
 /** Sends the chosen file as the raw request body; the server reads CSV and .xlsx. */
-export async function importFile(shop: string, file: File, options: { dryRun: boolean; allowDuplicate: boolean }): Promise<ImportReport> {
-  const query = new URLSearchParams({ filename: file.name, dry_run: String(options.dryRun), allow_duplicate: String(options.allowDuplicate) })
+export async function importFile(shop: string, file: File, options: { dryRun: boolean; allowDuplicate: boolean; stopOnErrors?: boolean }): Promise<ImportReport> {
+  const query = new URLSearchParams({ filename: file.name, dry_run: String(options.dryRun), allow_duplicate: String(options.allowDuplicate), stop_on_errors: String(options.stopOnErrors ?? false) })
   return request<ImportReport>('POST', `/v1/shops/${shop}/products/import?${query}`, { body: file })
 }
 
@@ -142,5 +156,46 @@ export function usePricePreview(input: PriceInput | null) {
     enabled: !!shop && !!input,
     placeholderData: previous => previous,
     retry: false,
+  })
+}
+
+/** What a bulk change would do, worked out by the server; nothing is written. */
+export const reviewBulk = (shop: string, input: { scope: BulkScope; action: BulkAction }) =>
+  api.post<BulkResult>(`/v1/shops/${shop}/products/bulk`, { ...input, dry_run: true })
+
+/** Applies the change that was reviewed. The server refuses it if the products changed since (`fingerprint`). */
+export const applyBulk = (shop: string, input: { scope: BulkScope; action: BulkAction; review: BulkResult; key: string }) =>
+  request<BulkResult>('POST', `/v1/shops/${shop}/products/bulk`, {
+    body: { scope: input.scope, action: input.action, dry_run: false, expected: { matched: input.review.matched, will_change: input.review.will_change, fingerprint: input.review.fingerprint } },
+    idempotencyKey: input.key,
+  })
+
+/** Name, code, barcode and price for each product in a selection, as they are now. */
+export const fetchLabelData = (shop: string, scope: BulkScope) => api.post<LabelProduct[]>(`/v1/shops/${shop}/products/label-data`, { scope })
+
+/** How many products are low, out of stock, expiring or without a code. */
+export function useStockSummary() {
+  const shop = useShopId()
+  return useQuery({ queryKey: ['products', shop, 'summary'], queryFn: () => api.get<StockSummary>(`/v1/shops/${shop}/products/stock-summary`), enabled: !!shop })
+}
+
+export interface LedgerFilters { from: string; to: string; type: string }
+
+/** A product's whole stock history, a page at a time (newest first), with the balance after each entry. */
+export function useLedger(id: string, f: LedgerFilters) {
+  const shop = useShopId()
+  return useInfiniteQuery({
+    queryKey: ['product', shop, id, 'ledger', f],
+    initialPageParam: '',
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ limit: '25' })
+      if (f.from) params.set('from', f.from)
+      if (f.to) params.set('to', f.to)
+      if (f.type) params.set('type', f.type)
+      if (pageParam) params.set('cursor', pageParam)
+      return api.get<LedgerPage>(`/v1/shops/${shop}/products/${id}/movements?${params}`)
+    },
+    getNextPageParam: last => last.next_cursor ?? undefined,
+    enabled: !!shop && !!id,
   })
 }

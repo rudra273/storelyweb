@@ -1,9 +1,9 @@
 import { QueryState, Pager, Status } from './Bits'
 import { useState, type FormEvent } from 'react'
 import { request } from '../api/client'
-import { Modal } from '../components/Modal'
-import { Alert, Empty, Field } from '../components/ui'
-import { Button, PageHeader } from '../components/workspace'
+import { Modal } from '../components/ui/Modal'
+import { Alert, Empty, Field } from '../components/ui/ui'
+import { Button, PageHeader } from '../components/ui/workspace'
 import { useAction } from '../components/useAction'
 import { date, localDate, PAGE, usePlatform, useRefreshPlatform, type Schemas } from './shared'
 

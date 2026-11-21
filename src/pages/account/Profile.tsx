@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { AccountHeader } from '../../components/AccountHeader'
+import { AccountHeader } from '../../components/layout/AccountHeader'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/context'
 import { useAction } from '../../components/useAction'
-import { Alert, Card, Field } from '../../components/ui'
+import { Alert, Card, Field } from '../../components/ui/ui'
 
 export function Profile() {
   const { user, reloadUser } = useAuth()

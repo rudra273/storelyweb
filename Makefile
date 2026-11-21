@@ -1,4 +1,4 @@
-.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e
+.PHONY: image lock lint typecheck test build audit secrets scan-image check api-types api-types-check e2e e2e-onboarding e2e-invoice-recovery e2e-invoice-locks
 
 # Everything runs in Docker (Node 26); the host needs only Docker.
 IMG = storelyweb:dev
@@ -55,3 +55,30 @@ e2e:             ## browser end-to-end test of sign-in, roles, two-step, session
 	  mcr.microsoft.com/playwright:v1.64.1-noble sh -c \
 	  'mkdir /tmp/p && cd /tmp/p && npm init -y >/dev/null && npm i playwright@1.64.1 >/dev/null 2>&1 && NODE_PATH=/tmp/p/node_modules node /e2e/live.cjs'; \
 	status=$$?; cd ../storelyapi && docker compose up -d --wait api >/dev/null; exit $$status
+
+# Bounded current-onboarding smoke. Start the shared API and a current-checkout
+# Vite server first; this target never restarts the API or changes rate limits.
+# PLAYWRIGHT_MODULE may point at an isolated runtime; optional CHROME_EXECUTABLE
+# selects an already-installed compatible Chromium. See docs/refactor-e00-baseline.md.
+e2e-onboarding:
+	node e2e/onboarding.cjs
+
+# Coordinator-created isolated premium fixture only; never uses a personal shop.
+e2e-invoice-recovery:
+	node e2e/invoice-recovery.cjs
+
+# Same-origin cross-tab locking; no account or business fixture required.
+e2e-invoice-locks:
+	node e2e/invoice-locks.cjs
+
+# Run-owned premium fixture with two unpaid purchases; see E01 supplier evidence.
+e2e-supplier-payment-recovery:
+	node e2e/supplier-payment-recovery.cjs
+
+# Run-owned premium product fixture only; actual server CAS and dirty-only rebase.
+e2e-product-revision:
+	node e2e/product-revision.cjs
+
+# Run-owned premium shop fixture only; aggregate settings revision/review/rebase.
+e2e-settings-revision:
+	node e2e/settings-revision.cjs

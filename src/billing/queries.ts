@@ -16,7 +16,7 @@ export type CreditInput = S['CreditNoteIn']
 
 export function useBillingQuery<T>(key: string, path: string, enabled = true) {
   const shop = useShop().current?.shop_id ?? ''
-  return useQuery({ queryKey: [key, shop, path], queryFn: () => api.get<T>(`/v1/shops/${shop}/${path}`), enabled: !!shop && enabled })
+  return useQuery({ queryKey: [key, shop, path], queryFn: ({ signal }) => api.get<T>(`/v1/shops/${shop}/${path}`, { signal }), enabled: !!shop && enabled })
 }
 
 export function useBillingMutation<T>(run: (base: string, input: T) => Promise<BillDetail>) {

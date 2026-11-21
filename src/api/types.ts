@@ -11,6 +11,20 @@ export type MyInvite = S['MyInviteOut']
 export type Session = S['SessionOut']
 export type SecurityEvent = S['EventOut']
 export type ShopEvent = S['ShopEventOut']
+export interface AuditEvent {
+  uuid: string
+  entity_type: string
+  entity_uuid: string
+  action: string
+  details: string | null
+  actor: string | null
+  device_id: string | null
+  created_at: string
+}
+export interface AuditPage {
+  items: AuditEvent[]
+  has_more: boolean
+}
 export type MfaStatus = S['MfaStatusOut']
 export type MfaSetup = S['MfaSetupOut']
 export type LoginResult = S['LoginOut']

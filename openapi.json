@@ -127,6 +127,17 @@
       ],
       "title": "Customer Phone"
      },
+     "customer_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Uuid"
+     },
      "total": {
       "title": "Total",
       "type": "string"
@@ -154,6 +165,126 @@
      "shop_id"
     ],
     "title": "AndroidWebClaimIn",
+    "type": "object"
+   },
+   "Archive": {
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "const": "archive",
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type"
+    ],
+    "title": "Archive",
+    "type": "object"
+   },
+   "AssignCodes": {
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "const": "assign_codes",
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type"
+    ],
+    "title": "AssignCodes",
+    "type": "object"
+   },
+   "AuditEventOut": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "actor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Actor"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "details": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Details"
+     },
+     "device_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Device Id"
+     },
+     "entity_type": {
+      "title": "Entity Type",
+      "type": "string"
+     },
+     "entity_uuid": {
+      "title": "Entity Uuid",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "entity_type",
+     "entity_uuid",
+     "action",
+     "details",
+     "actor",
+     "device_id",
+     "created_at"
+    ],
+    "title": "AuditEventOut",
+    "type": "object"
+   },
+   "AuditPageOut": {
+    "properties": {
+     "has_more": {
+      "title": "Has More",
+      "type": "boolean"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AuditEventOut"
+      },
+      "title": "Items",
+      "type": "array"
+     }
+    },
+    "required": [
+     "items",
+     "has_more"
+    ],
+    "title": "AuditPageOut",
     "type": "object"
    },
    "BillDetail": {
@@ -203,6 +334,17 @@
    "BillIn": {
     "additionalProperties": false,
     "properties": {
+     "allow_unassigned_credit": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Allow Unassigned Credit"
+     },
      "bill_type": {
       "default": "b2c",
       "enum": [
@@ -325,6 +467,34 @@
        }
       ],
       "title": "Place Of Supply State Code"
+     },
+     "reviewed_context": {
+      "anyOf": [
+       {
+        "pattern": "^br1:[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reviewed Context"
+     },
+     "settlement_choice": {
+      "anyOf": [
+       {
+        "enum": [
+         "full",
+         "partial",
+         "unpaid"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Settlement Choice"
      }
     },
     "required": [
@@ -735,6 +905,338 @@
     "title": "BillSummary",
     "type": "object"
    },
+   "BulkExpected": {
+    "additionalProperties": false,
+    "description": "What the review showed. If the products have changed since, the apply is refused.",
+    "properties": {
+     "fingerprint": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fingerprint"
+     },
+     "matched": {
+      "title": "Matched",
+      "type": "integer"
+     },
+     "will_change": {
+      "title": "Will Change",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "matched",
+     "will_change"
+    ],
+    "title": "BulkExpected",
+    "type": "object"
+   },
+   "BulkFilter": {
+    "additionalProperties": false,
+    "description": "The catalogue filter a selection was made under; the server re-runs it.",
+    "properties": {
+     "category": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "expiring_days": {
+      "anyOf": [
+       {
+        "maximum": 3650.0,
+        "minimum": 0.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiring Days"
+     },
+     "low_stock": {
+      "default": false,
+      "title": "Low Stock",
+      "type": "boolean"
+     },
+     "no_code": {
+      "default": false,
+      "title": "No Code",
+      "type": "boolean"
+     },
+     "out_of_stock": {
+      "default": false,
+      "title": "Out Of Stock",
+      "type": "boolean"
+     },
+     "q": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Q"
+     }
+    },
+    "title": "BulkFilter",
+    "type": "object"
+   },
+   "BulkIn": {
+    "additionalProperties": false,
+    "properties": {
+     "action": {
+      "discriminator": {
+       "mapping": {
+        "archive": "#/components/schemas/Archive",
+        "assign_codes": "#/components/schemas/AssignCodes",
+        "price_change": "#/components/schemas/PriceChange",
+        "set_category": "#/components/schemas/SetCategory",
+        "set_reorder_level": "#/components/schemas/SetReorderLevel"
+       },
+       "propertyName": "type"
+      },
+      "oneOf": [
+       {
+        "$ref": "#/components/schemas/SetCategory"
+       },
+       {
+        "$ref": "#/components/schemas/SetReorderLevel"
+       },
+       {
+        "$ref": "#/components/schemas/PriceChange"
+       },
+       {
+        "$ref": "#/components/schemas/Archive"
+       },
+       {
+        "$ref": "#/components/schemas/AssignCodes"
+       }
+      ],
+      "title": "Action"
+     },
+     "dry_run": {
+      "default": true,
+      "title": "Dry Run",
+      "type": "boolean"
+     },
+     "expected": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BulkExpected"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "scope": {
+      "$ref": "#/components/schemas/BulkScope"
+     }
+    },
+    "required": [
+     "scope",
+     "action"
+    ],
+    "title": "BulkIn",
+    "type": "object"
+   },
+   "BulkOut": {
+    "properties": {
+     "action": {
+      "title": "Action",
+      "type": "string"
+     },
+     "applied": {
+      "title": "Applied",
+      "type": "boolean"
+     },
+     "below_cost": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Below Cost"
+     },
+     "fingerprint": {
+      "title": "Fingerprint",
+      "type": "string"
+     },
+     "matched": {
+      "title": "Matched",
+      "type": "integer"
+     },
+     "missing": {
+      "title": "Missing",
+      "type": "integer"
+     },
+     "notes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "replayed": {
+      "default": false,
+      "title": "Replayed",
+      "type": "boolean"
+     },
+     "sample": {
+      "items": {
+       "$ref": "#/components/schemas/BulkSample"
+      },
+      "title": "Sample",
+      "type": "array"
+     },
+     "skipped": {
+      "items": {
+       "$ref": "#/components/schemas/BulkSkipped"
+      },
+      "title": "Skipped",
+      "type": "array"
+     },
+     "skipped_total": {
+      "title": "Skipped Total",
+      "type": "integer"
+     },
+     "unchanged": {
+      "title": "Unchanged",
+      "type": "integer"
+     },
+     "will_change": {
+      "title": "Will Change",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "applied",
+     "action",
+     "matched",
+     "will_change",
+     "unchanged",
+     "missing",
+     "skipped",
+     "skipped_total",
+     "sample",
+     "notes",
+     "below_cost",
+     "fingerprint"
+    ],
+    "title": "BulkOut",
+    "type": "object"
+   },
+   "BulkSample": {
+    "properties": {
+     "after": {
+      "title": "After",
+      "type": "string"
+     },
+     "before": {
+      "title": "Before",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "before",
+     "after"
+    ],
+    "title": "BulkSample",
+    "type": "object"
+   },
+   "BulkScope": {
+    "additionalProperties": false,
+    "description": "Exactly one of: the products picked (ids), or every product a filter matches.",
+    "properties": {
+     "filter": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/BulkFilter"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "maxItems": 1000,
+        "minItems": 1,
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ids"
+     }
+    },
+    "title": "BulkScope",
+    "type": "object"
+   },
+   "BulkSkipped": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "reason"
+    ],
+    "title": "BulkSkipped",
+    "type": "object"
+   },
    "CancelIn": {
     "additionalProperties": false,
     "properties": {
@@ -787,6 +1289,39 @@
      "unit_name"
     ],
     "title": "Candidate",
+    "type": "object"
+   },
+   "CapabilitiesOut": {
+    "properties": {
+     "contract_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+     },
+     "features": {
+      "$ref": "#/components/schemas/ContractFeatures"
+     },
+     "role": {
+      "enum": [
+       "owner",
+       "admin",
+       "staff"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "shop_id": {
+      "title": "Shop Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "shop_id",
+     "role",
+     "features"
+    ],
+    "title": "CapabilitiesOut",
     "type": "object"
    },
    "CartIn": {
@@ -1218,6 +1753,43 @@
     "title": "CategoryTotal",
     "type": "object"
    },
+   "ContractFeatures": {
+    "description": "Service support versions, never a substitute for per-command authorization.",
+    "properties": {
+     "operation_lookup": {
+      "const": 1,
+      "default": 1,
+      "title": "Operation Lookup",
+      "type": "integer"
+     },
+     "product_expected_updated_at": {
+      "const": 1,
+      "default": 1,
+      "title": "Product Expected Updated At",
+      "type": "integer"
+     },
+     "settings_revision": {
+      "const": 1,
+      "default": 1,
+      "title": "Settings Revision",
+      "type": "integer"
+     },
+     "supplier_payment_binding": {
+      "const": 2,
+      "default": 2,
+      "title": "Supplier Payment Binding",
+      "type": "integer"
+     },
+     "supplier_payment_proof": {
+      "const": 1,
+      "default": 1,
+      "title": "Supplier Payment Proof",
+      "type": "integer"
+     }
+    },
+    "title": "ContractFeatures",
+    "type": "object"
+   },
    "CreditNoteIn": {
     "additionalProperties": false,
     "properties": {
@@ -1277,6 +1849,39 @@
      "quantities"
     ],
     "title": "CreditNoteIn",
+    "type": "object"
+   },
+   "CustomerAllocation": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "bill_number": {
+      "title": "Bill Number",
+      "type": "string"
+     },
+     "bill_uuid": {
+      "title": "Bill Uuid",
+      "type": "string"
+     },
+     "due_after": {
+      "title": "Due After",
+      "type": "string"
+     },
+     "due_before": {
+      "title": "Due Before",
+      "type": "string"
+     }
+    },
+    "required": [
+     "bill_uuid",
+     "bill_number",
+     "amount",
+     "due_before",
+     "due_after"
+    ],
+    "title": "CustomerAllocation",
     "type": "object"
    },
    "CustomerBill": {
@@ -1355,6 +1960,11 @@
       "title": "Bills",
       "type": "array"
      },
+     "bills_has_more": {
+      "default": false,
+      "title": "Bills Has More",
+      "type": "boolean"
+     },
      "customer": {
       "$ref": "#/components/schemas/CustomerRow"
      },
@@ -1364,6 +1974,11 @@
       },
       "title": "Payments",
       "type": "array"
+     },
+     "payments_has_more": {
+      "default": false,
+      "title": "Payments Has More",
+      "type": "boolean"
      }
     },
     "required": [
@@ -1717,13 +2332,23 @@
      "total_due": {
       "title": "Total Due",
       "type": "string"
+     },
+     "unassigned_bills": {
+      "title": "Unassigned Bills",
+      "type": "integer"
+     },
+     "unassigned_due": {
+      "title": "Unassigned Due",
+      "type": "string"
      }
     },
     "required": [
      "items",
      "has_more",
      "owing_customers",
-     "total_due"
+     "total_due",
+     "unassigned_due",
+     "unassigned_bills"
     ],
     "title": "CustomerPage",
     "type": "object"
@@ -1788,6 +2413,37 @@
      "received_at"
     ],
     "title": "CustomerPayment",
+    "type": "object"
+   },
+   "CustomerPaymentPreview": {
+    "properties": {
+     "allocations": {
+      "items": {
+       "$ref": "#/components/schemas/CustomerAllocation"
+      },
+      "title": "Allocations",
+      "type": "array"
+     },
+     "due_after": {
+      "title": "Due After",
+      "type": "string"
+     },
+     "due_before": {
+      "title": "Due Before",
+      "type": "string"
+     },
+     "review_key": {
+      "title": "Review Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "due_before",
+     "due_after",
+     "allocations",
+     "review_key"
+    ],
+    "title": "CustomerPaymentPreview",
     "type": "object"
    },
    "CustomerRow": {
@@ -2633,6 +3289,16 @@
       "title": "Categories",
       "type": "array"
      },
+     "count": {
+      "default": 0,
+      "title": "Count",
+      "type": "integer"
+     },
+     "has_more": {
+      "default": false,
+      "title": "Has More",
+      "type": "boolean"
+     },
      "items": {
       "items": {
        "$ref": "#/components/schemas/ExpenseOut"
@@ -2959,6 +3625,17 @@
       "title": "Possible Duplicate",
       "type": "boolean"
      },
+     "previous_import_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Previous Import At"
+     },
      "rows_read": {
       "title": "Rows Read",
       "type": "integer"
@@ -3094,6 +3771,85 @@
     "title": "InviteOut",
     "type": "object"
    },
+   "InvoiceCheck": {
+    "properties": {
+     "existing": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/InvoiceMatch"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "existing"
+    ],
+    "title": "InvoiceCheck",
+    "type": "object"
+   },
+   "InvoiceMatch": {
+    "description": "A purchase already recorded under the same supplier invoice number.",
+    "properties": {
+     "invoice_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "payment_status": {
+      "enum": [
+       "not_recorded",
+       "unpaid",
+       "partial",
+       "paid"
+      ],
+      "title": "Payment Status",
+      "type": "string"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "total": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "purchase_date",
+     "invoice_number",
+     "total",
+     "subtotal",
+     "payment_status"
+    ],
+    "title": "InvoiceMatch",
+    "type": "object"
+   },
    "InvoiceSettings": {
     "properties": {
      "bank_details": {
@@ -3106,6 +3862,21 @@
        }
       ],
       "title": "Bank Details"
+     },
+     "default_gst_percent": {
+      "default": "18",
+      "title": "Default Gst Percent",
+      "type": "string"
+     },
+     "default_overhead_cost": {
+      "default": "0",
+      "title": "Default Overhead Cost",
+      "type": "string"
+     },
+     "default_profit_margin_percent": {
+      "default": "0",
+      "title": "Default Profit Margin Percent",
+      "type": "string"
      },
      "digital_signature": {
       "anyOf": [
@@ -3139,8 +3910,17 @@
       "title": "Invoice Title",
       "type": "string"
      },
+     "low_stock_threshold": {
+      "default": "5",
+      "title": "Low Stock Threshold",
+      "type": "string"
+     },
      "paper_size": {
       "title": "Paper Size",
+      "type": "string"
+     },
+     "revision": {
+      "title": "Revision",
       "type": "string"
      },
      "round_off_total": {
@@ -3237,6 +4017,7 @@
      }
     },
     "required": [
+     "revision",
      "shop_name",
      "shop_phone",
      "shop_email",
@@ -3272,6 +4053,54 @@
       ],
       "title": "Bank Details"
      },
+     "default_gst_percent": {
+      "anyOf": [
+       {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Gst Percent"
+     },
+     "default_overhead_cost": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Overhead Cost"
+     },
+     "default_profit_margin_percent": {
+      "anyOf": [
+       {
+        "maximum": 100.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Profit Margin Percent"
+     },
      "digital_signature": {
       "anyOf": [
        {
@@ -3283,6 +4112,19 @@
        }
       ],
       "title": "Digital Signature"
+     },
+     "expected_revision": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "pattern": "^s1:[0-9]+$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Revision"
      },
      "footer_text": {
       "anyOf": [
@@ -3324,12 +4166,30 @@
       ],
       "title": "Invoice Title"
      },
+     "low_stock_threshold": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Low Stock Threshold"
+     },
      "paper_size": {
       "anyOf": [
        {
         "enum": [
          "a4",
-         "a5"
+         "a5",
+         "80mm",
+         "58mm"
         ],
         "type": "string"
        },
@@ -3508,6 +4368,182 @@
     "title": "InvoiceSettingsIn",
     "type": "object"
    },
+   "JobIn": {
+    "additionalProperties": false,
+    "properties": {
+     "kind": {
+      "const": "stock_valuation_csv_v1",
+      "title": "Kind",
+      "type": "string"
+     },
+     "request_key": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Request Key",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request_key",
+     "kind"
+    ],
+    "title": "JobIn",
+    "type": "object"
+   },
+   "JobOut": {
+    "properties": {
+     "attempts": {
+      "title": "Attempts",
+      "type": "integer"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "error_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error Code"
+     },
+     "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "kind": {
+      "const": "stock_valuation_csv_v1",
+      "title": "Kind",
+      "type": "string"
+     },
+     "next_attempt_at": {
+      "format": "date-time",
+      "title": "Next Attempt At",
+      "type": "string"
+     },
+     "state": {
+      "enum": [
+       "ready",
+       "running",
+       "retry",
+       "succeeded",
+       "failed",
+       "cancelled"
+      ],
+      "title": "State",
+      "type": "string"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "state",
+     "attempts",
+     "error_code",
+     "created_at",
+     "updated_at",
+     "expires_at",
+     "next_attempt_at"
+    ],
+    "title": "JobOut",
+    "type": "object"
+   },
+   "KpiComparison": {
+    "properties": {
+     "direction": {
+      "enum": [
+       "up",
+       "down",
+       "flat"
+      ],
+      "title": "Direction",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text",
+     "direction"
+    ],
+    "title": "KpiComparison",
+    "type": "object"
+   },
+   "KpiComparisons": {
+    "properties": {
+     "collected": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "expenses": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "gross_profit": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "previous_from": {
+      "title": "Previous From",
+      "type": "string"
+     },
+     "previous_to": {
+      "title": "Previous To",
+      "type": "string"
+     },
+     "revenue": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparison"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "previous_from",
+     "previous_to"
+    ],
+    "title": "KpiComparisons",
+    "type": "object"
+   },
    "Kpis": {
     "properties": {
      "average_order_value": {
@@ -3532,6 +4568,16 @@
       "title": "Collected",
       "type": "string"
      },
+     "comparisons": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/KpiComparisons"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "daily": {
       "items": {
        "$ref": "#/components/schemas/DailyPoint"
@@ -3546,6 +4592,14 @@
      "expenses": {
       "title": "Expenses",
       "type": "string"
+     },
+     "expenses_by_category": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/ExpenseCategory"
+      },
+      "title": "Expenses By Category",
+      "type": "array"
      },
      "gross_margin_percent": {
       "title": "Gross Margin Percent",
@@ -3598,6 +4652,11 @@
       "title": "Top By Units",
       "type": "array"
      },
+     "uncosted_item_count": {
+      "default": 0,
+      "title": "Uncosted Item Count",
+      "type": "integer"
+     },
      "unpaid_count": {
       "title": "Unpaid Count",
       "type": "integer"
@@ -3629,6 +4688,320 @@
      "top_by_units"
     ],
     "title": "Kpis",
+    "type": "object"
+   },
+   "LabelProduct": {
+    "properties": {
+     "barcode": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Barcode"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "product_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Code"
+     },
+     "selling_price": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selling Price"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "name",
+     "product_code",
+     "barcode",
+     "selling_price"
+    ],
+    "title": "LabelProduct",
+    "type": "object"
+   },
+   "LabelScopeIn": {
+    "additionalProperties": false,
+    "properties": {
+     "scope": {
+      "$ref": "#/components/schemas/BulkScope"
+     }
+    },
+    "required": [
+     "scope"
+    ],
+    "title": "LabelScopeIn",
+    "type": "object"
+   },
+   "LedgerEntry": {
+    "properties": {
+     "balance_after": {
+      "title": "Balance After",
+      "type": "string"
+     },
+     "batch_no": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "quantity_delta": {
+      "title": "Quantity Delta",
+      "type": "string"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "source": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/LedgerSource"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "type": {
+      "title": "Type",
+      "type": "string"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Cost"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "type",
+     "quantity_delta",
+     "balance_after",
+     "reason",
+     "notes",
+     "batch_no",
+     "expiry_date",
+     "created_at",
+     "source"
+    ],
+    "title": "LedgerEntry",
+    "type": "object"
+   },
+   "LedgerEntryOut": {
+    "properties": {
+     "balance": {
+      "title": "Balance",
+      "type": "string"
+     },
+     "credit": {
+      "title": "Credit",
+      "type": "string"
+     },
+     "date": {
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+     },
+     "debit": {
+      "title": "Debit",
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "purchase",
+       "payment",
+       "purchase_reversal",
+       "payment_reversal"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "method": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Method"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "uuid",
+     "date",
+     "reference",
+     "method",
+     "debit",
+     "credit",
+     "balance"
+    ],
+    "title": "LedgerEntryOut",
+    "type": "object"
+   },
+   "LedgerPage": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/LedgerEntry"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "next_cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Cursor"
+     },
+     "on_hand": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "On Hand"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "items",
+     "total",
+     "on_hand",
+     "next_cursor"
+    ],
+    "title": "LedgerPage",
+    "type": "object"
+   },
+   "LedgerSource": {
+    "properties": {
+     "kind": {
+      "enum": [
+       "bill",
+       "credit_note",
+       "purchase",
+       "purchase_reversal",
+       "phone_purchase"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "uuid",
+     "label"
+    ],
+    "title": "LedgerSource",
     "type": "object"
    },
    "LoginIn": {
@@ -4684,6 +6057,91 @@
     "title": "NoteRow",
     "type": "object"
    },
+   "OperationStatusOut": {
+    "properties": {
+     "contract_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "operation_kind": {
+      "anyOf": [
+       {
+        "enum": [
+         "idempotent_write",
+         "purchase_receipt",
+         "supplier_payment"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Operation Kind"
+     },
+     "result_kind": {
+      "anyOf": [
+       {
+        "enum": [
+         "purchase_receipt",
+         "supplier_payment"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Result Kind"
+     },
+     "result_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Result Uuid"
+     },
+     "status": {
+      "enum": [
+       "committed",
+       "not_found"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "operation_kind",
+     "result_kind",
+     "key",
+     "status",
+     "result_uuid",
+     "created_at"
+    ],
+    "title": "OperationStatusOut",
+    "type": "object"
+   },
    "PasswordChangeIn": {
     "properties": {
      "current_password": {
@@ -4772,6 +6230,42 @@
     "title": "Payment",
     "type": "object"
    },
+   "PaymentAllocationOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "invoice_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Number"
+     },
+     "purchase_date": {
+      "format": "date",
+      "title": "Purchase Date",
+      "type": "string"
+     },
+     "purchase_uuid": {
+      "title": "Purchase Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "purchase_uuid",
+     "invoice_number",
+     "purchase_date",
+     "amount"
+    ],
+    "title": "PaymentAllocationOut",
+    "type": "object"
+   },
    "PaymentIn": {
     "additionalProperties": false,
     "properties": {
@@ -4842,6 +6336,57 @@
      "uuid"
     ],
     "title": "PaymentRecorded",
+    "type": "object"
+   },
+   "PaymentRecoveryOut": {
+    "properties": {
+     "contract_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+     },
+     "request_binding_version": {
+      "anyOf": [
+       {
+        "enum": [
+         1,
+         2
+        ],
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Request Binding Version"
+     },
+     "status": {
+      "enum": [
+       "committed",
+       "not_found"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Uuid"
+     }
+    },
+    "required": [
+     "status",
+     "uuid",
+     "request_binding_version"
+    ],
+    "title": "PaymentRecoveryOut",
     "type": "object"
    },
    "PaymentRow": {
@@ -5416,6 +6961,10 @@
       "title": "Lines",
       "type": "array"
      },
+     "reviewed_context": {
+      "title": "Reviewed Context",
+      "type": "string"
+     },
      "round_off_amount": {
       "title": "Round Off Amount",
       "type": "string"
@@ -5438,6 +6987,7 @@
      }
     },
     "required": [
+     "reviewed_context",
      "lines",
      "subtotal",
      "discount_amount",
@@ -5501,6 +7051,44 @@
      "amount"
     ],
     "title": "PreviewLine",
+    "type": "object"
+   },
+   "PriceChange": {
+    "additionalProperties": false,
+    "properties": {
+     "mode": {
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Mode",
+      "type": "string"
+     },
+     "type": {
+      "const": "price_change",
+      "title": "Type",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "maximum": 1000000.0,
+        "minimum": -1000000.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "type",
+     "mode",
+     "value"
+    ],
+    "title": "PriceChange",
     "type": "object"
    },
    "PricePreviewIn": {
@@ -5626,6 +7214,10 @@
       ],
       "title": "Category Name"
      },
+     "cost_known": {
+      "title": "Cost Known",
+      "type": "boolean"
+     },
      "gst_percent": {
       "title": "Gst Percent",
       "type": "string"
@@ -5664,8 +7256,15 @@
       "type": "string"
      },
      "profit_amount": {
-      "title": "Profit Amount",
-      "type": "string"
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Profit Amount"
      },
      "profit_margin_percent": {
       "title": "Profit Margin Percent",
@@ -5697,6 +7296,7 @@
      "purchase_gst_amount",
      "overhead_cost",
      "total_cost",
+     "cost_known",
      "profit_margin_percent",
      "profit_amount",
      "gst_percent",
@@ -6282,6 +7882,18 @@
       ],
       "title": "Category Uuid"
      },
+     "expected_updated_at": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Updated At"
+     },
      "gst_percent": {
       "anyOf": [
        {
@@ -6540,6 +8152,11 @@
      "sales": {
       "title": "Sales",
       "type": "string"
+     },
+     "sales_without_cost": {
+      "default": "0",
+      "title": "Sales Without Cost",
+      "type": "string"
      }
     },
     "required": [
@@ -6645,6 +8262,28 @@
       "title": "Product Name",
       "type": "string"
      },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
+     },
+     "purchase_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Purchase Uuid"
+     },
      "quantity": {
       "title": "Quantity",
       "type": "string"
@@ -6689,6 +8328,60 @@
      "imported"
     ],
     "title": "PurchaseRow",
+    "type": "object"
+   },
+   "PurchaseSummary": {
+    "description": "Purchase flows for the chosen dates, and balances owed today.",
+    "properties": {
+     "overdue": {
+      "title": "Overdue",
+      "type": "string"
+     },
+     "overdue_purchases": {
+      "title": "Overdue Purchases",
+      "type": "integer"
+     },
+     "payable": {
+      "title": "Payable",
+      "type": "string"
+     },
+     "payments_made": {
+      "title": "Payments Made",
+      "type": "string"
+     },
+     "purchase_value": {
+      "title": "Purchase Value",
+      "type": "string"
+     },
+     "purchases": {
+      "title": "Purchases",
+      "type": "integer"
+     },
+     "suppliers_owed": {
+      "title": "Suppliers Owed",
+      "type": "integer"
+     },
+     "unrecorded_purchases": {
+      "title": "Unrecorded Purchases",
+      "type": "integer"
+     },
+     "unrecorded_stock_cost": {
+      "title": "Unrecorded Stock Cost",
+      "type": "string"
+     }
+    },
+    "required": [
+     "purchases",
+     "purchase_value",
+     "payments_made",
+     "unrecorded_purchases",
+     "unrecorded_stock_cost",
+     "payable",
+     "overdue",
+     "overdue_purchases",
+     "suppliers_owed"
+    ],
+    "title": "PurchaseSummary",
     "type": "object"
    },
    "Purchases": {
@@ -7389,6 +9082,28 @@
       "title": "Purchase Date",
       "type": "string"
      },
+     "reversal_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversal Reason"
+     },
+     "reversed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversed At"
+     },
      "subtotal": {
       "title": "Subtotal",
       "type": "string"
@@ -7502,6 +9217,197 @@
      "notes"
     ],
     "title": "ReceiptPaymentOut",
+    "type": "object"
+   },
+   "ReceiptPreview": {
+    "properties": {
+     "balance_due": {
+      "title": "Balance Due",
+      "type": "string"
+     },
+     "charges_amount": {
+      "title": "Charges Amount",
+      "type": "string"
+     },
+     "discount_amount": {
+      "title": "Discount Amount",
+      "type": "string"
+     },
+     "paid_now": {
+      "title": "Paid Now",
+      "type": "string"
+     },
+     "payment_recorded": {
+      "title": "Payment Recorded",
+      "type": "boolean"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "tax_amount": {
+      "title": "Tax Amount",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "subtotal",
+     "tax_amount",
+     "charges_amount",
+     "discount_amount",
+     "total",
+     "paid_now",
+     "balance_due",
+     "payment_recorded"
+    ],
+    "title": "ReceiptPreview",
+    "type": "object"
+   },
+   "ReceiptPreviewIn": {
+    "additionalProperties": false,
+    "description": "What a purchase would total before it is saved. Only the figures that change money.",
+    "properties": {
+     "charges_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Charges Amount"
+     },
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Amount"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ReceiptStock"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "paid_in_full": {
+      "default": false,
+      "title": "Paid In Full",
+      "type": "boolean"
+     },
+     "paid_now": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Paid Now"
+     },
+     "record_payment_terms": {
+      "default": false,
+      "title": "Record Payment Terms",
+      "type": "boolean"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Tax Amount"
+     }
+    },
+    "required": [
+     "items"
+    ],
+    "title": "ReceiptPreviewIn",
+    "type": "object"
+   },
+   "ReceiptStock": {
+    "additionalProperties": false,
+    "properties": {
+     "batch_no": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Batch No"
+     },
+     "expiry_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expiry Date"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Unit Cost"
+     }
+    },
+    "required": [
+     "quantity",
+     "unit_cost"
+    ],
+    "title": "ReceiptStock",
     "type": "object"
    },
    "RefreshIn": {
@@ -7695,6 +9601,206 @@
     "title": "ResetIn",
     "type": "object"
    },
+   "ReturnPreview": {
+    "properties": {
+     "can_return": {
+      "title": "Can Return",
+      "type": "boolean"
+     },
+     "cgst_amount": {
+      "title": "Cgst Amount",
+      "type": "string"
+     },
+     "credit_total": {
+      "title": "Credit Total",
+      "type": "string"
+     },
+     "igst_amount": {
+      "title": "Igst Amount",
+      "type": "string"
+     },
+     "invoice_due": {
+      "title": "Invoice Due",
+      "type": "string"
+     },
+     "invoice_due_after": {
+      "title": "Invoice Due After",
+      "type": "string"
+     },
+     "invoice_paid": {
+      "title": "Invoice Paid",
+      "type": "string"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/ReturnPreviewLine"
+      },
+      "title": "Lines",
+      "type": "array"
+     },
+     "reduces_invoice_due": {
+      "title": "Reduces Invoice Due",
+      "type": "string"
+     },
+     "refund_to_customer": {
+      "title": "Refund To Customer",
+      "type": "string"
+     },
+     "round_off_amount": {
+      "title": "Round Off Amount",
+      "type": "string"
+     },
+     "settlement": {
+      "title": "Settlement",
+      "type": "string"
+     },
+     "sgst_amount": {
+      "title": "Sgst Amount",
+      "type": "string"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "tax_amount": {
+      "title": "Tax Amount",
+      "type": "string"
+     },
+     "taxable_amount": {
+      "title": "Taxable Amount",
+      "type": "string"
+     }
+    },
+    "required": [
+     "lines",
+     "subtotal",
+     "taxable_amount",
+     "cgst_amount",
+     "sgst_amount",
+     "igst_amount",
+     "round_off_amount",
+     "credit_total",
+     "settlement",
+     "invoice_paid",
+     "invoice_due",
+     "invoice_due_after",
+     "tax_amount",
+     "refund_to_customer",
+     "reduces_invoice_due",
+     "can_return"
+    ],
+    "title": "ReturnPreview",
+    "type": "object"
+   },
+   "ReturnPreviewIn": {
+    "additionalProperties": false,
+    "properties": {
+     "quantities": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "maximum": 1000000.0,
+         "minimum": 0.0,
+         "type": "number"
+        },
+        {
+         "type": "string"
+        }
+       ]
+      },
+      "maxProperties": 200,
+      "title": "Quantities",
+      "type": "object"
+     },
+     "settlement": {
+      "default": "refund",
+      "enum": [
+       "refund",
+       "adjust"
+      ],
+      "title": "Settlement",
+      "type": "string"
+     }
+    },
+    "title": "ReturnPreviewIn",
+    "type": "object"
+   },
+   "ReturnPreviewLine": {
+    "properties": {
+     "already_returned": {
+      "title": "Already Returned",
+      "type": "string"
+     },
+     "credit": {
+      "title": "Credit",
+      "type": "string"
+     },
+     "goes_back_to_stock": {
+      "title": "Goes Back To Stock",
+      "type": "boolean"
+     },
+     "item_uuid": {
+      "title": "Item Uuid",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "remaining": {
+      "title": "Remaining",
+      "type": "string"
+     },
+     "returning": {
+      "title": "Returning",
+      "type": "string"
+     },
+     "sold": {
+      "title": "Sold",
+      "type": "string"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "required": [
+     "item_uuid",
+     "product_name",
+     "unit",
+     "sold",
+     "already_returned",
+     "remaining",
+     "returning",
+     "credit",
+     "goes_back_to_stock"
+    ],
+    "title": "ReturnPreviewLine",
+    "type": "object"
+   },
+   "ReversalIn": {
+    "additionalProperties": false,
+    "properties": {
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "reason"
+    ],
+    "title": "ReversalIn",
+    "type": "object"
+   },
    "ReviewIn": {
     "additionalProperties": false,
     "properties": {
@@ -7854,6 +9960,66 @@
     "title": "SessionOut",
     "type": "object"
    },
+   "SetCategory": {
+    "additionalProperties": false,
+    "properties": {
+     "category_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category Uuid"
+     },
+     "type": {
+      "const": "set_category",
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "type",
+     "category_uuid"
+    ],
+    "title": "SetCategory",
+    "type": "object"
+   },
+   "SetReorderLevel": {
+    "additionalProperties": false,
+    "properties": {
+     "type": {
+      "const": "set_reorder_level",
+      "title": "Type",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "type",
+     "value"
+    ],
+    "title": "SetReorderLevel",
+    "type": "object"
+   },
    "SettleIn": {
     "additionalProperties": false,
     "properties": {
@@ -7893,12 +10059,47 @@
        }
       ],
       "title": "Reference"
+     },
+     "review_key": {
+      "anyOf": [
+       {
+        "pattern": "^[a-f0-9]{64}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Review Key"
      }
     },
     "required": [
      "amount"
     ],
     "title": "SettleIn",
+    "type": "object"
+   },
+   "SettlePreviewIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     }
+    },
+    "required": [
+     "amount"
+    ],
+    "title": "SettlePreviewIn",
     "type": "object"
    },
    "ShopCreatedOut": {
@@ -8104,6 +10305,39 @@
     "title": "StatusOut",
     "type": "object"
    },
+   "StockSummary": {
+    "properties": {
+     "all": {
+      "title": "All",
+      "type": "integer"
+     },
+     "expiring": {
+      "title": "Expiring",
+      "type": "integer"
+     },
+     "low": {
+      "title": "Low",
+      "type": "integer"
+     },
+     "no_code": {
+      "title": "No Code",
+      "type": "integer"
+     },
+     "out": {
+      "title": "Out",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "all",
+     "low",
+     "out",
+     "expiring",
+     "no_code"
+    ],
+    "title": "StockSummary",
+    "type": "object"
+   },
    "StockValuation": {
     "properties": {
      "gst_registered": {
@@ -8159,6 +10393,17 @@
      "name": {
       "title": "Name",
       "type": "string"
+     },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
      },
      "quantity": {
       "title": "Quantity",
@@ -8386,6 +10631,11 @@
       ],
       "title": "Notes"
      },
+     "overdue_due": {
+      "default": "0",
+      "title": "Overdue Due",
+      "type": "string"
+     },
      "phone": {
       "anyOf": [
        {
@@ -8537,6 +10787,18 @@
       "title": "Payment Method",
       "type": "string"
      },
+     "purchase_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 64,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Purchase Uuid"
+     },
      "reference": {
       "anyOf": [
        {
@@ -8566,6 +10828,14 @@
    },
    "SupplierPaymentOut": {
     "properties": {
+     "allocations": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/PaymentAllocationOut"
+      },
+      "title": "Allocations",
+      "type": "array"
+     },
      "amount": {
       "title": "Amount",
       "type": "string"
@@ -8600,6 +10870,28 @@
        }
       ],
       "title": "Reference"
+     },
+     "reversal_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversal Reason"
+     },
+     "reversed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversed At"
      },
      "uuid": {
       "title": "Uuid",
@@ -8666,6 +10958,28 @@
       "title": "Purchase Date",
       "type": "string"
      },
+     "reversal_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversal Reason"
+     },
+     "reversed_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reversed At"
+     },
      "total": {
       "anyOf": [
        {
@@ -8701,6 +11015,21 @@
       "title": "Balance Due",
       "type": "string"
      },
+     "ledger": {
+      "items": {
+       "$ref": "#/components/schemas/LedgerEntryOut"
+      },
+      "title": "Ledger",
+      "type": "array"
+     },
+     "overdue": {
+      "title": "Overdue",
+      "type": "string"
+     },
+     "paid_total": {
+      "title": "Paid Total",
+      "type": "string"
+     },
      "payments": {
       "items": {
        "$ref": "#/components/schemas/SupplierPaymentOut"
@@ -8708,18 +11037,31 @@
       "title": "Payments",
       "type": "array"
      },
+     "purchased_total": {
+      "title": "Purchased Total",
+      "type": "string"
+     },
      "purchases": {
       "items": {
        "$ref": "#/components/schemas/SupplierPurchaseOut"
       },
       "title": "Purchases",
       "type": "array"
+     },
+     "unrecorded_purchases": {
+      "title": "Unrecorded Purchases",
+      "type": "integer"
      }
     },
     "required": [
      "purchases",
      "payments",
-     "balance_due"
+     "ledger",
+     "balance_due",
+     "overdue",
+     "purchased_total",
+     "paid_total",
+     "unrecorded_purchases"
     ],
     "title": "SupplierStatementOut",
     "type": "object"
@@ -8801,6 +11143,109 @@
      "total_tax"
     ],
     "title": "TaxSummary",
+    "type": "object"
+   },
+   "TermsIn": {
+    "additionalProperties": false,
+    "description": "Payment terms for a purchase that was saved without them.",
+    "properties": {
+     "charges_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Charges Amount"
+     },
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Amount"
+     },
+     "due_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Due Date"
+     },
+     "paid_in_full": {
+      "default": false,
+      "title": "Paid In Full",
+      "type": "boolean"
+     },
+     "paid_now": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Paid Now"
+     },
+     "payment_date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Date"
+     },
+     "payment_method": {
+      "default": "cash",
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank_transfer",
+       "online"
+      ],
+      "title": "Payment Method",
+      "type": "string"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Tax Amount"
+     }
+    },
+    "title": "TermsIn",
     "type": "object"
    },
    "TokenOut": {
@@ -10934,6 +13379,107 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/audit-events": {
+   "get": {
+    "description": "Business audit log for financial records, catalog, customers and settings.",
+    "operationId": "shop_audit_events_v1_shops__shop_id__audit_events_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "entity_type",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 40,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Entity Type"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 100,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 50,
+       "maximum": 200,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 100000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AuditPageOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shop Audit Events",
+    "tags": [
+     "shops"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/bills": {
    "get": {
     "operationId": "list_bills_v1_shops__shop_id__bills_get",
@@ -11046,6 +13592,16 @@
       "schema": {
        "default": false,
        "title": "Cancelled",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "unassigned_credit",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Unassigned Credit",
        "type": "boolean"
       }
      },
@@ -11416,6 +13972,68 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/preview": {
+   "post": {
+    "description": "What returning these quantities would credit, priced by the code that saves the return.",
+    "operationId": "credit_note_preview_v1_shops__shop_id__bills__bill_id__credit_note_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReturnPreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReturnPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Credit Note Preview",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/bills/{bill_id}/payments": {
    "post": {
     "operationId": "add_payment_v1_shops__shop_id__bills__bill_id__payments_post",
@@ -11490,6 +14108,119 @@
     "summary": "Add Payment",
     "tags": [
      "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/{bill_id}/pdf": {
+   "get": {
+    "description": "The invoice or credit note as a PDF, drawn now from the saved figures and the shop's\ninvoice settings. `paper` overrides the shop's saved paper for this file only. Nothing is\nstored: the file exists only in this response.",
+    "operationId": "bill_pdf_v1_shops__shop_id__bills__bill_id__pdf_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "paper",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "A4",
+          "A5",
+          "80mm",
+          "58mm"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Paper"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/pdf": {}
+      },
+      "description": "The invoice as a PDF."
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Bill Pdf",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/capabilities": {
+   "get": {
+    "description": "Negotiate supported contracts without opening paid business-data access.",
+    "operationId": "shop_capabilities_v1_shops__shop_id__capabilities_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CapabilitiesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shop Capabilities",
+    "tags": [
+     "shops"
     ]
    }
   },
@@ -11759,6 +14490,22 @@
        "title": "Shop Id",
        "type": "string"
       }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
      }
     ],
     "requestBody": {
@@ -11895,6 +14642,7 @@
   },
   "/v1/shops/{shop_id}/customers/{customer_id}": {
    "get": {
+    "description": "The customer with pages of bills and payments and totals across the entire account.",
     "operationId": "get_customer_v1_shops__shop_id__customers__customer_id__get",
     "parameters": [
      {
@@ -11913,6 +14661,30 @@
       "schema": {
        "title": "Customer Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "bills_offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Bills Offset",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "payments_offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Payments Offset",
+       "type": "integer"
       }
      }
     ],
@@ -12082,6 +14854,111 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/customers/{customer_id}/payments/preview": {
+   "post": {
+    "operationId": "preview_customer_payment_v1_shops__shop_id__customers__customer_id__payments_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SettlePreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CustomerPaymentPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Preview Customer Payment",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/customers/{customer_id}/statement.csv": {
+   "get": {
+    "operationId": "customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "customer_id",
+      "required": true,
+      "schema": {
+       "title": "Customer Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Customer Statement",
+    "tags": [
+     "customers"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/entitlement": {
    "get": {
     "operationId": "entitlement_v1_shops__shop_id__entitlement_get",
@@ -12173,6 +15050,47 @@
        ],
        "title": "Category"
       }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 100,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 1000,
+       "maximum": 1000,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 1000000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
      }
     ],
     "responses": {
@@ -12203,6 +15121,7 @@
     ]
    },
    "post": {
+    "description": "Record an expense. Send an Idempotency-Key and a retry returns the same expense.",
     "operationId": "create_expense_v1_shops__shop_id__expenses_post",
     "parameters": [
      {
@@ -12212,6 +15131,22 @@
       "schema": {
        "title": "Shop Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
       }
      }
     ],
@@ -12591,6 +15526,213 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/jobs": {
+   "post": {
+    "operationId": "enqueue_report_v1_shops__shop_id__jobs_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/JobIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Enqueue Report",
+    "tags": [
+     "jobs"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/jobs/{job_id}": {
+   "delete": {
+    "operationId": "cancel_job_v1_shops__shop_id__jobs__job_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cancel Job",
+    "tags": [
+     "jobs"
+    ]
+   },
+   "get": {
+    "operationId": "job_status_v1_shops__shop_id__jobs__job_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JobOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Job Status",
+    "tags": [
+     "jobs"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/jobs/{job_id}/result": {
+   "get": {
+    "operationId": "job_result_v1_shops__shop_id__jobs__job_id__result_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "job_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Job Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "text/csv": {
+        "schema": {
+         "format": "binary",
+         "type": "string"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Job Result",
+    "tags": [
+     "jobs"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/members": {
    "get": {
     "operationId": "list_members_v1_shops__shop_id__members_get",
@@ -12743,6 +15885,79 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/operations/{operation_key}": {
+   "get": {
+    "description": "Check whether an idempotent write with `operation_key` has already committed.",
+    "operationId": "get_operation_status_v1_shops__shop_id__operations__operation_key__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "operation_key",
+      "required": true,
+      "schema": {
+       "title": "Operation Key",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "operation_kind",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "idempotent_write",
+          "purchase_receipt",
+          "supplier_payment"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Operation Kind"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OperationStatusOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Operation Status",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/products": {
    "get": {
     "operationId": "list_products_v1_shops__shop_id__products_get",
@@ -12816,6 +16031,26 @@
         }
        ],
        "title": "Expiring Days"
+      }
+     },
+     {
+      "in": "query",
+      "name": "no_code",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "No Code",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "out_of_stock",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Out Of Stock",
+       "type": "boolean"
       }
      },
      {
@@ -12906,6 +16141,7 @@
     ]
    },
    "post": {
+    "description": "Add a product. Send an Idempotency-Key and a retry returns the same product.",
     "operationId": "create_product_v1_shops__shop_id__products_post",
     "parameters": [
      {
@@ -12915,6 +16151,22 @@
       "schema": {
        "title": "Shop Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
       }
      }
     ],
@@ -12951,6 +16203,75 @@
      }
     },
     "summary": "Create Product",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/bulk": {
+   "post": {
+    "description": "Review (dry_run, the default) or apply one change to many products. The server decides\nwhich products the scope means, reports what would change and what is left alone and why,\nand applies all of it in one transaction or none. Applying with `expected` (the review's\ncounts) is refused if the products no longer match what was reviewed.",
+    "operationId": "change_many_products_v1_shops__shop_id__products_bulk_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BulkIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BulkOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Change Many Products",
     "tags": [
      "catalog"
     ]
@@ -13054,6 +16375,16 @@
        "title": "Allow Duplicate",
        "type": "boolean"
       }
+     },
+     {
+      "in": "query",
+      "name": "stop_on_errors",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Stop On Errors",
+       "type": "boolean"
+      }
      }
     ],
     "responses": {
@@ -13079,6 +16410,117 @@
      }
     },
     "summary": "Import Products",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/label-data": {
+   "post": {
+    "description": "What a printed label needs for the products in a scope, as they are now.",
+    "operationId": "label_data_v1_shops__shop_id__products_label_data_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LabelScopeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/LabelProduct"
+         },
+         "title": "Response Label Data V1 Shops  Shop Id  Products Label Data Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Label Data",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/lookup": {
+   "get": {
+    "description": "The one product whose barcode or code is exactly `code`: what a scanner sends.",
+    "operationId": "lookup_product_v1_shops__shop_id__products_lookup_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "maxLength": 64,
+       "minLength": 1,
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProductOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Lookup Product",
     "tags": [
      "catalog"
     ]
@@ -13132,6 +16574,49 @@
      }
     },
     "summary": "Price Preview",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/products/stock-summary": {
+   "get": {
+    "description": "How many products are low, out of stock, expiring soon or without a code.",
+    "operationId": "stock_summary_v1_shops__shop_id__products_stock_summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StockSummary"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Stock Summary",
     "tags": [
      "catalog"
     ]
@@ -13299,6 +16784,144 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/products/{product_id}/movements": {
+   "get": {
+    "description": "The product's full stock history, newest first, a page at a time.",
+    "operationId": "product_ledger_v1_shops__shop_id__products__product_id__movements_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "product_id",
+      "required": true,
+      "schema": {
+       "title": "Product Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "in": "query",
+      "name": "type",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "purchase",
+          "sale",
+          "adjustment",
+          "return",
+          "void",
+          "stocktake"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Type"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 25,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Cursor"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LedgerPage"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Product Ledger",
+    "tags": [
+     "catalog"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/products/{product_id}/stock-adjustments": {
    "post": {
     "operationId": "adjust_stock_v1_shops__shop_id__products__product_id__stock_adjustments_post",
@@ -13395,6 +17018,107 @@
        "minimum": 0,
        "title": "Offset",
        "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "supplier",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 64,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 100,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "not_recorded",
+          "unpaid",
+          "partial",
+          "paid",
+          "open"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "in": "query",
+      "name": "overdue",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Overdue",
+       "type": "boolean"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
       }
      }
     ],
@@ -13607,6 +17331,82 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/purchase-receipts/invoice-check": {
+   "get": {
+    "description": "Whether this supplier invoice number is already recorded, before the purchase is saved.",
+    "operationId": "invoice_check_v1_shops__shop_id__purchase_receipts_invoice_check_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "supplier",
+      "required": true,
+      "schema": {
+       "maxLength": 64,
+       "minLength": 1,
+       "title": "Supplier",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "invoice_number",
+      "required": true,
+      "schema": {
+       "maxLength": 100,
+       "minLength": 1,
+       "title": "Invoice Number",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "purchase_date",
+      "required": true,
+      "schema": {
+       "format": "date",
+       "title": "Purchase Date",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvoiceCheck"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Invoice Check",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/purchase-receipts/native": {
    "post": {
     "operationId": "publish_native_receipt_v1_shops__shop_id__purchase_receipts_native_post",
@@ -13660,6 +17460,155 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/purchase-receipts/preview": {
+   "post": {
+    "description": "The total, amount paid and balance this purchase would be saved with.",
+    "operationId": "preview_receipt_v1_shops__shop_id__purchase_receipts_preview_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReceiptPreviewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Preview Receipt",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/summary": {
+   "get": {
+    "description": "Purchases and payments in the dates chosen, plus what is owed and overdue today.",
+    "operationId": "purchase_summary_v1_shops__shop_id__purchase_receipts_summary_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "supplier",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 64,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Supplier"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseSummary"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Purchase Summary",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}": {
    "get": {
     "operationId": "receipt_detail_v1_shops__shop_id__purchase_receipts__receipt_id__get",
@@ -13706,6 +17655,132 @@
      }
     },
     "summary": "Receipt Detail",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/payment-terms": {
+   "post": {
+    "description": "Record what is owed on a purchase saved without payment terms.",
+    "operationId": "record_payment_terms_v1_shops__shop_id__purchase_receipts__receipt_id__payment_terms_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "receipt_id",
+      "required": true,
+      "schema": {
+       "title": "Receipt Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TermsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Record Payment Terms",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
+   "post": {
+    "description": "Correct a posted purchase: its stock goes back out and it is no longer owed.",
+    "operationId": "reverse_receipt_v1_shops__shop_id__purchase_receipts__receipt_id__reverse_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "receipt_id",
+      "required": true,
+      "schema": {
+       "title": "Receipt Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReversalIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReceiptOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reverse Receipt",
     "tags": [
      "catalog",
      "purchases"
@@ -14790,6 +18865,140 @@
      }
     },
     "summary": "Supplier Payment",
+    "tags": [
+     "catalog",
+     "supplier payments"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/recover": {
+   "post": {
+    "operationId": "recover_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments_recover_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "supplier_id",
+      "required": true,
+      "schema": {
+       "title": "Supplier Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SupplierPaymentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentRecoveryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Recover Supplier Payment",
+    "tags": [
+     "catalog",
+     "supplier payments"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/suppliers/{supplier_id}/payments/{payment_id}/reverse": {
+   "post": {
+    "description": "Cancel a recorded payment: what it paid is owed again. Repeats are safe.",
+    "operationId": "reverse_supplier_payment_v1_shops__shop_id__suppliers__supplier_id__payments__payment_id__reverse_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "supplier_id",
+      "required": true,
+      "schema": {
+       "title": "Supplier Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "payment_id",
+      "required": true,
+      "schema": {
+       "title": "Payment Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ReversalIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PaymentRecorded"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reverse Supplier Payment",
     "tags": [
      "catalog",
      "supplier payments"

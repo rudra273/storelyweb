@@ -8,11 +8,15 @@ import { reportShopAccess } from './shopAccessEvents'
  *  - the long-lived refresh token is an httpOnly cookie the browser handles by itself.
  */
 
+export const DEFAULT_READ_TIMEOUT_MS = 15_000
+export const DEFAULT_WRITE_TIMEOUT_MS = 30_000
+
 export class ApiError extends Error {
   readonly status: number
   readonly code: string
   readonly retryAfter: number | null
   readonly fields: { field: string; message: string }[]
+  readonly requestId: string | null
 
   constructor(
     status: number,
@@ -20,6 +24,7 @@ export class ApiError extends Error {
     message: string,
     retryAfter: number | null = null,
     fields: { field: string; message: string }[] = [],
+    requestId: string | null = null,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -27,6 +32,7 @@ export class ApiError extends Error {
     this.code = code
     this.retryAfter = retryAfter
     this.fields = fields
+    this.requestId = requestId
   }
 }
 
@@ -66,26 +72,51 @@ async function parseError(response: Response): Promise<ApiError> {
   let code = `http_${response.status}`
   let message = 'Something went wrong. Please try again.'
   let fields: { field: string; message: string }[] = []
+  let bodyRequestId: string | null = null
   try {
     const body = (await response.json()) as {
-      error?: { code?: string; message?: string; fields?: typeof fields }
+      error?: { code?: string; message?: string; fields?: typeof fields; request_id?: string }
     }
     code = body.error?.code ?? code
     message = body.error?.message ?? message
     fields = body.error?.fields ?? []
+    bodyRequestId = body.error?.request_id ?? null
   } catch {
     // not JSON (a proxy error page, say): keep the generic message
   }
+  const headerId = response.headers.get('X-Request-ID')
+  const requestId = bodyRequestId || (headerId ? headerId.trim() : null) || null
   const retry = Number(response.headers.get('Retry-After'))
-  return new ApiError(response.status, code, message, Number.isFinite(retry) && retry > 0 ? retry : null, fields)
+  return new ApiError(response.status, code, message, Number.isFinite(retry) && retry > 0 ? retry : null, fields, requestId)
 }
 
-async function send(method: string, path: string, body: unknown, withToken: boolean, idempotencyKey?: string): Promise<Response> {
+async function send(
+  method: string,
+  path: string,
+  body: unknown,
+  withToken: boolean,
+  idempotencyKey?: string,
+  callerSignal?: AbortSignal,
+  timeoutMs?: number,
+): Promise<Response> {
+  if (callerSignal?.aborted) {
+    throw callerSignal.reason ?? new DOMException('Request was cancelled.', 'AbortError')
+  }
   const headers: Record<string, string> = { ...WEB_HEADER }
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
   const raw = body instanceof Blob // a file goes up as it is, everything else as JSON
   if (body !== undefined) headers['Content-Type'] = raw ? 'application/octet-stream' : 'application/json'
   if (withToken && accessToken) headers.Authorization = `Bearer ${accessToken}`
+  const isRead = method === 'GET' || method === 'HEAD'
+  const budget = timeoutMs ?? (isRead ? DEFAULT_READ_TIMEOUT_MS : DEFAULT_WRITE_TIMEOUT_MS)
+  const controller = new AbortController()
+  let timedOut = false
+  const onCallerAbort = () => controller.abort(callerSignal?.reason)
+  callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
+  const timer = globalThis.setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, budget)
   try {
     return await fetch(path, {
       method,
@@ -94,9 +125,25 @@ async function send(method: string, path: string, body: unknown, withToken: bool
       credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
+      signal: controller.signal,
     })
-  } catch {
+  } catch (err) {
+    if (callerSignal?.aborted) {
+      throw err instanceof Error ? err : new DOMException('Request was cancelled.', 'AbortError')
+    }
+    if (timedOut) {
+      throw new ApiError(
+        408,
+        'timeout',
+        isRead
+          ? 'The server took too long to answer. Please try again.'
+          : 'The request timed out before confirmation. Check whether it saved before retrying.',
+      )
+    }
     throw new ApiError(0, 'network', 'Cannot reach the server. Check your connection and try again.')
+  } finally {
+    globalThis.clearTimeout(timer)
+    callerSignal?.removeEventListener('abort', onCallerAbort)
   }
 }
 
@@ -129,14 +176,14 @@ async function doRefresh(): Promise<boolean> {
 export async function request<T>(
   method: string,
   path: string,
-  options: { body?: unknown; auth?: boolean; as?: 'json' | 'blob'; idempotencyKey?: string } = {},
+  options: { body?: unknown; auth?: boolean; as?: 'json' | 'blob'; idempotencyKey?: string; signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<T> {
   const withToken = options.auth !== false
-  let response = await send(method, path, options.body, withToken, options.idempotencyKey)
+  let response = await send(method, path, options.body, withToken, options.idempotencyKey, options.signal, options.timeoutMs)
   if (response.status === 401 && withToken) {
     // The access token expired (or was revoked): try the cookie once, then repeat.
     if (await refreshSession()) {
-      response = await send(method, path, options.body, true, options.idempotencyKey)
+      response = await send(method, path, options.body, true, options.idempotencyKey, options.signal, options.timeoutMs)
     } else {
       onSessionLost?.()
     }
@@ -155,7 +202,7 @@ export async function request<T>(
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>('GET', path),
+  get: <T>(path: string, options?: { signal?: AbortSignal; timeoutMs?: number }) => request<T>('GET', path, options),
   post: <T>(path: string, body?: unknown, auth = true) => request<T>('POST', path, { body: body ?? {}, auth }),
   patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, { body }),
   delete: <T>(path: string, body?: unknown) => request<T>('DELETE', path, { body }),

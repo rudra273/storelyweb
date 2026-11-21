@@ -1,12 +1,14 @@
 import { Link, Route, Routes } from 'react-router'
-import { ToastProvider } from './components/Toast'
+import { DirtyProvider } from './lib/DirtyProvider'
+import { ThemeProvider } from './theme/ThemeProvider'
+import { ToastProvider } from './components/ui/Toast'
 import { AuthProvider } from './auth/AuthProvider'
-import { AppLayout } from './components/AppLayout'
+import { AppLayout } from './components/layout/AppLayout'
 import { PublicOnly, RequireAuth, RequireCapability } from './components/guards'
 import { BillsPage } from './billing/BillsPage'
 import { NewBill } from './billing/NewBill'
 import { BillDetailPage } from './billing/BillDetailPage'
-import { InvoiceSettingsPage } from './billing/InvoiceSettingsPage'
+import { InvoiceSettingsPage } from './billing/invoice/InvoiceSettingsPage'
 import { ProductsPage } from './products/ProductsPage'
 import { CustomersPage } from './customers/CustomersPage'
 import { ExpensesPage } from './customers/ExpensesPage'
@@ -14,14 +16,14 @@ import { Overview } from './reports/Overview'
 import { ExpiringPage, PurchasesPage, StockValuePage, TaxPage } from './reports/Registers'
 import { ReportsLayout } from './reports/ReportsLayout'
 import { DayBookPage, ProfitLossPage, ReceivablesPage } from './reports/Statements'
-import { ForgotPassword } from './pages/ForgotPassword'
-import { Home } from './pages/Home'
-import { Login } from './pages/Login'
-import { ResetPassword } from './pages/ResetPassword'
-import { ShopActivity } from './pages/ShopActivity'
-import { Signup } from './pages/Signup'
-import { Team } from './pages/Team'
-import { VerifyEmail } from './pages/VerifyEmail'
+import { ForgotPassword } from './pages/auth/ForgotPassword'
+import { Home } from './pages/dashboard/Home'
+import { Login } from './pages/auth/Login'
+import { ResetPassword } from './pages/auth/ResetPassword'
+import { ShopActivity } from './pages/shop/ShopActivity'
+import { Signup } from './pages/auth/Signup'
+import { Team } from './pages/shop/Team'
+import { VerifyEmail } from './pages/auth/VerifyEmail'
 import { DeleteAccount } from './pages/account/DeleteAccount'
 import { Profile } from './pages/account/Profile'
 import { Security } from './pages/account/Security'
@@ -34,7 +36,12 @@ import { PlatformRequests } from './platform/Requests'
 import { PlatformHistory } from './platform/History'
 import { RequirePaid, SubscriptionStatus } from './subscriptions/Status'
 import { PremiumRequestPage } from './subscriptions/PremiumRequestPage'
-import { AccountLayout } from './components/AccountLayout'
+import { AccountLayout } from './components/layout/AccountLayout'
+import { PurchaseInvoicesPage } from './purchases/PurchaseInvoicesPage'
+import { PurchaseDetailPage } from './purchases/PurchaseDetailPage'
+import { PurchaseWorkspacePage } from './purchases/PurchaseWorkspace'
+import { SuppliersPage } from './products/suppliers/SuppliersPage'
+import { SupplierDetailPage } from './products/suppliers/SupplierDetailPage'
 
 function NotFound() {
   return (
@@ -50,7 +57,7 @@ function NotFound() {
 /** Needs a router and a QueryClientProvider around it (see main.tsx and the tests). */
 export default function App() {
   return (
-    <AuthProvider><ToastProvider>
+    <ThemeProvider><AuthProvider><ToastProvider><DirtyProvider>
       <Routes>
         <Route element={<PublicOnly />}>
           <Route path="/login" element={<Login />} />
@@ -91,6 +98,13 @@ export default function App() {
                 <Route path="products" element={<ProductsPage />} />
                 <Route path="products/:id" element={<ProductsPage />} />
               </Route>
+              <Route element={<RequireCapability needs="products.edit" />}>
+                <Route path="purchases" element={<PurchaseInvoicesPage />} />
+                <Route path="purchases/new" element={<PurchaseWorkspacePage />} />
+                <Route path="purchases/:id" element={<PurchaseDetailPage />} />
+                <Route path="suppliers" element={<SuppliersPage />} />
+                <Route path="suppliers/:id" element={<SupplierDetailPage />} />
+              </Route>
               <Route element={<RequireCapability needs="reports.view" />}>
                 <Route path="reports" element={<ReportsLayout />}>
                   <Route index element={<Overview />} />
@@ -130,6 +144,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </ToastProvider></AuthProvider>
+    </DirtyProvider></ToastProvider></AuthProvider></ThemeProvider>
   )
 }

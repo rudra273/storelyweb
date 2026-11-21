@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiError, api, clearAccessToken, refreshSession, setSessionLostHandler, storeLogin } from '../api/client'
 import type { LoginResult, Me } from '../api/types'
+import { clearAllDrafts } from '../lib/drafts'
 import { AuthContext, type AuthStatus, type AuthValue } from './context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -80,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           // already gone on the server, or offline: either way this browser forgets it
         }
+        clearAllDrafts() // a deliberate sign-out leaves no customer details behind
         signedOut(null)
       },
       reloadUser: loadUser,

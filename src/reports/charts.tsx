@@ -1,3 +1,4 @@
+import { ValuesTable } from '../components/ui/Kpi'
 import { formatMoney } from '../lib/money'
 
 export interface Point {
@@ -40,6 +41,7 @@ export function BarChart({ points, title }: { points: Point[]; title: string }) 
           {points[points.length - 1]?.label}
         </text>
       </svg>
+      <ValuesTable title={title} points={points} />
     </figure>
   )
 }

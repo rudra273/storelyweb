@@ -2,10 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { api } from '../../api/client'
 import { useAuth } from '../../auth/context'
-import { AuthLayout } from '../../components/AuthLayout'
+import { AuthLayout } from '../../components/layout/AuthLayout'
 import { useAction } from '../../components/useAction'
-import { Alert, Field } from '../../components/ui'
-import { LoginForm } from '../LoginForm'
+import { Alert, Field } from '../../components/ui/ui'
+import { LoginForm } from '../auth/LoginForm'
 
 /**
  * Public page where anyone can ask for their account to be deleted (Google Play requires

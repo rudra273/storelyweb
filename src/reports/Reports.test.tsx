@@ -25,7 +25,7 @@ test('the overview shows the numbers, a chart with a text alternative, and the m
   expect(await screen.findByText('₹205.90')).toBeInTheDocument()
   expect(screen.getByText('2 invoices, net of returns')).toBeInTheDocument()
   expect(screen.getByText('22.22% margin')).toBeInTheDocument()
-  expect(screen.getByText(/3 unpaid bills, all time/)).toBeInTheDocument()
+  expect(screen.getByText(/3 unpaid invoices, all time/)).toBeInTheDocument()
   const chart = screen.getByRole('img', { name: /Sales by day: 2026-10-01 ₹258.40, 2026-10-05 -₹52.50/ })
   expect(chart).toBeInTheDocument()
   expect(screen.getByText('upi')).toBeInTheDocument()
@@ -139,5 +139,63 @@ test('stock value shows each product\'s GST and cost per unit, and why GST is in
   expect(within(row).getByText('18%')).toBeInTheDocument()
   expect(within(row).getByText('₹47.20')).toBeInTheDocument()
   expect(screen.getByText(/not GST-registered, so GST paid on purchases is part of cost/)).toBeInTheDocument()
+  expect(within(row).getByRole('link', { name: 'Basmati Rice' })).toHaveAttribute('href', '/products?q=Basmati%20Rice')
+})
+
+test('overview KPIs show period comparisons, expense breakdown, and drill into matching records', async () => {
+  fakeApi([
+    ...SIGNED_IN, SHOP('owner'),
+    ok('GET', REPORT, {
+      ...KPIS,
+      expenses_by_category: [{ category: 'Rent', amount: '800.00' }],
+      comparisons: {
+        previous_from: '2026-09-01',
+        previous_to: '2026-09-30',
+        revenue: { text: '+₹50.00 (+32.1%) vs previous period', direction: 'up' },
+        collected: null,
+        gross_profit: { text: '-₹10.00 (-20.0%) vs previous period', direction: 'down' },
+        expenses: { text: 'No change (0.0%) vs previous period', direction: 'flat' },
+      },
+    }),
+  ])
+  renderApp('/reports?p=custom&from=2026-10-01&to=2026-10-31')
+  expect(await screen.findByText(/\+₹50\.00 \(\+32\.1%\) vs previous period/)).toBeInTheDocument()
+  expect(screen.getByText('No comparison')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Expenses by category' })).toBeInTheDocument()
+  const main = within(screen.getByRole('main'))
+  expect(main.getByRole('link', { name: 'Sales' })).toHaveAttribute('href', '/billing?from=2026-10-01&to=2026-10-31')
+  expect(main.getByRole('link', { name: 'Expenses' })).toHaveAttribute('href', '/expenses?start=2026-10-01&end=2026-10-31')
+  expect(main.getByRole('link', { name: 'Still to receive' })).toHaveAttribute('href', '/customers?owing=1')
+})
+
+test('day book bills and receivables ageing link directly to the underlying invoices and customer accounts', async () => {
+  fakeApi([
+    ...SIGNED_IN, SHOP('owner'),
+    ok('GET', /^\/v1\/shops\/s1\/reports\/day-book\?day=2026-10-01/, {
+      day: '2026-10-01',
+      bills: [{ uuid: 'b1', bill_number: 'INV-1', customer_name: 'Ravi', document_type: 'invoice', total_amount: '105.00', paid_amount: '105.00', balance_due: '0.00', created_at: 'x' }],
+      payments_by_method: [],
+      expenses: [{ uuid: 'e1', category: 'Rent', amount: '500.00', payment_method: 'cash', notes: null }],
+      sales: '105.00', collected: '105.00', cash_received: '105.00', cash_expenses: '500.00', total_expenses: '500.00', net_cash: '-395.00',
+    }),
+    ok('GET', /^\/v1\/shops\/s1\/reports\/receivables-ageing\?as_of=2026-10-25/, {
+      as_of: '2026-10-25',
+      bucket_labels: ['0-7 days', '8-30 days', '31-60 days', '60+ days'],
+      customers: [
+        { customer_uuid: 'c1', customer_name: 'Sita', customer_phone: '919888888888', buckets: ['0.00', '100.00', '0.00', '0.00'], total: '100.00' },
+        { customer_uuid: null, customer_name: 'Mohan', customer_phone: null, buckets: ['0.00', '0.00', '0.00', '50.00'], total: '50.00' },
+      ],
+      bucket_totals: ['0.00', '100.00', '0.00', '50.00'],
+      total: '150.00',
+    }),
+  ])
+  renderApp('/reports/day-book?day=2026-10-01')
+  expect(await screen.findByRole('link', { name: 'INV-1' })).toHaveAttribute('href', '/billing/b1')
+  expect(screen.getByRole('link', { name: 'Rent' })).toHaveAttribute('href', '/expenses?start=2026-10-01&end=2026-10-01&category=Rent')
+  expect(screen.getByText(/net movement, not opening or counted closing cash/)).toBeInTheDocument()
+
+  renderApp('/reports/receivables?as_of=2026-10-25')
+  expect(await screen.findByRole('link', { name: 'Sita' })).toHaveAttribute('href', '/customers/c1')
+  expect(screen.getByRole('link', { name: 'Mohan' })).toHaveAttribute('href', '/billing?unassigned_credit=1&q=Mohan')
 })
 

@@ -1,3 +1,4 @@
+import { PAYMENT_STATUS } from '../lib/vocabulary'
 /** Words for the codes and dates the API sends, so the screens never show raw values
  * ("2026-11-01", "partial", "upi", "own_use"). One place, the same everywhere. */
 
@@ -23,14 +24,13 @@ function words(code: string): string {
 const METHODS: Record<string, string> = { cash: 'Cash', upi: 'UPI', card: 'Card', bank: 'Bank transfer', online: 'Online', credit: 'Credit', cheque: 'Cheque' }
 export const paymentMethod = (code: string | null | undefined) => (code ? METHODS[code] ?? words(code) : '—')
 
-const STATUSES: Record<string, string> = { paid: 'Paid', partial: 'Part paid', unpaid: 'Unpaid', not_recorded: 'Not recorded', refunded: 'Refunded' }
-export const paymentStatus = (code: string) => STATUSES[code] ?? words(code)
+export const paymentStatus = (code: string) => PAYMENT_STATUS[code] ?? words(code)
 
 const ROLES: Record<string, string> = { owner: 'Owner', admin: 'Admin', staff: 'Staff' }
 export const roleLabel = (code: string) => ROLES[code] ?? words(code)
 
-const REASONS: Record<string, string> = { damage: 'Damaged', expired: 'Expired', theft: 'Lost / theft', return: 'Customer return', own_use: 'Own use', count: 'Stock count corrected', other: 'Other' }
+const REASONS: Record<string, string> = { damage: 'Damaged', expired: 'Expired', theft: 'Lost / theft', return: 'Customer return', own_use: 'Own use', count: 'Stock count corrected', other: 'Other', purchase_reversal: 'Purchase reversed' }
 export const stockReason = (code: string | null | undefined) => (code ? REASONS[code] ?? words(code) : '')
 
-const ACTIONS: Record<string, string> = { created: 'Bill created', payment: 'Payment recorded', cancelled: 'Bill cancelled', credit_note: 'Items returned', refund: 'Refund' }
+const ACTIONS: Record<string, string> = { created: 'Created', payment: 'Payment recorded', cancelled: 'Voided', credit_note: 'Items returned', refund: 'Refund' }
 export const billAction = (code: string) => ACTIONS[code] ?? words(code)

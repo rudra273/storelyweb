@@ -6,6 +6,14 @@ configures API forwarding, SPA routes, and security headers. Use Node 24.x,
 `npm run build`, and output directory `dist`. Full production setup is in
 `../storelyapi/docs/DEPLOYMENT.md`.
 
+## Code layout
+
+`src/` groups business features by domain. Shared layout and UI primitives live
+in `src/components/layout/` and `src/components/ui/`; account, authentication,
+shop, and dashboard pages are grouped under `src/pages/`. Larger features keep
+related pieces together, such as invoices, product components and suppliers,
+and the purchase composer.
+
 ## First Vercel deployment
 
 Import `rudra273/storelyweb` as a new Vercel project. This frontend currently uses

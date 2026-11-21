@@ -1,8 +1,8 @@
 import { QueryState, Pager } from './Bits'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
-import { Empty, Field } from '../components/ui'
-import { Button, PageHeader } from '../components/workspace'
+import { Empty, Field } from '../components/ui/ui'
+import { Button, PageHeader } from '../components/ui/workspace'
 import { date, PAGE, usePlatform, type Schemas } from './shared'
 
 export function PlatformHistory() {

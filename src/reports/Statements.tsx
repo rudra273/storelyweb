@@ -1,8 +1,8 @@
-import { useSearchParams } from 'react-router'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import { paymentMethod } from '../components/labels'
-import { Empty } from '../components/ui'
+import { Empty } from '../components/ui/ui'
 import { formatMoney } from '../lib/money'
-import { DownloadBar, PeriodPicker } from './ReportBits'
+import { DownloadBar, PeriodPicker, Tile } from './ReportBits'
 import { today } from './periods'
 import { useReport, useReportDownload, type Ageing, type DayBook, type ProfitLoss } from './queries'
 import { State } from './State'
@@ -17,6 +17,8 @@ function useDay(key: string): [string, (day: string) => void] {
 
 export function DayBookPage() {
   const [day, setDay] = useDay('day')
+  const location = useLocation()
+  const here = location.pathname + location.search
   const query = useReport<DayBook>('day-book', { day })
   const save = useReportDownload('day-book', { day })
   return (
@@ -32,10 +34,10 @@ export function DayBookPage() {
           <>
             <DownloadBar save={save} />
             <div className="kpis">
-              <div className="kpi"><span className="kpi-label">Sales</span><strong className="kpi-value">{formatMoney(b.sales)}</strong></div>
-              <div className="kpi"><span className="kpi-label">Money received</span><strong className="kpi-value">{formatMoney(b.collected)}</strong></div>
-              <div className="kpi"><span className="kpi-label">Expenses</span><strong className="kpi-value">{formatMoney(b.total_expenses)}</strong></div>
-              <div className="kpi"><span className="kpi-label">Cash drawer change</span><strong className={Number(b.net_cash) < 0 ? 'kpi-value bad' : 'kpi-value'}>{formatMoney(b.net_cash)}</strong><small className="muted">cash in {formatMoney(b.cash_received)}, cash out {formatMoney(b.cash_expenses)}</small></div>
+              <Tile label="Sales" value={formatMoney(b.sales)} to={`/billing?from=${day}&to=${day}`} />
+              <Tile label="Money received" value={formatMoney(b.collected)} />
+              <Tile label="Expenses" value={formatMoney(b.total_expenses)} to={`/expenses?start=${day}&end=${day}`} />
+              <Tile label="Cash drawer change" value={formatMoney(b.net_cash)} tone={Number(b.net_cash) < 0 ? 'bad' : undefined} note={`cash in ${formatMoney(b.cash_received)}, cash out ${formatMoney(b.cash_expenses)} · net movement, not opening or counted closing cash`} />
             </div>
             <h2>Bills</h2>
             {b.bills.length === 0 ? <Empty title="No bills on this day" /> : (
@@ -44,7 +46,7 @@ export function DayBookPage() {
                 <tbody>
                   {b.bills.map((x) => (
                     <tr key={x.uuid}>
-                      <td>{x.bill_number}{x.document_type === 'credit_note' && <span className="badge warn">return</span>}</td>
+                      <td><Link to={`/billing/${x.uuid}`} state={{ from: here }}>{x.bill_number}</Link>{x.document_type === 'credit_note' && <> <span className="badge warn">return</span></>}</td>
                       <td>{x.customer_name}</td><td>{formatMoney(x.total_amount)}</td><td>{formatMoney(x.paid_amount)}</td><td>{formatMoney(x.balance_due)}</td>
                     </tr>
                   ))}
@@ -61,7 +63,7 @@ export function DayBookPage() {
               <section className="card">
                 <h2>Expenses</h2>
                 {b.expenses.length === 0 ? <p className="muted">None.</p> : (
-                  <table className="table"><tbody>{b.expenses.map((e) => <tr key={e.uuid}><td>{e.category}<br /><small className="muted">{paymentMethod(e.payment_method)}</small></td><td>{formatMoney(e.amount)}</td></tr>)}</tbody></table>
+                  <table className="table"><tbody>{b.expenses.map((e) => <tr key={e.uuid}><td><Link to={`/expenses?start=${day}&end=${day}&category=${encodeURIComponent(e.category)}`}>{e.category}</Link><br /><small className="muted">{paymentMethod(e.payment_method)}</small></td><td>{formatMoney(e.amount)}</td></tr>)}</tbody></table>
                 )}
               </section>
             </div>
@@ -87,11 +89,12 @@ export function ProfitLossPage() {
               <DownloadBar save={save} />
               <table className="table statement">
                 <tbody>
-                  <tr><td>Sales (without GST)</td><td>{formatMoney(p.sales)}</td></tr>
+                  <tr><td><Link to={`/billing?from=${period.from}&to=${period.to}`}>Sales (without GST)</Link></td><td>{formatMoney(p.sales)}</td></tr>
                   <tr><td>Cost of goods sold</td><td>{formatMoney(p.cost_of_goods)}</td></tr>
+                  {Number(p.sales_without_cost) > 0 && <tr><td>Sales of products with no cost price (left out of profit)</td><td>{formatMoney(p.sales_without_cost)}</td></tr>}
                   <tr className="total"><td>Gross profit</td><td>{formatMoney(p.gross_profit)}</td></tr>
-                  {p.expenses_by_category.map((e) => <tr key={e.category}><td className="indent">{e.category}</td><td>{formatMoney(e.amount)}</td></tr>)}
-                  <tr><td>Total expenses</td><td>{formatMoney(p.expenses)}</td></tr>
+                  {p.expenses_by_category.map((e) => <tr key={e.category}><td className="indent"><Link to={`/expenses?start=${period.from}&end=${period.to}&category=${encodeURIComponent(e.category)}`}>{e.category}</Link></td><td>{formatMoney(e.amount)}</td></tr>)}
+                  <tr><td><Link to={`/expenses?start=${period.from}&end=${period.to}`}>Total expenses</Link></td><td>{formatMoney(p.expenses)}</td></tr>
                   <tr className="total"><td>Net profit</td><td className={Number(p.net_profit) < 0 ? 'bad' : undefined}>{formatMoney(p.net_profit)}</td></tr>
                 </tbody>
               </table>
@@ -106,6 +109,8 @@ export function ProfitLossPage() {
 
 export function ReceivablesPage() {
   const [asOf, setAsOf] = useDay('as_of')
+  const location = useLocation()
+  const here = location.pathname + location.search
   const query = useReport<Ageing>('receivables-ageing', { as_of: asOf })
   const save = useReportDownload('receivables-ageing', { as_of: asOf })
   return (
@@ -126,7 +131,7 @@ export function ReceivablesPage() {
                 <tbody>
                   {a.customers.map((c) => (
                     <tr key={`${c.customer_name}-${c.customer_phone}`}>
-                      <td>{c.customer_name}{c.customer_phone && <><br /><small className="muted">{c.customer_phone}</small></>}</td>
+                      <td><Link to={c.customer_uuid ? `/customers/${c.customer_uuid}` : `/billing?unassigned_credit=1&q=${encodeURIComponent(c.customer_name)}`} state={{ from: here }}>{c.customer_name}</Link>{c.customer_phone && <><br /><small className="muted">{c.customer_phone}</small></>}</td>
                       {c.buckets.map((v, i) => <td key={a.bucket_labels[i]}>{Number(v) ? formatMoney(v) : '—'}</td>)}
                       <td><strong>{formatMoney(c.total)}</strong></td>
                     </tr>

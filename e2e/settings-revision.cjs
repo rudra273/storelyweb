@@ -1,0 +1,65 @@
+// Current-source localhost + coordinator-owned synthetic premium fixture only.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const fs = require('node:fs')
+const assert = require('node:assert/strict')
+const origin = process.env.STORELY_WEB_ORIGIN || 'http://localhost:5173'
+if (!['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) throw new Error('Current-source localhost required')
+if (!process.env.STORELY_FIXTURE) throw new Error('Run-owned fixture required')
+const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
+
+;(async () => {
+  const browser = await chromium.launch({ ...(process.env.CHROME_EXECUTABLE ? { executablePath: process.env.CHROME_EXECUTABLE } : {}) })
+  const context = await browser.newContext({ ignoreHTTPSErrors: true })
+  const page = await context.newPage()
+  page.setDefaultTimeout(15000)
+  try {
+    const auth = await context.request.post(origin + '/v1/auth/login', { data: { email: fixture.email, password: fixture.password, client: 'mobile' }, headers: { 'X-Requested-With': 'storely-web' } })
+    assert.ok(auth.ok(), 'Fixture authentication')
+    const headers = { authorization: `Bearer ${(await auth.json()).access_token}` }
+    const path = `/v1/shops/${fixture.shop_id}/invoice-settings`
+    async function settings() {
+      const response = await context.request.get(origin + path, { headers })
+      assert.ok(response.ok(), 'Read fixture settings')
+      return response.json()
+    }
+    const original = await settings()
+    assert.match(original.revision, /^s1:\d+$/)
+    const writes = []
+    page.on('request', request => {
+      if (request.method() === 'PATCH' && new URL(request.url()).pathname === path) writes.push(request.postDataJSON())
+    })
+    await page.goto(origin + '/settings?tab=invoice')
+    await page.getByLabel('Email', { exact: true }).fill(fixture.email)
+    await page.getByLabel('Password', { exact: true }).fill(fixture.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await page.getByRole('tab', { name: 'Invoice appearance', exact: true }).click()
+    await page.getByLabel('Footer', { exact: true }).fill('Local reviewed footer')
+    await page.getByLabel('HSN / SAC', { exact: true }).setChecked(!original.show.show_hsn_column)
+    const remote = await context.request.patch(origin + path, { headers, data: { expected_revision: original.revision, shop_phone: '9876543210', footer_text: 'Remote footer', show: { show_item_name_column: !original.show.show_item_name_column } } })
+    assert.ok(remote.ok(), 'Concurrent fixture settings change')
+    const latest = await remote.json()
+    await page.getByRole('button', { name: 'Save settings', exact: true }).click()
+    await page.getByRole('button', { name: 'Review latest settings', exact: true }).waitFor()
+    assert.equal(await page.getByLabel('Footer', { exact: true }).inputValue(), 'Local reviewed footer')
+    assert.equal(await page.getByRole('button', { name: 'Save settings', exact: true }).isDisabled(), true)
+    assert.equal(writes[0].expected_revision, original.revision)
+    await page.getByRole('button', { name: 'Review latest settings', exact: true }).click()
+    await page.getByRole('region', { name: 'Latest settings review', exact: true }).waitFor()
+    await page.getByRole('button', { name: 'Keep my edits with latest settings', exact: true }).click()
+    await page.getByRole('tab', { name: 'Shop details', exact: true }).click()
+    assert.equal(await page.getByRole('textbox', { name: 'Phone', exact: true }).inputValue(), '9876543210')
+    await page.getByRole('tab', { name: 'Invoice appearance', exact: true }).click()
+    assert.equal(await page.getByLabel('Item name', { exact: true }).isChecked(), !original.show.show_item_name_column)
+    await page.getByRole('button', { name: 'Save settings', exact: true }).click()
+    await page.getByText('Saved. Phones get the new layout on their next sync.', { exact: true }).waitFor()
+    assert.equal(writes.length, 2)
+    assert.deepEqual(writes[1], { footer_text: 'Local reviewed footer', show: { show_hsn_column: !original.show.show_hsn_column }, expected_revision: latest.revision })
+    const final = await settings()
+    assert.equal(final.footer_text, 'Local reviewed footer')
+    assert.equal(final.shop_phone, '9876543210')
+    assert.equal(final.show.show_item_name_column, !original.show.show_item_name_column)
+    assert.equal(final.show.show_hsn_column, !original.show.show_hsn_column)
+    assert.notEqual(final.revision, latest.revision)
+    process.stdout.write('PASS aggregate settings stale rejection, retained input, explicit dirty-field/show-key rebase and remote-field preservation\n')
+  } finally { await browser.close() }
+})().catch(error => { process.stderr.write(String(error) + '\n'); process.exitCode = 1 })

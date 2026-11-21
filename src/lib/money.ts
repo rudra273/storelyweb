@@ -25,3 +25,22 @@ export function decimalOrNull(text: string): string | null {
 export function isAmount(text: string): boolean {
   return /^\d{1,9}(\.\d{1,4})?$/.test(text.trim())
 }
+
+const toPaise = (text: string): number => Math.round(Number(text) * 100)
+
+/** Cash handed over minus what is owed, for the counter only ("give back ₹x"). The saved
+ * payment never uses it: the server records what is due, capped, and that stays the record. */
+export function changeToReturn(received: string, owed: string): string | null {
+  return excess(received, owed)
+}
+
+/** What is still unpaid after a part payment, shown beside the field. The server's figure is the record. */
+export function balanceAfter(total: string, paidNow: string): string | null {
+  return excess(total, paidNow)
+}
+
+function excess(larger: string, smaller: string): string | null {
+  if (!isAmount(larger) || !isAmount(smaller)) return null
+  const diff = toPaise(larger) - toPaise(smaller)
+  return diff > 0 ? (diff / 100).toFixed(2) : null
+}

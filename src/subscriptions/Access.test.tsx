@@ -15,11 +15,11 @@ describe('paid web access', () => {
     it(`${state} keeps all business routes closed`, async () => {
       const calls = fakeApi([...ACCOUNT_SESSION,shops,requests,ok('GET','/v1/shops/s1/entitlement',{...ACTIVE_ENTITLEMENT,web_access:false,cloud_sync:false,effective_status:state,status:state==='scheduled'?'active':state})])
       renderApp('/products')
-      expect(await screen.findByRole('heading',{name:'Cloud subscription'})).toBeInTheDocument()
+      expect(await screen.findByRole('heading',{name:'Subscription'})).toBeInTheDocument()
       await waitFor(() => expect(screen.queryByText('Checking subscription…')).not.toBeInTheDocument())
       expect(screen.queryByRole('heading',{name:'Products'})).not.toBeInTheDocument()
       expect(calls.some(c => /\/(products|reports|bills|categories|units)(\?|$)/.test(c.path))).toBe(false)
-      expect(roleMenu()).toEqual(['Home','Cloud subscription'])
+      expect(roleMenu()).toEqual(['Dashboard','Subscription'])
     })
   }
   it('does not flash the subscription page while a paying shop is being checked', async () => {
@@ -30,10 +30,10 @@ describe('paid web access', () => {
     vi.stubGlobal('fetch', async (path: string, init: RequestInit) => { if (path.endsWith('/entitlement')) await slow; return answer(path, init) })
     renderApp('/')
     expect(await screen.findByText('Opening your workspace…')).toBeInTheDocument()
-    expect(screen.queryByRole('heading',{name:'Cloud subscription'})).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading',{name:'Subscription'})).not.toBeInTheDocument()
     release()
     await waitFor(() => expect(screen.queryByText('Opening your workspace…')).not.toBeInTheDocument())
-    expect(screen.queryByRole('heading',{name:'Cloud subscription'})).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading',{name:'Subscription'})).not.toBeInTheDocument()
   })
   it('fails closed when subscription verification is unavailable and can retry', async () => {
     const user=userEvent.setup()
@@ -70,7 +70,7 @@ describe('paid web access', () => {
     expect(await screen.findByText('Premium is active')).toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText('Shop'),'s2')
     expect(await screen.findByText('Your subscription is suspended')).toBeInTheDocument()
-    expect(roleMenu()).toEqual(['Home','Cloud subscription'])
+    expect(roleMenu()).toEqual(['Dashboard','Subscription'])
     expect(calls.some(c => c.path.startsWith('/v1/shops/s2/') && !c.path.endsWith('/entitlement'))).toBe(false)
   })
   it('closes business views on server rejection, then rechecks entitlement', async () => {
@@ -81,7 +81,7 @@ describe('paid web access', () => {
     active=false
     act(()=>reportShopAccess({shopId:'s1',membership:false}))
     expect(await screen.findByText('Your subscription is suspended')).toBeInTheDocument()
-    expect(roleMenu()).toEqual(['Home','Cloud subscription'])
+    expect(roleMenu()).toEqual(['Dashboard','Subscription'])
   })
   it('uses the server clock to expire access without waiting for polling', async () => {
     let calls=0

@@ -1,4 +1,4 @@
-import { PageHeader } from '../components/workspace'
+import { PageHeader } from '../components/ui/workspace'
 import { NavLink, Outlet, useLocation, useSearchParams } from 'react-router'
 
 const TABS = [

@@ -1,6 +1,6 @@
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { day } from '../components/labels'
-import { Alert, Empty } from '../components/ui'
+import { Alert, Empty } from '../components/ui/ui'
 import { formatMoney, formatQty } from '../lib/money'
 import { DownloadBar, PeriodPicker } from './ReportBits'
 import { useReport, useReportDownload, type Expiring, type Gstr1, type Purchases, type StockValuation, type TaxSummary } from './queries'
@@ -32,7 +32,7 @@ export function ExpiringPage() {
                 <tbody>
                   {e.batches.map((b) => (
                     <tr key={`${b.product_uuid}-${b.batch_no}-${b.expiry}`}>
-                      <td>{b.product_name}</td><td>{b.batch_no ?? '—'}</td>
+                      <td><Link to={`/products?q=${encodeURIComponent(b.product_name)}&expiring=1`}>{b.product_name}</Link></td><td>{b.batch_no ?? '—'}</td>
                       <td>{b.expiry} {b.expired && <span className="badge warn">expired</span>}</td>
                       <td>{formatQty(b.quantity)} {b.unit ?? ''}</td>
                     </tr>
@@ -67,7 +67,7 @@ export function PurchasesPage() {
                   <tbody>
                     {p.rows.map((r, i) => (
                       <tr key={`${r.date}-${r.product_name}-${i}`}>
-                        <td>{day(r.date)}</td><td>{r.product_name}{r.imported && <span className="badge">import</span>}</td><td>{r.supplier ?? '—'}</td>
+                        <td>{r.purchase_uuid ? <Link to={`/purchases/${r.purchase_uuid}`}>{day(r.date)}</Link> : day(r.date)}</td><td><Link to={`/products?q=${encodeURIComponent(r.product_name)}`}>{r.product_name}</Link>{r.imported && <> <span className="badge">import</span></>}</td><td>{r.supplier ?? '—'}</td>
                         <td>{formatQty(r.quantity)} {r.unit ?? ''}</td><td>{formatMoney(r.unit_cost)}</td><td>{formatMoney(r.amount)}</td>
                         <td>{r.batch_no ?? '—'}{r.expiry ? <><br /><small className="muted">expires {r.expiry}</small></> : null}</td>
                       </tr>
@@ -155,7 +155,7 @@ export function StockValuePage() {
               <thead><tr><th>Product</th><th>Category</th><th>Quantity</th><th className="num">GST</th><th className="num">Cost per unit</th><th className="num">At cost</th><th className="num">At selling price</th></tr></thead>
               <tbody>
                 {v.items.map((i, n) => (
-                  <tr key={`${i.name}-${n}`}><td>{i.name}</td><td>{i.category ?? '—'}</td><td>{formatQty(i.quantity)} {i.unit ?? ''}</td><td className="num">{formatQty(i.gst_percent)}%</td><td className="num">{formatMoney(i.unit_cost)}</td><td className="num">{formatMoney(i.cost_value)}</td><td className="num">{formatMoney(i.sale_value)}</td></tr>
+                  <tr key={`${i.name}-${n}`}><td><Link to={`/products?q=${encodeURIComponent(i.name)}`}>{i.name}</Link></td><td>{i.category ?? '—'}</td><td>{formatQty(i.quantity)} {i.unit ?? ''}</td><td className="num">{formatQty(i.gst_percent)}%</td><td className="num">{formatMoney(i.unit_cost)}</td><td className="num">{formatMoney(i.cost_value)}</td><td className="num">{formatMoney(i.sale_value)}</td></tr>
                 ))}
               </tbody>
               <tfoot><tr><th colSpan={5}>Total</th><th className="num">{formatMoney(v.total_cost)}</th><th className="num">{formatMoney(v.total_sale)}</th></tr></tfoot>

@@ -37,7 +37,7 @@ export function useReport<T>(name: ReportName, params: Record<string, string>, e
   const shop = useShop().current?.shop_id ?? ''
   return useQuery({
     queryKey: ['report', shop, name, params],
-    queryFn: () => api.get<T>(path(shop, name, params)),
+    queryFn: ({ signal }) => api.get<T>(path(shop, name, params), { signal }),
     enabled: !!shop && enabled,
     placeholderData: (previous, previousQuery) => previousQuery?.queryKey[1] === shop && previousQuery.queryKey[2] === name ? previous : undefined,
     staleTime: 30_000,

@@ -1,5 +1,5 @@
-import { Alert, Loading } from '../components/ui'
-import { Button } from '../components/workspace'
+import { Alert, Loading } from '../components/ui/ui'
+import { Button } from '../components/ui/workspace'
 import { describeError } from '../components/useAction'
 import { PAGE } from './shared'
 export function QueryState({ pending, error, retry }: { pending: boolean; error: unknown; retry: () => void }) {
