@@ -1,3 +1,5 @@
+import { Alert, Loading } from '../../components/ui/ui'
+import { useBillingQuery, type BillPage } from '../../billing/queries'
 import { PageHeader } from '../../components/ui/workspace'
 import { useProducts } from '../../products/queries'
 import { Link } from 'react-router'
@@ -47,20 +49,33 @@ function DailySummary() {
   </section>
 }
 
-/** For a shop with nothing in it yet: the three things to do first, in order. */
+/** A saved invoice, including a voided original, completes the first-invoice milestone. */
 function GettingStarted() {
+  const active = useBillingQuery<BillPage>('bills', 'bills?kind=invoice&cancelled=false&limit=1')
+  const hasInvoice = (page: BillPage | undefined) => page?.items.some(bill => bill.document_type === 'invoice') ?? false
+  const completed = hasInvoice(active.data)
+  // The existing API exposes active and voided records separately.
+  const cancelled = useBillingQuery<BillPage>('bills', 'bills?kind=invoice&cancelled=true&limit=1', !!active.data && !completed && !active.error && !active.isFetching)
+  if (completed || hasInvoice(cancelled.data)) return null
+  if (active.error || cancelled.error) return <section className="card wide" aria-label="Setup progress"><Alert>Could not check your first-invoice progress. <button type="button" className="link" onClick={() => { void active.refetch(); if (active.data) void cancelled.refetch() }}>Retry setup progress</button></Alert></section>
+  if (active.isPending || active.isFetching || cancelled.isPending || cancelled.isFetching) return <section className="card wide" aria-label="Setup progress"><Loading label="Checking first-invoice progress…" /></section>
+  return <FirstInvoiceSteps />
+}
+
+function FirstInvoiceSteps() {
   const products = useProducts({ q: '', category: '', low: false, expiring: false, noCode: false, out: false, sort: 'name', dir: 'asc', page: 0 })
-  if (!products.data || products.data.items.length > 0) return null
+  if (products.error) return <section className="card wide" aria-label="Setup progress"><Alert>Could not check your catalog. <button type="button" className="link" onClick={() => void products.refetch()}>Retry setup progress</button></Alert></section>
+  if (products.isPending || !products.data) return <section className="card wide" aria-label="Setup progress"><Loading label="Checking your catalog…" /></section>
+  const hasProducts = products.data.items.length > 0
   return <section className="card wide getting-started" aria-labelledby="start-heading">
     <h2 id="start-heading">Get your shop ready</h2>
-    <p className="muted">Five steps and you can invoice your first customer.</p>
+    <p className="muted">{hasProducts ? 'Your catalog has products. Check stock and record your first invoice.' : 'Start with a product and its selling price. Enter actual opening stock for tracked products, or receive stock before selling.'}</p>
+    <p><Link className="button primary" to={hasProducts ? '/billing/new' : '/products?new=1'}>{hasProducts ? 'Create your first invoice' : 'Add your first product'}</Link></p>
+    <p className="muted">You can review these setup details at any time.</p>
     <ol>
       <li><Link to="/settings?tab=shop"><strong>Shop identity</strong><span>Name, address, phone and GSTIN, as they print on invoices.</span></Link></li>
       <li><Link to="/settings?tab=pricing"><strong>Tax configuration</strong><span>Regular GST, composition or not registered, and default rates.</span></Link></li>
       <li><Link to="/settings?tab=printing"><strong>Invoice and printing</strong><span>Choose A4, A5 or a receipt roll and preview the layout.</span></Link></li>
-      <li><Link to="/products?new=1"><strong>Add your first product</strong><span>Name and price are enough to start; or import a file from Products.</span></Link></li>
-      <li><Link to="/billing/new"><strong>Create your first invoice</strong><span>Pick products, take payment and print or share the invoice.</span></Link></li>
     </ol>
   </section>
 }
-
