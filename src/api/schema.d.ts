@@ -7163,6 +7163,7 @@ export interface operations {
                 status?: ("paid" | "partial" | "unpaid") | null;
                 kind?: ("invoice" | "credit_note") | null;
                 q?: string | null;
+                workspace_search?: boolean;
                 cancelled?: boolean;
                 unassigned_credit?: boolean;
                 limit?: number;
@@ -7719,6 +7720,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string | null;
+                workspace_search?: boolean;
                 owing?: boolean;
                 limit?: number;
                 offset?: number;
@@ -8592,6 +8594,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string | null;
+                workspace_search?: boolean;
                 category?: string | null;
                 low_stock?: boolean;
                 expiring_days?: number | null;
