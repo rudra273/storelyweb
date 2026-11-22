@@ -1,5 +1,6 @@
 import { Alert, Loading } from '../../components/ui/ui'
 import { useBillingQuery, type BillPage } from '../../billing/queries'
+import { NeedsAction } from './NeedsAction'
 import { WorkspaceSearch } from './WorkspaceSearch'
 import { PageHeader } from '../../components/ui/workspace'
 import { useProducts } from '../../products/queries'
@@ -22,6 +23,7 @@ export function Home() {
     <div className="home-page">
       <PageHeader eyebrow="YOUR WORKSPACE" title={`Hello${user?.full_name ? `, ${user.full_name}` : ''}`} description={`Here’s what’s happening at ${current?.name}.`} actions={can(role, 'billing.create') ? <Link className="primary button" to="/billing/new">New invoice <span aria-hidden="true">↗</span></Link> : undefined} />
       <WorkspaceSearch>
+      <NeedsAction />
       {can(role, 'products.edit') && <GettingStarted />}
       {can(role, 'reports.view') ? <DailySummary /> : <section className="staff-welcome"><div><p className="eyebrow">READY FOR THE DAY</p><h2>Everything you need at the counter.</h2><p>Look up a product, check its availability or start your next bill.</p></div><Link className="button secondary" to="/products">Browse products →</Link></section>}
       <section className="home-shortcuts" aria-labelledby="shortcuts-heading">
