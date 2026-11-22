@@ -150,7 +150,7 @@ test('an unfinished invoice survives leaving the page and can be discarded', asy
 
   fakeApi([...SIGNED_IN, SHOP('staff'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', preview)])
   renderApp('/billing/new')
-  expect(await screen.findByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(await screen.findByLabelText('Quantity for Rice')).toHaveValue('1')
   expect(screen.getByText('Ravi')).toBeInTheDocument()
   expect(screen.getByText(/unfinished invoice from/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Discard draft' }))
@@ -303,7 +303,7 @@ test('scanning a product again adds one more to the same line', async () => {
   renderApp('/billing/new')
   await addRice()
   await scan('8901')
-  await waitFor(() => expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(2))
+  await waitFor(() => expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('2'))
   expect(screen.getAllByLabelText(/^Quantity for/)).toHaveLength(1)
   expect(screen.getByLabelText('Scan barcode or search products')).toHaveFocus()
   expect(screen.getByText('Rice × 2')).toBeInTheDocument()
@@ -1041,8 +1041,8 @@ test('barcode product creation adds the exact saved result even when its barcode
   expect(screen.getByLabelText('Quantity for Rice')).toBeDisabled()
   await enterScannedProduct(dialog)
   await userEvent.click(within(dialog).getByRole('button', { name: 'Add product' }))
-  expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue(1)
-  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue('1')
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('1')
   expect(calls.filter(c => c.path === '/v1/shops/s1/products/lookup?code=000')).toHaveLength(1)
   expect(calls.find(c => c.method === 'POST' && c.path === '/v1/shops/s1/products')?.body).toMatchObject({ barcode: 'edited-code', name: 'New Salt' })
   expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
@@ -1071,7 +1071,7 @@ test('checkout is durably retained before opening a scanned product and storage 
   const dialog = await screen.findByRole('dialog', { name: 'Add product' })
   await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
   expect(screen.getByLabelText('Cash received')).toHaveValue('200')
-  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('1')
 })
 
 test('failed scanned product creation keeps editor fields and cancel retains the invoice', async () => {
@@ -1086,7 +1086,7 @@ test('failed scanned product creation keeps editor fields and cancel retains the
   expect(within(dialog).getByLabelText('Product name')).toHaveValue('New Salt')
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
-  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('1')
   expect(calls.filter(c => c.path === '/v1/shops/s1/products/lookup?code=000')).toHaveLength(1)
 })
 
@@ -1157,7 +1157,7 @@ test('zero-stock tracked product created from checkout closes editor, reports ou
   expect(status).toHaveClass('scan-status', 'scan-error')
   expect(screen.queryByLabelText('Quantity for Zero Salt')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Create product with this barcode' })).not.toBeInTheDocument()
-  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(2)
+  expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('2')
   expect(screen.getByLabelText('Quantity for Rice')).toBeEnabled()
   expect(screen.getByLabelText('Discount (%)')).toHaveValue(10)
   expect(screen.getByLabelText(/^Paid now/)).toHaveValue('50.001')
@@ -1345,7 +1345,7 @@ test('saved catalogue product survives failed invoice handoff and reload without
     await screen.findByRole('button', { name: 'Retry adding saved product' })
     expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+    expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('1')
     expect(screen.getByLabelText('Cash received')).toHaveValue('200')
     expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.pendingCatalogProduct.uuid).toBe(ENTRY_PRODUCT.uuid)
     first.unmount()
@@ -1354,7 +1354,7 @@ test('saved catalogue product survives failed invoice handoff and reload without
     expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
   } finally { blocked.mockRestore() }
   await userEvent.click(screen.getByRole('button', { name: 'Retry adding saved product' }))
-  expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue(1)
+  expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue('1')
   expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.items.map((line: { product: { uuid: string } }) => line.product.uuid)).toEqual(['p1', ENTRY_PRODUCT.uuid])
   expect(screen.queryByRole('button', { name: 'Retry adding saved product' })).not.toBeInTheDocument()
   expect(calls.filter(call => call.method === 'POST' && call.path === '/v1/shops/s1/products')).toHaveLength(1)
@@ -1382,7 +1382,7 @@ for (const leave of [false, true]) {
       await navigator.locks.request('storely.draft.bill.u1.s1', () => {})
       expect(JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data.items.map((line: { product: { uuid: string } }) => line.product.uuid)).toEqual(['p1'])
     } else {
-      expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue(1)
+      expect(await screen.findByLabelText('Quantity for New Salt')).toHaveValue('1')
       expect(screen.queryByRole('dialog', { name: 'Add product' })).not.toBeInTheDocument()
     }
     expect(calls.filter(call => call.method === 'POST' && call.path === '/v1/shops/s1/products')).toHaveLength(1)
@@ -1403,7 +1403,7 @@ for (const result of ['available', 'deleted', 'empty', 'wrong-identity'] as cons
     renderApp('/billing/new')
     await userEvent.click(await screen.findByRole('button', { name: 'Retry adding saved product' }))
     if (result === 'available') {
-      expect(await screen.findByLabelText('Quantity for Current Salt')).toHaveValue(1)
+      expect(await screen.findByLabelText('Quantity for Current Salt')).toHaveValue('1')
       const persisted = JSON.parse(localStorage.getItem(key)!).data
       expect(persisted.items[1].product).toMatchObject({ uuid: ENTRY_PRODUCT.uuid, selling_price: '15.00', quantity: '2' })
       expect(persisted.pendingCatalogProduct).toBeNull()
@@ -1411,13 +1411,51 @@ for (const result of ['available', 'deleted', 'empty', 'wrong-identity'] as cons
       await screen.findByText(/The product was saved in the catalogue, but it has not been added/)
       expect(screen.queryByLabelText('Quantity for Current Salt')).not.toBeInTheDocument()
       expect(screen.queryByLabelText('Quantity for New Salt')).not.toBeInTheDocument()
-      expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+      expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('1')
       expect(JSON.parse(localStorage.getItem(key)!).data.pendingCatalogProduct.uuid).toBe(ENTRY_PRODUCT.uuid)
       await userEvent.click(screen.getByRole('button', { name: 'Continue without adding product' }))
       await waitFor(() => expect(screen.queryByRole('button', { name: 'Retry adding saved product' })).not.toBeInTheDocument())
-      expect(screen.getByLabelText('Quantity for Rice')).toHaveValue(1)
+      expect(screen.getByLabelText('Quantity for Rice')).toHaveValue('1')
     }
     expect(calls.filter(call => call.path === '/v1/shops/s1/products/created-exact')).toHaveLength(1)
     expect(calls.filter(call => call.method === 'POST' && call.path === '/v1/shops/s1/products')).toHaveLength(0)
+  })
+}
+
+for (const custom of [false, true]) {
+  test(`${custom ? 'custom' : 'catalog'} sale quantity preserves invalid text, blocks pricing/save and normalizes valid trailing zeros`, async () => {
+    const priced = custom ? { ...preview, lines: [{ product_uuid: null, name: 'Gift wrap', quantity: '1.23', unit_price: '59.00', taxable_value: '72.57', gst: '0.00', amount: '72.57' }] } : preview
+    const calls = fakeApi([...SIGNED_IN, SHOP('owner'), ...CHECKOUT, ok('POST', '/v1/shops/s1/bills/preview', priced), ok('POST', '/v1/shops/s1/bills', detail), ok('GET', '/v1/shops/s1/bills/b1', detail)])
+    renderApp('/billing/new')
+    if (custom) {
+      await userEvent.click(await screen.findByRole('button', { name: '+ Item not in the list' }))
+      const dialog = screen.getByRole('dialog', { name: 'Item not in the product list' })
+      await userEvent.type(within(dialog).getByLabelText('Item name'), 'Gift wrap')
+      await userEvent.type(within(dialog).getByLabelText('Price (₹)'), '59')
+      await userEvent.selectOptions(within(dialog).getByLabelText('GST rate'), '0')
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Add to invoice' }))
+      await screen.findByLabelText('Quantity for Gift wrap')
+    } else await addRice()
+    const quantity = screen.getByLabelText(`Quantity for ${custom ? 'Gift wrap' : 'Rice'}`)
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, '1.2345')
+    const previewCount = calls.filter(c => c.path.endsWith('/bills/preview')).length
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 400)) })
+    expect(quantity).toHaveValue('1.2345')
+    expect(quantity).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeDisabled()
+    expect(calls.filter(c => c.path.endsWith('/bills/preview'))).toHaveLength(previewCount)
+    expect(calls.some(c => c.path === '/v1/shops/s1/bills')).toBe(false)
+    const saved = JSON.parse(localStorage.getItem('storely.draft.bill.u1.s1')!).data
+    expect((custom ? saved.custom : saved.items)[0].quantity).toBe('1.2345')
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, ' 0001.23000 ')
+    await waitFor(() => expect(calls.filter(c => c.path.endsWith('/bills/preview')).at(-1)?.body).toMatchObject({ items: [custom ? { name: 'Gift wrap', quantity: '1.23' } : { product_uuid: 'p1', quantity: '1.23' }] }))
+    expect(quantity).toHaveValue(' 0001.23000 ')
+    await userEvent.click(screen.getByLabelText(/^Paid in full/))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Create invoice/ })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: /^Create invoice/ }))
+    await screen.findByText(bill.bill_number)
+    expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [custom ? { name: 'Gift wrap', quantity: '1.23' } : { product_uuid: 'p1', quantity: '1.23' }] })
   })
 }

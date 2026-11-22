@@ -18,6 +18,10 @@ describe('cart', () => {
   it('keeps a fractional quantity exact when one more is added', () => {
     expect(addOrIncrement([{ product: rice, quantity: '0.1' }], rice).quantity).toBe('1.1')
   })
+  it('preserves invalid edited quantity when scanned again', () => {
+    const items = [{ product: rice, quantity: '1e2' }]
+    expect(addOrIncrement(items, rice)).toEqual({ items, quantity: '1e2', added: false })
+  })
   it('flags a request above the stock shown, only for tracked products', () => {
     expect(stockProblem(rice, '3')).toBeNull()
     expect(stockProblem(rice, '4')).toBe('Only 3 kg in stock.')

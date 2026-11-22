@@ -1,3 +1,4 @@
+import { saleQuantity } from './quantity'
 import { formatQty } from '../../lib/money'
 import type { Product } from '../../products/queries'
 
@@ -10,6 +11,7 @@ export const MAX_LINES = 200
 export function addOrIncrement(items: CartItem[], product: Product): { items: CartItem[]; quantity: string; added: boolean } {
   const at = items.findIndex(i => i.product.uuid === product.uuid)
   if (at < 0) return { items: [...items, { product, quantity: '1' }], quantity: '1', added: true }
+  if (saleQuantity(items[at]!.quantity) === null) return { items, quantity: items[at]!.quantity, added: false }
   const quantity = String(Math.round((Number(items[at]!.quantity) + 1) * 10000) / 10000)
   return { items: items.map((row, n) => n === at ? { ...row, quantity } : row), quantity, added: false }
 }

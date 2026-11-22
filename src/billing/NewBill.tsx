@@ -1,3 +1,4 @@
+import { saleQuantity, SALE_QUANTITY_ERROR } from './checkout/quantity'
 import { PageHeader } from '../components/ui/workspace'
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -154,7 +155,7 @@ function BillForm({ another }: { another: () => void }) {
     phone: checkCustomer || customer.customer_phone.replace(/\D/g, '').length >= 10 ? customerErrors.phone : null,
     gstin: checkCustomer || gstin.length >= 15 ? customerErrors.gstin : null,
   }
-  const lines = [...items.map(i => ({ product_uuid: i.product.uuid, quantity: i.quantity })), ...custom.map(c => ({ name: c.name, quantity: c.quantity, unit_price: c.unit_price, gst_percent: c.gst_percent, cost: c.cost || null, hsn_code: c.hsn_code || null, unit: c.unit || null }))]
+  const lines = [...items.map(i => ({ product_uuid: i.product.uuid, quantity: saleQuantity(i.quantity) ?? i.quantity })), ...custom.map(c => ({ name: c.name, quantity: saleQuantity(c.quantity) ?? c.quantity, unit_price: c.unit_price, gst_percent: c.gst_percent, cost: c.cost || null, hsn_code: c.hsn_code || null, unit: c.unit || null }))]
   const cart: CartInput = { ...customer, customer_phone: customerErrors.phone ? null : customer.customer_phone, customer_gstin: gstinProblem(gstin) ? null : gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: lines }
   const lineCount = items.length + custom.length
   // Only what changes the price asks the server again; typing a name or phone does not.
@@ -163,7 +164,7 @@ function BillForm({ another }: { another: () => void }) {
   const priceCurrent = settledText === pricedText
   // A business invoice cannot be priced until its GSTIN is complete; say so instead of showing a refusal.
   const needsGstin = billType === 'b2b' && !!customerErrors.gstin
-  const quantitiesOk = [...items, ...custom].every(i => Number(i.quantity) > 0)
+  const quantitiesOk = [...items, ...custom].every(i => saleQuantity(i.quantity) !== null)
   const discountOk = isAmount(discount) && Number(discount) <= 100
   // The server prices catalogue lines first, then the other lines in the order added.
   const preview = useQuery({
@@ -171,8 +172,8 @@ function BillForm({ another }: { another: () => void }) {
     queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, JSON.parse(settledText) as CartInput),
     enabled: lineCount > 0 && quantitiesOk && discountOk && !needsGstin && !attempt, retry: false, placeholderData: keepPreviousData,
   })
-  const pricing = lineCount > 0 && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
-  const totals = lineCount > 0 && !needsGstin ? preview.data : undefined
+  const pricing = lineCount > 0 && quantitiesOk && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
+  const totals = lineCount > 0 && quantitiesOk && !needsGstin ? preview.data : undefined
   const locked = !!attempt || mutation.isPending || preparing || draftConflict || !!creating
   useLayoutEffect(() => {
     checkoutOwner.current = { userId, shop, allowed: canCreateProduct, blocked: locked, uncertain: !!attempt, conflict: draftConflict }
@@ -205,6 +206,7 @@ function BillForm({ another }: { another: () => void }) {
     if (!existing && current.length + custom.length >= MAX_LINES) return note(`An invoice can have ${MAX_LINES} lines. Create this invoice first.`, 'error')
     if (outOfStock(product)) return note(`${product.name} is out of stock, so it cannot be sold. Receive stock first.`, 'error')
     const next = addOrIncrement(current, product)
+    if (saleQuantity(next.quantity) === null) return note(`${product.name}: ${SALE_QUANTITY_ERROR}`, 'error')
     commit(next.items)
     const warning = stockProblem(product, next.quantity)
     if (warning) return note(`${product.name} × ${formatQty(next.quantity)}. ${warning}`, 'warn')
@@ -214,7 +216,7 @@ function BillForm({ another }: { another: () => void }) {
   // The payment options may only just have appeared (the first item), so look after this render.
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
   const unlinked = !!payment.paid && payment.paid !== 'full' && (paymentMinorUnits(totals?.total ?? '') ?? 0n) > 0n && !/\d/.test(customer.customer_phone)
-  const canCreate = !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
+  const canCreate = quantitiesOk && !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
     lineCount > 0 && (!payment.paid || reviewCurrent) && (!unlinked || consentCurrent)
 
   async function submit(e: FormEvent) {
@@ -339,6 +341,7 @@ function BillForm({ another }: { another: () => void }) {
         return
       }
       const next = addOrIncrement(activeDraft.items, product)
+      if (saleQuantity(next.quantity) === null) throw new Error(`${product.name}: ${SALE_QUANTITY_ERROR}`)
       await draftStore.save({ ...activeDraft, items: next.items, pendingCatalogProduct: null }, { isActive: ownsCheckout })
       if (!ownsCheckout()) return
       commit(next.items); setPendingCatalogProduct(null); setUnknown(null); setStorageError('')
@@ -407,14 +410,14 @@ function BillForm({ another }: { another: () => void }) {
               const problem = stockProblem(i.product, i.quantity)
               return <tr key={i.product.uuid}>
                 <td className="cart-item"><span className="cart-name">{i.product.name}</span><small className="muted">{[i.product.barcode || i.product.product_code, i.product.gst_percent != null ? `GST ${formatQty(i.product.gst_percent)}%` : ''].filter(Boolean).join(' · ')}</small>{problem ? <small className="field-error" role="alert">{problem}</small> : stockText(i.product) && <small className="muted">{stockText(i.product)}</small>}</td>
-                <td><input className="qty" aria-label={`Quantity for ${i.product.name}`} type="number" inputMode="decimal" min="0.001" max="1000000" step="0.001" required value={i.quantity} onChange={e => setQuantity(index, e.target.value)} />{i.product.unit_name && <small className="muted unit"> {i.product.unit_name}</small>}</td>
+                <td><input className="qty" aria-label={`Quantity for ${i.product.name}`} type="text" inputMode="decimal" aria-invalid={saleQuantity(i.quantity) === null} aria-describedby={saleQuantity(i.quantity) === null ? `quantity-error-${index}` : undefined} required value={i.quantity} onChange={e => setQuantity(index, e.target.value)} />{saleQuantity(i.quantity) === null && <small id={`quantity-error-${index}`} className="field-error" role="alert">{SALE_QUANTITY_ERROR}</small>}{i.product.unit_name && <small className="muted unit"> {i.product.unit_name}</small>}</td>
                 <td className="num hide-sm">{line ? formatMoney(line.unit_price) : '—'}</td>
                 <td className="num">{line ? formatMoney(line.amount) : '—'}</td>
                 <td><button type="button" className="link remove" aria-label={`Remove ${i.product.name}`} onClick={() => commit(items.filter((_, n) => n !== index))}>✕</button></td></tr>
             })}
             {custom.map((c, index) => { const line = customPreview[index]; return <tr key={c.key}>
               <td className="cart-item"><span className="cart-name">{c.name}</span><small className="muted">Not in the list · GST {c.gst_percent}%</small></td>
-              <td><input className="qty" aria-label={`Quantity for ${c.name}`} type="number" inputMode="decimal" min="0.001" max="1000000" step="0.001" required value={c.quantity} onChange={e => setCustom(custom.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} /></td>
+              <td><input className="qty" aria-label={`Quantity for ${c.name}`} type="text" inputMode="decimal" aria-invalid={saleQuantity(c.quantity) === null} aria-describedby={saleQuantity(c.quantity) === null ? `custom-quantity-error-${index}` : undefined} required value={c.quantity} onChange={e => setCustom(custom.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} />{saleQuantity(c.quantity) === null && <small id={`custom-quantity-error-${index}`} className="field-error" role="alert">{SALE_QUANTITY_ERROR}</small>}</td>
               <td className="num hide-sm">{line ? formatMoney(line.unit_price) : formatMoney(c.unit_price)}</td>
               <td className="num">{line ? formatMoney(line.amount) : '—'}</td>
               <td><button type="button" className="link remove" aria-label={`Remove ${c.name}`} onClick={() => setCustom(custom.filter((_, n) => n !== index))}>✕</button></td></tr> })}
