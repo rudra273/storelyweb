@@ -1830,6 +1830,7 @@
        "upi",
        "card",
        "bank",
+       "bank_transfer",
        "online"
       ],
       "title": "Refund Method",
@@ -3136,7 +3137,8 @@
          "cash",
          "upi",
          "card",
-         "bank"
+         "bank",
+         "bank_transfer"
         ],
         "type": "string"
        },
@@ -3201,7 +3203,8 @@
        "cash",
        "upi",
        "card",
-       "bank"
+       "bank",
+       "bank_transfer"
       ],
       "title": "Payment Method",
       "type": "string"
@@ -6209,6 +6212,7 @@
        "upi",
        "card",
        "bank",
+       "bank_transfer",
        "online"
       ],
       "title": "Method",
@@ -6289,6 +6293,7 @@
        "upi",
        "card",
        "bank",
+       "bank_transfer",
        "online"
       ],
       "title": "Method",
@@ -8624,6 +8629,7 @@
        "cash",
        "upi",
        "card",
+       "bank",
        "bank_transfer",
        "online"
       ],
@@ -10043,6 +10049,7 @@
        "upi",
        "card",
        "bank",
+       "bank_transfer",
        "online"
       ],
       "title": "Method",
@@ -10781,6 +10788,7 @@
        "cash",
        "upi",
        "card",
+       "bank",
        "bank_transfer",
        "online"
       ],
@@ -11225,6 +11233,7 @@
        "cash",
        "upi",
        "card",
+       "bank",
        "bank_transfer",
        "online"
       ],

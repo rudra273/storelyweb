@@ -2682,7 +2682,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            refund_method: "cash" | "upi" | "card" | "bank" | "online";
+            refund_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /**
              * Settlement
              * @default refund
@@ -3084,7 +3084,7 @@ export interface components {
             /** Notes */
             notes?: string | null;
             /** Payment Method */
-            payment_method?: ("cash" | "upi" | "card" | "bank") | null;
+            payment_method?: ("cash" | "upi" | "card" | "bank" | "bank_transfer") | null;
         };
         /** ExpenseIn */
         ExpenseIn: {
@@ -3104,7 +3104,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer";
         };
         /** ExpenseOut */
         ExpenseOut: {
@@ -4078,7 +4078,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            method: "cash" | "upi" | "card" | "bank" | "online";
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Reference */
             reference?: string | null;
         };
@@ -4105,7 +4105,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            method: "cash" | "upi" | "card" | "bank" | "online";
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Notes */
             notes?: string | null;
             /** Reference */
@@ -4765,7 +4765,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /**
              * Purchase Date
              * Format: date
@@ -5242,7 +5242,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            method: "cash" | "upi" | "card" | "bank" | "online";
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Reference */
             reference?: string | null;
             /** Review Key */
@@ -5452,7 +5452,7 @@ export interface components {
              * Payment Method
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Purchase Uuid */
             purchase_uuid?: string | null;
             /** Reference */
@@ -5596,7 +5596,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /**
              * Tax Amount
              * @default 0
