@@ -138,7 +138,7 @@ test('stock value shows each product\'s GST and cost per unit, and why GST is in
   const row = (await screen.findByText('Basmati Rice')).closest('tr')!
   expect(within(row).getByText('18%')).toBeInTheDocument()
   expect(within(row).getByText('₹47.20')).toBeInTheDocument()
-  expect(screen.getByText(/not GST-registered, so GST paid on purchases is part of cost/)).toBeInTheDocument()
+  expect(screen.getByText(/Purchase GST is included in stock cost when it cannot be recovered/)).toBeInTheDocument()
   expect(within(row).getByRole('link', { name: 'Basmati Rice' })).toHaveAttribute('href', '/products?q=Basmati%20Rice')
 })
 

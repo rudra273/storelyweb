@@ -149,7 +149,7 @@ export function StockValuePage() {
           <DownloadBar save={save} />
           <p className="muted report-note">{v.gst_registered
             ? 'Cost per unit is the cost price plus overhead. GST you pay on purchases is claimed back, so it is not part of cost.'
-            : 'Your shop is not GST-registered, so GST paid on purchases is part of cost: cost per unit is the cost price plus that GST (at the rate shown) and any overhead.'}</p>
+            : 'Purchase GST is included in stock cost when it cannot be recovered: cost per unit is the cost price plus that GST (at the rate shown) and any overhead.'}</p>
           {v.items.length === 0 ? <Empty title="No stock on hand" /> : (
             <div className="table-wrap"><table className="table">
               <thead><tr><th>Product</th><th>Category</th><th>Quantity</th><th className="num">GST</th><th className="num">Cost per unit</th><th className="num">At cost</th><th className="num">At selling price</th></tr></thead>
