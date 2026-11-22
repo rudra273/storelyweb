@@ -351,3 +351,23 @@ test('a queued supplier payment does not send or repopulate storage after its ow
   expect(localStorage.getItem('storely.supplier-payment:u1:s1:vendor1')).toBeNull()
   expect(calls.filter(call => call.method === 'POST' && call.path.endsWith('/payments'))).toHaveLength(0)
 })
+
+for (const method of ['bank', 'bank_transfer']) {
+  test(`supplier history ${method} displays Bank transfer while new supplier payment keeps its endpoint code`, async () => {
+    const calls = fakeApi([
+      ...SIGNED_IN,
+      ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+      ok('GET', '/v1/shops/s1/suppliers', [supplier]),
+      ok('GET', '/v1/shops/s1/suppliers/vendor1/statement', { ...STATEMENT, payments: STATEMENT.payments.map(p => ({ ...p, payment_method: method })), ledger: STATEMENT.ledger.map(e => e.kind === 'payment' ? { ...e, method } : e) }),
+      ok('POST', '/v1/shops/s1/suppliers/vendor1/payments', { uuid: 'payment1' }, 201),
+    ])
+    renderApp('/suppliers/vendor1')
+    await screen.findByRole('heading', { name: supplier.name })
+    expect((await screen.findAllByText(/Bank transfer/)).length).toBeGreaterThan(0)
+    await userEvent.click(screen.getByRole('button', { name: 'Record payment' }))
+    await userEvent.type(screen.getByLabelText('Amount (₹)'), '25.50')
+    await userEvent.selectOptions(screen.getByLabelText('Payment method'), 'bank_transfer')
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Record payment' }))
+    await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/payments'))?.body).toMatchObject({ payment_method: 'bank_transfer' }))
+  })
+}

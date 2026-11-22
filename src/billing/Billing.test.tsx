@@ -1459,3 +1459,15 @@ for (const custom of [false, true]) {
     expect(calls.find(c => c.path === '/v1/shops/s1/bills')?.body).toMatchObject({ items: [custom ? { name: 'Gift wrap', quantity: '1.23' } : { product_uuid: 'p1', quantity: '1.23' }] })
   })
 }
+
+for (const method of ['bank', 'bank_transfer']) {
+  test(`saved invoice payment ${method} displays the same bank label`, async () => {
+    fakeApi([...SIGNED_IN, SHOP('owner'), ok('GET', '/v1/shops/s1/bills/b1', {
+      ...detail, payments: [{ uuid: 'bank-history', received_at: '2026-11-21', amount: '10.00', payment_method: method, payment_reference: 'BANK-HISTORY', notes: null }],
+    })])
+    renderApp('/billing/b1')
+    const history = (await screen.findByText(/BANK-HISTORY/)).closest('li')!
+    expect(history).toHaveTextContent('Bank transfer')
+    expect(history).not.toHaveTextContent('bank_transfer')
+  })
+}
