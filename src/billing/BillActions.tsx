@@ -1,3 +1,4 @@
+import { returnQuantity, exceedsReturnQuantity, SALE_QUANTITY_ERROR } from './checkout/quantity'
 import { useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
@@ -36,23 +37,37 @@ export function BillAction({ action, detail, close }: { action: BillActionKind; 
   const leave = useDirtyClose(useIsDirty([amount, method, reason, reference, settlement, quantities]) && !attempt, close)
   const shop = useShop().current?.shop_id ?? ''
   // The server prices the return (earlier returns, tax, round-off) before anything is saved.
-  const picked = Object.fromEntries(Object.entries(quantities).filter(([, q]) => Number(q) > 0))
+  const normalized = Object.entries(quantities).map(([id, raw]) => [id, returnQuantity(raw)] as const)
+  const quantitiesValid = normalized.every(([, q]) => q !== null)
+  const picked = Object.fromEntries(normalized.filter((entry): entry is readonly [string, string] => entry[1] !== null && entry[1] !== '0'))
   const pickedKey = JSON.stringify([picked, settlement])
   const settledKey = useDebounced(pickedKey, 250)
+  const [remainingKnown, setRemainingKnown] = useState<Record<string, string>>({})
+  const withinKnownRemaining = normalized.every(([id, q]) => q === null || !exceedsReturnQuantity(q, remainingKnown[id] ?? detail.items.find(item => item.uuid === id)?.quantity ?? '0'))
   const review = useQuery({
     queryKey: ['return-preview', shop, detail.bill.uuid, settledKey],
-    queryFn: () => api.post<ReturnPreview>(`/v1/shops/${shop}/bills/${detail.bill.uuid}/credit-note/preview`, { quantities: JSON.parse(settledKey)[0], settlement: JSON.parse(settledKey)[1] }),
-    enabled: action === 'return' && !attempt, retry: false,
+    queryFn: async () => {
+      const result = await api.post<ReturnPreview>(`/v1/shops/${shop}/bills/${detail.bill.uuid}/credit-note/preview`, { quantities: JSON.parse(settledKey)[0], settlement: JSON.parse(settledKey)[1] })
+      setRemainingKnown(Object.fromEntries(result.lines.map(line => [line.item_uuid, line.remaining])))
+      return result
+    },
+    enabled: action === 'return' && quantitiesValid && withinKnownRemaining && !attempt, retry: false,
   })
-  const reviewCurrent = review.data && !review.isFetching && settledKey === pickedKey && !review.error
+  const quantityErrors = Object.fromEntries(detail.items.map(item => {
+    const quantity = returnQuantity(quantities[item.uuid] ?? '')
+    const remaining = review.data?.lines.find(line => line.item_uuid === item.uuid)?.remaining ?? remainingKnown[item.uuid] ?? item.quantity
+    return [item.uuid, quantity === null ? SALE_QUANTITY_ERROR : exceedsReturnQuantity(quantity, remaining) ? `Only ${formatQty(remaining)} can be returned.` : undefined]
+  }))
+  const quantitiesWithinRemaining = quantitiesValid && Object.values(quantityErrors).every(error => !error)
+  const reviewCurrent = quantitiesWithinRemaining && review.data && !review.isFetching && settledKey === pickedKey && !review.error
   const mutation = useBillingMutation(async (base: string, input: Attempt) => request<BillDetail>('POST', `${base}/bills/${detail.bill.uuid}/${action === 'payment' ? 'payments' : action === 'return' ? 'credit-note' : 'cancel'}`, { body: input.body, idempotencyKey: input.key }))
   const uncertainCancel = action === 'cancel' && mutation.error instanceof ApiError && (mutation.error.status === 0 || mutation.error.status >= 500)
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (sending.current || uncertainCancel) return
+    if (sending.current || uncertainCancel || (action === 'return' && !attempt && !(Object.keys(picked).length > 0 && reviewCurrent && review.data.can_return))) return
     if ((action === 'cancel' || action === 'return') && reason.trim().length < 3) { setReasonError(action === 'cancel' ? 'Say why this is being voided, so the record explains it later.' : 'Say why the items are coming back.'); return }
     setReasonError('')
-    const body = action === 'payment' ? { amount, method, reference: method === 'cash' ? null : reference.trim() || null, notes: reason || null } : action === 'cancel' ? { reason: reason.trim() } : { quantities: Object.fromEntries(Object.entries(quantities).filter(([, q]) => Number(q) > 0)), settlement, refund_method: method, reason: reason.trim() || null }
+    const body = action === 'payment' ? { amount, method, reference: method === 'cash' ? null : reference.trim() || null, notes: reason || null } : action === 'cancel' ? { reason: reason.trim() } : { quantities: picked, settlement, refund_method: method, reason: reason.trim() || null }
     const next = attempt ?? { body, key: action === 'cancel' ? undefined : crypto.randomUUID() }
     if (action !== 'cancel') setAttempt(next)
     sending.current = true
@@ -72,10 +87,10 @@ export function BillAction({ action, detail, close }: { action: BillActionKind; 
     {action === 'payment' && <Field label="Amount (₹)" type="number" min="0.01" max={detail.bill.balance_due} step="0.01" required value={amount} onChange={e => setAmount(e.target.value)} />}
     {action === 'return' && <>
       <p>Enter how many of each item are coming back. Returns are credited at the price originally charged.</p>
-      {detail.items.map(i => { const row = review.data?.lines.find(l => l.item_uuid === i.uuid); return <Field key={i.uuid} label={`Return ${i.product_name}`} type="number" min="0" max={row?.remaining ?? i.quantity} step="0.001" value={quantities[i.uuid] ?? ''} hint={row ? `Sold ${formatQty(row.sold)} · returned before ${formatQty(row.already_returned)} · can return ${formatQty(row.remaining)}` : undefined} onChange={e => setQuantities({ ...quantities, [i.uuid]: e.target.value })} /> })}
+      {detail.items.map(i => { const row = review.data?.lines.find(l => l.item_uuid === i.uuid); return <Field key={i.uuid} label={`Return ${i.product_name}`} type="text" inputMode="decimal" error={quantityErrors[i.uuid]} value={quantities[i.uuid] ?? ''} hint={row ? `Sold ${formatQty(row.sold)} · returned before ${formatQty(row.already_returned)} · can return ${formatQty(row.remaining)}` : undefined} onChange={e => setQuantities({ ...quantities, [i.uuid]: e.target.value })} /> })}
       <label>Settlement<select value={settlement} onChange={e => setSettlement(e.target.value as typeof settlement)}><option value="refund">Refund customer</option><option value="adjust">Reduce invoice due</option></select></label>
       {review.error && <Alert>{describeError(review.error)}</Alert>}
-      {Object.keys(picked).length > 0 && !review.error && <section aria-label="Return summary" aria-live="polite">
+      {quantitiesWithinRemaining && Object.keys(picked).length > 0 && !review.error && <section aria-label="Return summary" aria-live="polite">
         {!reviewCurrent ? <Loading label="Calculating the credit…" /> : <dl className="bill-totals">
           {[['Items', review.data.subtotal], ['Tax', review.data.tax_amount], ['Round-off', review.data.round_off_amount]].map(([k, v]) => <div className="row" key={k}><dt>{k}</dt><dd>{formatMoney(v!)}</dd></div>)}
           <div className="row grand-total"><dt>Credit note total</dt><dd>{formatMoney(review.data.credit_total)}</dd></div>

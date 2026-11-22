@@ -14,3 +14,17 @@ export function saleQuantity(raw: string): string | null {
   if (BigInt(integer) === 0n && !decimal) return null
   return decimal ? `${integer}.${decimal}` : integer
 }
+
+/** Blank and any plain decimal zero mean an unselected return line. */
+export function returnQuantity(raw: string): string | null {
+  const text = raw.trim()
+  return text === '' || /^0+(?:\.0+)?$/.test(text) ? '0' : saleQuantity(text)
+}
+
+/** Exact decimal comparison with server-supplied remaining quantity. */
+export function exceedsReturnQuantity(quantity: string, remaining: string): boolean {
+  const [whole, fraction = ''] = quantity.split('.')
+  const [limitWhole, limitFraction = ''] = remaining.split('.')
+  const scale = Math.max(fraction.length, limitFraction.length)
+  return BigInt(whole! + fraction.padEnd(scale, '0')) > BigInt(limitWhole! + limitFraction.padEnd(scale, '0'))
+}
