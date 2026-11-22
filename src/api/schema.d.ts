@@ -781,6 +781,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/native/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Native Sale Preflight
+         * @description Compare an issued offline sale with current rules without posting or adopting it.
+         */
+        post: operations["native_sale_preflight_v1_shops__shop_id__bills_native_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/preview": {
         parameters: {
             query?: never;
@@ -3961,6 +3981,69 @@ export interface components {
              * Format: uuid
              */
             uuid: string;
+        };
+        /** NativeSalePreflightIn */
+        NativeSalePreflightIn: {
+            /** Balance Due */
+            balance_due: number | string;
+            cart: components["schemas"]["CartIn"];
+            /** Cgst Amount */
+            cgst_amount: number | string;
+            /** Discount Amount */
+            discount_amount: number | string;
+            /** Igst Amount */
+            igst_amount: number | string;
+            /** Invoice Number */
+            invoice_number: string;
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /** Lines */
+            lines: components["schemas"]["NativeSaleRecordedLine"][];
+            /** Paid Amount */
+            paid_amount: number | string;
+            /** Round Off Amount */
+            round_off_amount: number | string;
+            /** Sgst Amount */
+            sgst_amount: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
+        };
+        /** NativeSalePreflightOut */
+        NativeSalePreflightOut: {
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "matched_recorded_amounts";
+        };
+        /** NativeSaleRecordedLine */
+        NativeSaleRecordedLine: {
+            /** Name */
+            name: string;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Tax Amount */
+            tax_amount: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
         };
         /** NewReceiptProduct */
         "NewReceiptProduct-Input": {
@@ -7221,6 +7304,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    native_sale_preflight_v1_shops__shop_id__bills_native_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSalePreflightIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSalePreflightOut"];
                 };
             };
             /** @description Validation Error */

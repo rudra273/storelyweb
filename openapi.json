@@ -5761,6 +5761,288 @@
     "title": "NativeReceiptLine",
     "type": "object"
    },
+   "NativeSalePreflightIn": {
+    "additionalProperties": false,
+    "properties": {
+     "balance_due": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Balance Due"
+     },
+     "cart": {
+      "$ref": "#/components/schemas/CartIn"
+     },
+     "cgst_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Cgst Amount"
+     },
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Discount Amount"
+     },
+     "igst_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Igst Amount"
+     },
+     "invoice_number": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Invoice Number",
+      "type": "string"
+     },
+     "invoice_uuid": {
+      "format": "uuid",
+      "title": "Invoice Uuid",
+      "type": "string"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/NativeSaleRecordedLine"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+     },
+     "paid_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Paid Amount"
+     },
+     "round_off_amount": {
+      "anyOf": [
+       {
+        "maximum": 1.0,
+        "minimum": -1.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Round Off Amount"
+     },
+     "sgst_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Sgst Amount"
+     },
+     "subtotal": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Subtotal"
+     },
+     "taxable_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Taxable Amount"
+     },
+     "total_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Total Amount"
+     }
+    },
+    "required": [
+     "invoice_uuid",
+     "invoice_number",
+     "cart",
+     "lines",
+     "subtotal",
+     "discount_amount",
+     "taxable_amount",
+     "cgst_amount",
+     "sgst_amount",
+     "igst_amount",
+     "round_off_amount",
+     "total_amount",
+     "paid_amount",
+     "balance_due"
+    ],
+    "title": "NativeSalePreflightIn",
+    "type": "object"
+   },
+   "NativeSalePreflightOut": {
+    "properties": {
+     "invoice_uuid": {
+      "format": "uuid",
+      "title": "Invoice Uuid",
+      "type": "string"
+     },
+     "status": {
+      "const": "matched_recorded_amounts",
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "invoice_uuid",
+     "status"
+    ],
+    "title": "NativeSalePreflightOut",
+    "type": "object"
+   },
+   "NativeSaleRecordedLine": {
+    "additionalProperties": false,
+    "properties": {
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1000000.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     },
+     "subtotal": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Subtotal"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Tax Amount"
+     },
+     "taxable_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Taxable Amount"
+     },
+     "total_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Total Amount"
+     }
+    },
+    "required": [
+     "name",
+     "quantity",
+     "subtotal",
+     "taxable_amount",
+     "tax_amount",
+     "total_amount"
+    ],
+    "title": "NativeSaleRecordedLine",
+    "type": "object"
+   },
    "NewReceiptProduct-Input": {
     "additionalProperties": false,
     "properties": {
@@ -13762,6 +14044,59 @@
      }
     },
     "summary": "Create Bill",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/native/preflight": {
+   "post": {
+    "description": "Compare an issued offline sale with current rules without posting or adopting it.",
+    "operationId": "native_sale_preflight_v1_shops__shop_id__bills_native_preflight_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeSalePreflightIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NativeSalePreflightOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Native Sale Preflight",
     "tags": [
      "billing"
     ]
