@@ -5761,6 +5761,330 @@
     "title": "NativeReceiptLine",
     "type": "object"
    },
+   "NativeSalePostIn": {
+    "additionalProperties": false,
+    "properties": {
+     "allow_unassigned_credit": {
+      "default": false,
+      "title": "Allow Unassigned Credit",
+      "type": "boolean"
+     },
+     "balance_due": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Balance Due"
+     },
+     "cart": {
+      "$ref": "#/components/schemas/CartIn"
+     },
+     "cgst_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Cgst Amount"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "device_id": {
+      "maxLength": 64,
+      "minLength": 8,
+      "title": "Device Id",
+      "type": "string"
+     },
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Discount Amount"
+     },
+     "igst_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Igst Amount"
+     },
+     "invoice_number": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Invoice Number",
+      "type": "string"
+     },
+     "invoice_uuid": {
+      "format": "uuid",
+      "title": "Invoice Uuid",
+      "type": "string"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/NativeSalePostLine"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+     },
+     "paid_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Paid Amount"
+     },
+     "payment": {
+      "$ref": "#/components/schemas/Payment"
+     },
+     "payment_uuid": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payment Uuid"
+     },
+     "round_off_amount": {
+      "anyOf": [
+       {
+        "maximum": 1.0,
+        "minimum": -1.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Round Off Amount"
+     },
+     "settlement_choice": {
+      "enum": [
+       "full",
+       "partial",
+       "unpaid"
+      ],
+      "title": "Settlement Choice",
+      "type": "string"
+     },
+     "sgst_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Sgst Amount"
+     },
+     "subtotal": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Subtotal"
+     },
+     "taxable_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Taxable Amount"
+     },
+     "total_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Total Amount"
+     }
+    },
+    "required": [
+     "invoice_uuid",
+     "invoice_number",
+     "cart",
+     "lines",
+     "subtotal",
+     "discount_amount",
+     "taxable_amount",
+     "cgst_amount",
+     "sgst_amount",
+     "igst_amount",
+     "round_off_amount",
+     "total_amount",
+     "paid_amount",
+     "balance_due",
+     "device_id",
+     "created_at",
+     "payment",
+     "settlement_choice"
+    ],
+    "title": "NativeSalePostIn",
+    "type": "object"
+   },
+   "NativeSalePostLine": {
+    "additionalProperties": false,
+    "properties": {
+     "line_uuid": {
+      "format": "uuid",
+      "title": "Line Uuid",
+      "type": "string"
+     },
+     "movement_uuid": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Movement Uuid"
+     },
+     "name": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "anyOf": [
+       {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Product Uuid"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1000000.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     },
+     "subtotal": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Subtotal"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Tax Amount"
+     },
+     "taxable_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Taxable Amount"
+     },
+     "total_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Total Amount"
+     }
+    },
+    "required": [
+     "name",
+     "quantity",
+     "subtotal",
+     "taxable_amount",
+     "tax_amount",
+     "total_amount",
+     "line_uuid"
+    ],
+    "title": "NativeSalePostLine",
+    "type": "object"
+   },
    "NativeSalePreflightIn": {
     "additionalProperties": false,
     "properties": {
@@ -14044,6 +14368,75 @@
      }
     },
     "summary": "Create Bill",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/native": {
+   "post": {
+    "description": "Atomically publish a matching recorded invoice, using its original durable IDs.",
+    "operationId": "post_native_sale_v1_shops__shop_id__bills_native_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeSalePostIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BillDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Post Native Sale",
     "tags": [
      "billing"
     ]

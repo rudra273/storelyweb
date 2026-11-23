@@ -781,6 +781,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Native Sale
+         * @description Atomically publish a matching recorded invoice, using its original durable IDs.
+         */
+        post: operations["post_native_sale_v1_shops__shop_id__bills_native_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/native/preflight": {
         parameters: {
             query?: never;
@@ -3981,6 +4001,83 @@ export interface components {
              * Format: uuid
              */
             uuid: string;
+        };
+        /** NativeSalePostIn */
+        NativeSalePostIn: {
+            /**
+             * Allow Unassigned Credit
+             * @default false
+             */
+            allow_unassigned_credit: boolean;
+            /** Balance Due */
+            balance_due: number | string;
+            cart: components["schemas"]["CartIn"];
+            /** Cgst Amount */
+            cgst_amount: number | string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Device Id */
+            device_id: string;
+            /** Discount Amount */
+            discount_amount: number | string;
+            /** Igst Amount */
+            igst_amount: number | string;
+            /** Invoice Number */
+            invoice_number: string;
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /** Lines */
+            lines: components["schemas"]["NativeSalePostLine"][];
+            /** Paid Amount */
+            paid_amount: number | string;
+            payment: components["schemas"]["Payment"];
+            /** Payment Uuid */
+            payment_uuid?: string | null;
+            /** Round Off Amount */
+            round_off_amount: number | string;
+            /**
+             * Settlement Choice
+             * @enum {string}
+             */
+            settlement_choice: "full" | "partial" | "unpaid";
+            /** Sgst Amount */
+            sgst_amount: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
+        };
+        /** NativeSalePostLine */
+        NativeSalePostLine: {
+            /**
+             * Line Uuid
+             * Format: uuid
+             */
+            line_uuid: string;
+            /** Movement Uuid */
+            movement_uuid?: string | null;
+            /** Name */
+            name: string;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Tax Amount */
+            tax_amount: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
         };
         /** NativeSalePreflightIn */
         NativeSalePreflightIn: {
@@ -7294,6 +7391,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BillIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_native_sale_v1_shops__shop_id__bills_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSalePostIn"];
             };
         };
         responses: {
