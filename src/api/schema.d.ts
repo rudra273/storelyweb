@@ -2679,6 +2679,12 @@ export interface components {
          */
         ContractFeatures: {
             /**
+             * Native Sale Posting
+             * @default 1
+             * @constant
+             */
+            native_sale_posting: 1;
+            /**
              * Operation Lookup
              * @default 1
              * @constant

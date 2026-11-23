@@ -1756,6 +1756,12 @@
    "ContractFeatures": {
     "description": "Service support versions, never a substitute for per-command authorization.",
     "properties": {
+     "native_sale_posting": {
+      "const": 1,
+      "default": 1,
+      "title": "Native Sale Posting",
+      "type": "integer"
+     },
      "operation_lookup": {
       "const": 1,
       "default": 1,
