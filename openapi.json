@@ -1773,6 +1773,12 @@
       "title": "Native Sale Posting",
       "type": "integer"
      },
+     "native_sale_snapshot_proof": {
+      "const": 1,
+      "default": 1,
+      "title": "Native Sale Snapshot Proof",
+      "type": "integer"
+     },
      "operation_lookup": {
       "const": 1,
       "default": 1,
@@ -5778,6 +5784,99 @@
     "title": "NativeReceiptLine",
     "type": "object"
    },
+   "NativeSaleLineSnapshot": {
+    "additionalProperties": false,
+    "properties": {
+     "cost_snapshot": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Cost Snapshot"
+     },
+     "hsn_code_snapshot": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hsn Code Snapshot"
+     },
+     "hsn_type_snapshot": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Hsn Type Snapshot"
+     },
+     "profit_snapshot": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": -999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Profit Snapshot"
+     },
+     "purchase_price_snapshot": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Purchase Price Snapshot"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "maxLength": 30,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     }
+    },
+    "required": [
+     "hsn_code_snapshot",
+     "hsn_type_snapshot",
+     "unit_name",
+     "purchase_price_snapshot",
+     "cost_snapshot",
+     "profit_snapshot"
+    ],
+    "title": "NativeSaleLineSnapshot",
+    "type": "object"
+   },
    "NativeSalePostIn": {
     "additionalProperties": false,
     "properties": {
@@ -6041,6 +6140,16 @@
       ],
       "title": "Quantity"
      },
+     "snapshot": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NativeSaleLineSnapshot"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "subtotal": {
       "anyOf": [
        {
@@ -6100,6 +6209,62 @@
      "line_uuid"
     ],
     "title": "NativeSalePostLine",
+    "type": "object"
+   },
+   "NativeSalePostOut": {
+    "properties": {
+     "bill": {
+      "$ref": "#/components/schemas/BillSummary"
+     },
+     "credit_notes": {
+      "items": {
+       "$ref": "#/components/schemas/NoteRow"
+      },
+      "title": "Credit Notes",
+      "type": "array"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/HistoryRow"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/BillLine"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "native_sale_snapshot_verified": {
+      "anyOf": [
+       {
+        "const": 1,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Native Sale Snapshot Verified"
+     },
+     "payments": {
+      "items": {
+       "$ref": "#/components/schemas/PaymentRow"
+      },
+      "title": "Payments",
+      "type": "array"
+     }
+    },
+    "required": [
+     "bill",
+     "items",
+     "payments",
+     "credit_notes",
+     "history"
+    ],
+    "title": "NativeSalePostOut",
     "type": "object"
    },
    "NativeSalePreflightIn": {
@@ -14436,7 +14601,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/BillDetail"
+         "$ref": "#/components/schemas/NativeSalePostOut"
         }
        }
       },

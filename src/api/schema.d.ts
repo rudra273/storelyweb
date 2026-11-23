@@ -2687,6 +2687,12 @@ export interface components {
              */
             native_sale_posting: 1;
             /**
+             * Native Sale Snapshot Proof
+             * @default 1
+             * @constant
+             */
+            native_sale_snapshot_proof: 1;
+            /**
              * Operation Lookup
              * @default 1
              * @constant
@@ -4010,6 +4016,21 @@ export interface components {
              */
             uuid: string;
         };
+        /** NativeSaleLineSnapshot */
+        NativeSaleLineSnapshot: {
+            /** Cost Snapshot */
+            cost_snapshot: number | string;
+            /** Hsn Code Snapshot */
+            hsn_code_snapshot: string | null;
+            /** Hsn Type Snapshot */
+            hsn_type_snapshot: string | null;
+            /** Profit Snapshot */
+            profit_snapshot: number | string;
+            /** Purchase Price Snapshot */
+            purchase_price_snapshot: number | string;
+            /** Unit Name */
+            unit_name: string | null;
+        };
         /** NativeSalePostIn */
         NativeSalePostIn: {
             /**
@@ -4078,6 +4099,7 @@ export interface components {
             product_uuid?: string | null;
             /** Quantity */
             quantity: number | string;
+            snapshot?: components["schemas"]["NativeSaleLineSnapshot"] | null;
             /** Subtotal */
             subtotal: number | string;
             /** Tax Amount */
@@ -4086,6 +4108,20 @@ export interface components {
             taxable_amount: number | string;
             /** Total Amount */
             total_amount: number | string;
+        };
+        /** NativeSalePostOut */
+        NativeSalePostOut: {
+            bill: components["schemas"]["BillSummary"];
+            /** Credit Notes */
+            credit_notes: components["schemas"]["NoteRow"][];
+            /** History */
+            history: components["schemas"]["HistoryRow"][];
+            /** Items */
+            items: components["schemas"]["BillLine"][];
+            /** Native Sale Snapshot Verified */
+            native_sale_snapshot_verified?: 1 | null;
+            /** Payments */
+            payments: components["schemas"]["PaymentRow"][];
         };
         /** NativeSalePreflightIn */
         NativeSalePreflightIn: {
@@ -7445,7 +7481,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BillDetail"];
+                    "application/json": components["schemas"]["NativeSalePostOut"];
                 };
             };
             /** @description Validation Error */
