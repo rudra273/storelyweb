@@ -1302,6 +1302,17 @@
      "features": {
       "$ref": "#/components/schemas/ContractFeatures"
      },
+     "native_sale_device_registered": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Native Sale Device Registered"
+     },
      "role": {
       "enum": [
        "owner",
@@ -14955,7 +14966,7 @@
   },
   "/v1/shops/{shop_id}/capabilities": {
    "get": {
-    "description": "Negotiate supported contracts without opening paid business-data access.",
+    "description": "Negotiate support and optional own-device proof, without granting paid access.",
     "operationId": "shop_capabilities_v1_shops__shop_id__capabilities_get",
     "parameters": [
      {
@@ -14965,6 +14976,24 @@
       "schema": {
        "title": "Shop Id",
        "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "device_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 64,
+         "minLength": 8,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Device Id"
       }
      }
     ],

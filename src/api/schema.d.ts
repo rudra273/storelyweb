@@ -963,7 +963,7 @@ export interface paths {
         };
         /**
          * Shop Capabilities
-         * @description Negotiate supported contracts without opening paid business-data access.
+         * @description Negotiate support and optional own-device proof, without granting paid access.
          */
         get: operations["shop_capabilities_v1_shops__shop_id__capabilities_get"];
         put?: never;
@@ -2567,6 +2567,8 @@ export interface components {
              */
             contract_version: 1;
             features: components["schemas"]["ContractFeatures"];
+            /** Native Sale Device Registered */
+            native_sale_device_registered?: boolean | null;
             /**
              * Role
              * @enum {string}
@@ -7743,7 +7745,9 @@ export interface operations {
     };
     shop_capabilities_v1_shops__shop_id__capabilities_get: {
         parameters: {
-            query?: never;
+            query?: {
+                device_id?: string | null;
+            };
             header?: never;
             path: {
                 shop_id: string;
