@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -815,6 +815,46 @@ export interface paths {
          * @description Compare an issued offline sale with current rules without posting or adopting it.
          */
         post: operations["native_sale_preflight_v1_shops__shop_id__bills_native_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/native/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Native Sale
+         * @description Explicitly reconcile and post a stalled native sale with owner/admin approval.
+         */
+        post: operations["reconcile_native_sale_v1_shops__shop_id__bills_native_reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/native/reconcile/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inspect Native Sale Reconcile
+         * @description Read-only inspection of a reserved native sale for reconciliation.
+         */
+        post: operations["inspect_native_sale_reconcile_v1_shops__shop_id__bills_native_reconcile_inspect_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2687,6 +2727,12 @@ export interface components {
              */
             native_sale_posting: 1;
             /**
+             * Native Sale Reconciliation
+             * @default 1
+             * @constant
+             */
+            native_sale_reconciliation: 1;
+            /**
              * Native Sale Snapshot Proof
              * @default 1
              * @constant
@@ -4016,6 +4062,17 @@ export interface components {
              */
             uuid: string;
         };
+        /** NativeSaleFieldDiff */
+        NativeSaleFieldDiff: {
+            /** Current */
+            current?: string | null;
+            /** Field */
+            field: string;
+            /** Line Uuid */
+            line_uuid?: string | null;
+            /** Recorded */
+            recorded?: string | null;
+        };
         /** NativeSaleLineSnapshot */
         NativeSaleLineSnapshot: {
             /** Cost Snapshot */
@@ -4169,6 +4226,56 @@ export interface components {
              */
             status: "matched_recorded_amounts";
         };
+        /** NativeSaleReconcileIn */
+        NativeSaleReconcileIn: {
+            /**
+             * Accept Recorded Snapshot
+             * @default false
+             */
+            accept_recorded_snapshot: boolean;
+            /**
+             * Allow Stock Shortage
+             * @default false
+             */
+            allow_stock_shortage: boolean;
+            /** Reason */
+            reason: string;
+            sale: components["schemas"]["NativeSalePostIn"];
+        };
+        /** NativeSaleReconcileInspectIn */
+        NativeSaleReconcileInspectIn: {
+            /** Attempt Id */
+            attempt_id: string;
+            sale: components["schemas"]["NativeSalePostIn"];
+        };
+        /** NativeSaleReconcileInspectOut */
+        NativeSaleReconcileInspectOut: {
+            /** Blocking Reasons */
+            blocking_reasons?: string[];
+            /** Can Reconcile */
+            can_reconcile: boolean;
+            committed_bill?: components["schemas"]["NativeSalePostOut"] | null;
+            /** Identity Conflicts */
+            identity_conflicts?: string[];
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /** Operation Committed */
+            operation_committed: boolean;
+            /** Snapshot Mismatches */
+            snapshot_mismatches?: components["schemas"]["NativeSaleFieldDiff"][];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "already_committed" | "needs_reconciliation" | "identity_conflict" | "blocked";
+            /** Stock Shortages */
+            stock_shortages?: components["schemas"]["NativeSaleStockShortage"][];
+            /** Terms Mismatches */
+            terms_mismatches?: components["schemas"]["NativeSaleFieldDiff"][];
+        };
         /** NativeSaleRecordedLine */
         NativeSaleRecordedLine: {
             /** Name */
@@ -4185,6 +4292,19 @@ export interface components {
             taxable_amount: number | string;
             /** Total Amount */
             total_amount: number | string;
+        };
+        /** NativeSaleStockShortage */
+        NativeSaleStockShortage: {
+            /** Available Quantity */
+            available_quantity: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Recorded Quantity */
+            recorded_quantity: string;
+            /** Shortage Quantity */
+            shortage_quantity: string;
         };
         /** NewReceiptProduct */
         "NewReceiptProduct-Input": {
@@ -5945,7 +6065,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -5967,7 +6087,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -7517,6 +7637,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NativeSalePreflightOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_native_sale_v1_shops__shop_id__bills_native_reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSaleReconcileIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSalePostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_native_sale_reconcile_v1_shops__shop_id__bills_native_reconcile_inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSaleReconcileInspectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSaleReconcileInspectOut"];
                 };
             };
             /** @description Validation Error */

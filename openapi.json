@@ -1773,6 +1773,12 @@
       "title": "Native Sale Posting",
       "type": "integer"
      },
+     "native_sale_reconciliation": {
+      "const": 1,
+      "default": 1,
+      "title": "Native Sale Reconciliation",
+      "type": "integer"
+     },
      "native_sale_snapshot_proof": {
       "const": 1,
       "default": 1,
@@ -5784,6 +5790,52 @@
     "title": "NativeReceiptLine",
     "type": "object"
    },
+   "NativeSaleFieldDiff": {
+    "properties": {
+     "current": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Current"
+     },
+     "field": {
+      "title": "Field",
+      "type": "string"
+     },
+     "line_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Line Uuid"
+     },
+     "recorded": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Recorded"
+     }
+    },
+    "required": [
+     "field"
+    ],
+    "title": "NativeSaleFieldDiff",
+    "type": "object"
+   },
    "NativeSaleLineSnapshot": {
     "additionalProperties": false,
     "properties": {
@@ -6454,6 +6506,137 @@
     "title": "NativeSalePreflightOut",
     "type": "object"
    },
+   "NativeSaleReconcileIn": {
+    "additionalProperties": false,
+    "properties": {
+     "accept_recorded_snapshot": {
+      "default": false,
+      "title": "Accept Recorded Snapshot",
+      "type": "boolean"
+     },
+     "allow_stock_shortage": {
+      "default": false,
+      "title": "Allow Stock Shortage",
+      "type": "boolean"
+     },
+     "reason": {
+      "maxLength": 200,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     },
+     "sale": {
+      "$ref": "#/components/schemas/NativeSalePostIn"
+     }
+    },
+    "required": [
+     "sale",
+     "reason"
+    ],
+    "title": "NativeSaleReconcileIn",
+    "type": "object"
+   },
+   "NativeSaleReconcileInspectIn": {
+    "additionalProperties": false,
+    "properties": {
+     "attempt_id": {
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "Attempt Id",
+      "type": "string"
+     },
+     "sale": {
+      "$ref": "#/components/schemas/NativeSalePostIn"
+     }
+    },
+    "required": [
+     "attempt_id",
+     "sale"
+    ],
+    "title": "NativeSaleReconcileInspectIn",
+    "type": "object"
+   },
+   "NativeSaleReconcileInspectOut": {
+    "properties": {
+     "blocking_reasons": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Blocking Reasons",
+      "type": "array"
+     },
+     "can_reconcile": {
+      "title": "Can Reconcile",
+      "type": "boolean"
+     },
+     "committed_bill": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/NativeSalePostOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "identity_conflicts": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Identity Conflicts",
+      "type": "array"
+     },
+     "invoice_uuid": {
+      "format": "uuid",
+      "title": "Invoice Uuid",
+      "type": "string"
+     },
+     "operation_committed": {
+      "title": "Operation Committed",
+      "type": "boolean"
+     },
+     "snapshot_mismatches": {
+      "items": {
+       "$ref": "#/components/schemas/NativeSaleFieldDiff"
+      },
+      "title": "Snapshot Mismatches",
+      "type": "array"
+     },
+     "status": {
+      "enum": [
+       "ready",
+       "already_committed",
+       "needs_reconciliation",
+       "identity_conflict",
+       "blocked"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "stock_shortages": {
+      "items": {
+       "$ref": "#/components/schemas/NativeSaleStockShortage"
+      },
+      "title": "Stock Shortages",
+      "type": "array"
+     },
+     "terms_mismatches": {
+      "items": {
+       "$ref": "#/components/schemas/NativeSaleFieldDiff"
+      },
+      "title": "Terms Mismatches",
+      "type": "array"
+     }
+    },
+    "required": [
+     "status",
+     "operation_committed",
+     "invoice_uuid",
+     "can_reconcile"
+    ],
+    "title": "NativeSaleReconcileInspectOut",
+    "type": "object"
+   },
    "NativeSaleRecordedLine": {
     "additionalProperties": false,
     "properties": {
@@ -6547,6 +6730,39 @@
      "total_amount"
     ],
     "title": "NativeSaleRecordedLine",
+    "type": "object"
+   },
+   "NativeSaleStockShortage": {
+    "properties": {
+     "available_quantity": {
+      "title": "Available Quantity",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "title": "Product Uuid",
+      "type": "string"
+     },
+     "recorded_quantity": {
+      "title": "Recorded Quantity",
+      "type": "string"
+     },
+     "shortage_quantity": {
+      "title": "Shortage Quantity",
+      "type": "string"
+     }
+    },
+    "required": [
+     "product_uuid",
+     "product_name",
+     "recorded_quantity",
+     "available_quantity",
+     "shortage_quantity"
+    ],
+    "title": "NativeSaleStockShortage",
     "type": "object"
    },
    "NewReceiptProduct-Input": {
@@ -12334,7 +12550,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -12343,7 +12559,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -12358,7 +12574,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -12367,7 +12583,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -14672,6 +14888,128 @@
      }
     },
     "summary": "Native Sale Preflight",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/native/reconcile": {
+   "post": {
+    "description": "Explicitly reconcile and post a stalled native sale with owner/admin approval.",
+    "operationId": "reconcile_native_sale_v1_shops__shop_id__bills_native_reconcile_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeSaleReconcileIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NativeSalePostOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reconcile Native Sale",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/native/reconcile/inspect": {
+   "post": {
+    "description": "Read-only inspection of a reserved native sale for reconciliation.",
+    "operationId": "inspect_native_sale_reconcile_v1_shops__shop_id__bills_native_reconcile_inspect_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeSaleReconcileInspectIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NativeSaleReconcileInspectOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Inspect Native Sale Reconcile",
     "tags": [
      "billing"
     ]
