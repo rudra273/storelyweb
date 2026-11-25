@@ -108,9 +108,9 @@
 .getting-started h2 { margin: 0; }
 .getting-started ol { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; counter-reset: step; }
 .getting-started li { counter-increment: step; }
-.getting-started a { display: grid; gap: .25rem; height: 100%; padding: .9rem 1rem .9rem 3rem; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: inherit; position: relative; }
-.getting-started a::before { content: counter(step); position: absolute; left: 1rem; top: .9rem; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--primary-bg); color: var(--primary-fg); display: grid; place-items: center; font-size: .8rem; font-weight: 700; }
-.getting-started a:hover { border-color: var(--gold, #f5a623); }
+.getting-started ol a { display: grid; gap: .25rem; height: 100%; padding: .9rem 1rem .9rem 3rem; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: inherit; position: relative; }
+.getting-started ol a::before { content: counter(step); position: absolute; left: 1rem; top: .9rem; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--primary-bg); color: var(--primary-fg); display: grid; place-items: center; font-size: .8rem; font-weight: 700; }
+.getting-started ol a:hover { border-color: var(--gold, #f5a623); }
 .getting-started span { color: var(--muted); font-size: .875rem; }
 .image-pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
 .image-picker { display: grid; gap: .5rem; align-content: start; }

@@ -1,0 +1,72 @@
+// Local-only disposable paid fixture. Coordinator owns cleanup.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const fs = require('node:fs')
+const assert = require('node:assert/strict')
+const origin = process.env.STORELY_WEB_ORIGIN || 'http://127.0.0.1:5173'
+if (!['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) throw new Error('Localhost required')
+if (!process.env.STORELY_FIXTURE) throw new Error('Run-owned fixture required')
+const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
+;(async () => {
+  const browser = await chromium.launch({ ...(process.env.CHROME_EXECUTABLE ? { executablePath: process.env.CHROME_EXECUTABLE } : {}) })
+  const context = await browser.newContext({ ignoreHTTPSErrors: true })
+  const page = await context.newPage()
+  page.setDefaultTimeout(15000)
+  try {
+    const auth = await context.request.post(origin + '/v1/auth/login', { data: { email: fixture.email, password: fixture.password, client: 'mobile' }, headers: { 'X-Requested-With': 'storely-web' } })
+    assert.ok(auth.ok())
+    const headers = { authorization: `Bearer ${(await auth.json()).access_token}` }
+    const path = `/v1/shops/${fixture.shop_id}/invoice-settings`
+    const initialResponse = await context.request.get(origin + path, { headers })
+    assert.ok(initialResponse.ok())
+    const initial = await initialResponse.json()
+    await page.goto(origin + '/settings')
+    await page.getByLabel('Email', { exact: true }).fill(fixture.email)
+    await page.getByLabel('Password', { exact: true }).fill(fixture.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    const input = page.getByLabel('Search settings', { exact: true })
+    await input.waitFor()
+    const requests = []
+    page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/v1/')) requests.push({ method: request.method(), path: new URL(request.url()).pathname, body: request.postDataJSON() }) })
+    await page.getByRole('tab', { name: 'Invoice appearance', exact: true }).click()
+    const footer = page.getByLabel('Footer', { exact: true })
+    await footer.fill('Unsaved settings search acceptance')
+    async function find(query, label, tab, section) {
+      await input.fill(query)
+      const results = page.getByRole('region', { name: 'Settings search results', exact: true })
+      await results.getByRole('button', { name: label, exact: true }).click()
+      assert.equal(await page.getByRole('tab', { name: tab, exact: true }).getAttribute('aria-selected'), 'true')
+      assert.equal(await input.inputValue(), '')
+      await page.waitForFunction(id => document.activeElement?.getAttribute('data-settings-section') === id, section)
+      assert.equal(await footer.inputValue(), 'Unsaved settings search acceptance', 'Switching destination retains draft')
+    }
+    await find('  THERMAL  ', 'Printing', 'Printing', 'printing')
+    await find('reorder', 'Stock alerts', 'Shop details', 'stock')
+    await find('GST scheme', 'Tax and pricing defaults', 'Pricing & tax', 'tax')
+    await find('invoice layout', 'Invoice appearance', 'Invoice appearance', 'invoice')
+    await find('logo picture', 'Logo and signature', 'Shop details', 'images')
+    await find('HSN', 'What the invoice shows', 'Invoice appearance', 'visibility')
+    await input.fill('Unsaved settings search acceptance')
+    await page.getByText('No settings match. Try a setting name or task.', { exact: true }).waitFor()
+    await input.fill('.*')
+    await page.getByText('No settings match. Try a setting name or task.', { exact: true }).waitFor()
+    await input.press('Enter')
+    assert.equal(requests.filter(request => request.method === 'PATCH').length, 0)
+    await input.press('Escape')
+    assert.equal(await input.inputValue(), '')
+    assert.equal(await page.getByRole('region', { name: 'Settings search results', exact: true }).count(), 0)
+    assert.equal(requests.length, 0, 'Searching static settings labels sends no API requests')
+    const before = await context.request.get(origin + path, { headers })
+    assert.equal((await before.json()).revision, initial.revision, 'Search does not mutate settings')
+    const savedResponse = page.waitForResponse(response => response.request().method() === 'PATCH' && new URL(response.url()).pathname === path)
+    await page.getByRole('button', { name: 'Save settings', exact: true }).click()
+    const saved = await savedResponse
+    assert.ok(saved.ok())
+    assert.deepEqual(saved.request().postDataJSON(), { footer_text: 'Unsaved settings search acceptance', expected_revision: initial.revision })
+    await page.getByText(/Saved. Phones get the new layout/).waitFor()
+    if (process.env.STORELY_ARTIFACT_DIR) {
+      fs.mkdirSync(process.env.STORELY_ARTIFACT_DIR, { recursive: true })
+      await page.screenshot({ path: `${process.env.STORELY_ARTIFACT_DIR}/settings-search.png`, fullPage: true })
+    }
+    process.stdout.write('PASS literal local settings aliases, exact existing tab/section focus, no value indexing/network mutations, preserved draft and guarded original-baseline save\n')
+  } finally { await browser.close() }
+})().catch(error => { process.stderr.write(String(error) + '\n'); process.exitCode = 1 })

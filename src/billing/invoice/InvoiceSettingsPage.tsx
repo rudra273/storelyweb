@@ -17,6 +17,7 @@ import { Link, useSearchParams } from 'react-router'
 import { PaperSheet } from './PaperSheet'
 import { useBillingQuery, type BillDetail, type InvoiceSettings } from '../queries'
 
+import { findSettings, type SettingsSearchEntry } from './settingsSearch'
 import { lowStockThresholdProblem } from './lowStockThreshold'
 import { pricingSettingsProblems, PRICING_SETTING_KEYS } from './pricingDefaults'
 import { assertSettingsRevisionSupport, rebaseSettings, requireSettingsRevision, settingsChanges, settingsReview } from './settingsRevision'
@@ -121,6 +122,9 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   const [params] = useSearchParams()
   const wanted = TABS.find(t => t.id === params.get('tab'))?.id
   const [tab, setTab] = useState<TabId>(wanted ?? 'shop')
+  const [search, setSearch] = useState('')
+  const [destination, setDestination] = useState<SettingsSearchEntry | null>(null)
+  const searchResults = findSettings(search)
   const [baseline, setBaseline] = useState<InvoiceSettings>(saved)
   const [draft, setDraft] = useState<InvoiceSettings>(saved)
   const [stale, setStale] = useState(false)
@@ -128,6 +132,11 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   const sending = useRef(false)
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  useEffect(() => {
+    if (!destination) return
+    const heading = formRef.current?.querySelector<HTMLElement>(`[data-settings-section="${destination.id}"]`)
+    heading?.focus(); heading?.scrollIntoView?.({ block: 'nearest' })
+  }, [destination, formRef])
   const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
   const err = (key: string) => problems[key] || fieldErrors[key] || undefined
   const text = (key: 'shop_name' | 'shop_address' | 'shop_phone' | 'shop_email' | 'shop_gstin' | 'invoice_title' | 'footer_text' | 'upi_id' | 'terms_text' | 'bank_details') =>
@@ -180,12 +189,19 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     <PageHeader eyebrow="SHOP SETTINGS" title="Shop and invoice" description="Your shop's details and how invoices look. Saved settings also reach your phones when they sync." />
     <div className="settings-grid">
       <form ref={formRef} className="settings-form" onSubmit={save} noValidate aria-busy={busy}>
+        <section aria-label="Find settings">
+          <Field label="Search settings" type="search" value={search} onChange={event => setSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') event.preventDefault(); if (event.key === 'Escape') { event.preventDefault(); setSearch('') } }} placeholder="Find a setting or task" />
+          {search && <button type="button" className="link" onClick={() => setSearch('')}>Clear settings search</button>}
+          {search.trim() && <div role="region" aria-label="Settings search results" aria-live="polite">
+            {searchResults.length ? <ul className="plain">{searchResults.map(entry => <li key={entry.id}><button type="button" className="link" onClick={() => { setTab(entry.tab); setDestination({ ...entry }); setSearch('') }}>{entry.label}</button></li>)}</ul> : <p className="muted">No settings match. Try a setting name or task.</p>}
+          </div>}
+        </section>
         <div role="tablist" aria-label="Settings sections" className="settings-tabs">
           {TABS.map(t => <button key={t.id} type="button" role="tab" id={`tab-${t.id}`} aria-selected={tab === t.id} className={tab === t.id ? 'active' : undefined} onClick={() => setTab(t.id)}>{t.label}</button>)}
         </div>
         <fieldset disabled={busy}>
           <section className="card wide" {...show('shop')}>
-            <h2>Shop details</h2>
+            <h2 tabIndex={-1} data-settings-section="identity">Shop details</h2>
             <Field label="Shop name" required maxLength={120} value={draft.shop_name} onChange={text('shop_name')} error={err('shop_name')} />
             <label className="field-block">Address<textarea rows={2} maxLength={500} value={draft.shop_address ?? ''} onChange={text('shop_address')} /></label>
             <div className="form-grid">
@@ -193,12 +209,12 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               <Field label="Email" type="email" maxLength={254} error={err('shop_email')} value={draft.shop_email ?? ''} onChange={text('shop_email')} />
               <Field label="GSTIN" maxLength={15} placeholder="27ABCDE1234F1Z5" error={err('shop_gstin')} value={draft.shop_gstin ?? ''} onChange={text('shop_gstin')} hint="15 characters, starting with your state code." />
             </div>
-            <h3>Stock alerts</h3>
+            <h3 tabIndex={-1} data-settings-section="stock">Stock alerts</h3>
             <Field label="Default low-stock threshold" inputMode="decimal" value={draft.low_stock_threshold ?? '5'} onChange={e => set('low_stock_threshold', e.target.value)} error={err('low_stock_threshold')} hint="Used when a product has no reorder level. Tracked stock at or below this threshold is low. Zero is valid. Use up to four decimal places." />
           </section>
 
           <section className="card wide" {...show('shop')}>
-            <h2>Logo and signature</h2>
+            <h2 tabIndex={-1} data-settings-section="images">Logo and signature</h2>
             <p className="muted">PNG or JPG. Large pictures are made smaller (up to 400 KB, as on the phone).</p>
             <div className="image-pickers">
               <ImagePicker label="Shop logo" box={[600, 300]} value={draft.shop_logo ?? null} shown={draft.show.show_shop_logo !== false} disabled={busy}
@@ -212,7 +228,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
           </section>
 
           <section className="card wide" {...show('pricing')}>
-            <h2>Tax and pricing defaults</h2>
+            <h2 tabIndex={-1} data-settings-section="tax">Tax and pricing defaults</h2>
             <fieldset className="scheme-choice">
               <legend>GST registration</legend>
               {SCHEMES.map(sc => <label key={sc.value} className="check"><input type="radio" name="scheme" checked={draft.gst_scheme === sc.value} onChange={() => set('gst_scheme', sc.value)} /><span><strong>{sc.label}</strong><br /><small className="muted">{sc.note}</small></span></label>)}
@@ -228,7 +244,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
           </section>
 
           <section className="card wide" {...show('invoice')}>
-            <h2>Invoice</h2>
+            <h2 tabIndex={-1} data-settings-section="invoice">Invoice</h2>
             <div className="form-grid">
               <Field label="Title" maxLength={40} placeholder="Automatic" value={draft.invoice_title === 'TAX INVOICE' ? '' : draft.invoice_title} onChange={text('invoice_title')} hint="Leave blank for the standard title: Tax Invoice, Bill of Supply or Bill." />
               <Field label="UPI id" maxLength={100} placeholder="shopname@okaxis" error={err('upi_id')} value={draft.upi_id ?? ''} onChange={text('upi_id')} hint="Unpaid bills show a QR to pay the balance." />
@@ -239,11 +255,11 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
           </section>
 
           <section className="card wide" {...show('invoice')}>
-            <h2>What the invoice shows</h2>
+            <h2 tabIndex={-1} data-settings-section="visibility">What the invoice shows</h2>
             <div className="show-groups">{GROUPS.map(g => <fieldset key={g.title}><legend>{g.title}</legend>{g.keys.map(([key, label]) => <label key={key} className="check"><input type="checkbox" checked={draft.show[key] !== false} onChange={e => set('show', { ...draft.show, [key]: e.target.checked })} />{label}</label>)}</fieldset>)}</div>
           </section>
           <section className="card wide" {...show('printing')}>
-            <h2>Printing</h2>
+            <h2 tabIndex={-1} data-settings-section="printing">Printing</h2>
             <label>Default paper<select value={resolvePaper(draft.paper_size)} onChange={e => { const p = PAPERS.find(x => x.value === e.target.value)!; set('paper_size', p.setting); setPaper(p.value) }}>{PAPERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></label>
             <p className="muted">{paperGuidance(resolvePaper(draft.paper_size))}</p>
             <p className="muted">New invoices, reloads and the PDF open on this paper. Staff can pick another paper for a single print without changing it. Use the preview to check long names and line counts before printing on hardware.</p>

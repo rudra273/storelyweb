@@ -5,6 +5,7 @@ import { formatMoney } from '../lib/money'
 import { DownloadBar, PeriodPicker, Tile } from './ReportBits'
 import { today } from './periods'
 import { useReport, useReportDownload, type Ageing, type DayBook, type ProfitLoss } from './queries'
+import { overdueAgeing } from './overdue'
 import { State } from './State'
 import { usePeriod } from './usePeriod'
 
@@ -109,6 +110,8 @@ export function ProfitLossPage() {
 
 export function ReceivablesPage() {
   const [asOf, setAsOf] = useDay('as_of')
+  const [params, setParams] = useSearchParams()
+  const overdueOnly = params.get('overdue') === '1'
   const location = useLocation()
   const here = location.pathname + location.search
   const query = useReport<Ageing>('receivables-ageing', { as_of: asOf })
@@ -121,11 +124,13 @@ export function ReceivablesPage() {
           <input id="asof" type="date" value={asOf} max={today()} onChange={(e) => e.target.value && setAsOf(e.target.value)} />
         </div>
       </div>
+      <label className="check no-print"><input type="checkbox" checked={overdueOnly} onChange={event => { const next = new URLSearchParams(params); if (event.target.checked) next.set('overdue', '1'); else next.delete('overdue'); setParams(next, { replace: true }) }} />Over 30 days only</label>
       <State query={query}>
-        {(a) => (
+        {(source) => { const a = overdueOnly ? overdueAgeing(source) : source; return (
           <>
-            <DownloadBar save={save} />
-            {a.customers.length === 0 ? <Empty title="Nobody owes you anything">All bills are paid up.</Empty> : (
+            {!overdueOnly && <DownloadBar save={save} />}
+            {overdueOnly && <p className="muted">Showing balances over 30 days only. Clear the filter to view or download the full report.</p>}
+            {a.customers.length === 0 ? <Empty title={overdueOnly ? "No balances over 30 days" : "Nobody owes you anything"}>{overdueOnly ? "Newer balances are available in the full report." : "All bills are paid up."}</Empty> : (
               <div className="table-wrap"><table className="table">
                 <thead><tr><th>Customer</th>{a.bucket_labels.map((l) => <th key={l}>{l}</th>)}<th>Total</th></tr></thead>
                 <tbody>
@@ -141,7 +146,7 @@ export function ReceivablesPage() {
               </table></div>
             )}
           </>
-        )}
+        ) }}
       </State>
     </div>
   )

@@ -224,7 +224,7 @@ export function ProductForm({ product, startingBarcode, onClose, onSaved }: { pr
           </FormSection>
           <FormSection title="Stock" description="Track availability and choose when to reorder.">
             <label className="check wide-row"><input type="checkbox" checked={f.track} onChange={e => setF({ ...f, track: e.target.checked })} />Track stock for this product</label>
-            {!editing && <Field label="Opening stock" inputMode="decimal" value={f.opening} onChange={set('opening')} hint="What is on the shelf today." error={errors.opening_quantity} />}<Field label="Reorder level" inputMode="decimal" value={f.reorder} onChange={set('reorder')} error={errors.reorder_level} />
+            {!editing && <Field label="Opening stock" inputMode="decimal" value={f.opening} onChange={set('opening')} hint="Actual stock on the shelf today. Leave blank if none yet. Receive stock before selling a tracked product." error={errors.opening_quantity} />}<Field label="Reorder level" inputMode="decimal" value={f.reorder} onChange={set('reorder')} error={errors.reorder_level} />
           </FormSection>
           <details className="optional-fields" open={editing || !!startingBarcode || ['product_code', 'barcode', 'hsn_code'].some(k => errors[k]) ? true : undefined}>
             <summary>Codes and HSN (optional)</summary><div className="form-grid">

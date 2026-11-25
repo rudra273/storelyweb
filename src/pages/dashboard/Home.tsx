@@ -1,3 +1,7 @@
+import { Alert, Loading } from '../../components/ui/ui'
+import { useBillingQuery, type BillPage } from '../../billing/queries'
+import { NeedsAction } from './NeedsAction'
+import { WorkspaceSearch } from './WorkspaceSearch'
 import { PageHeader } from '../../components/ui/workspace'
 import { useProducts } from '../../products/queries'
 import { Link } from 'react-router'
@@ -18,6 +22,8 @@ export function Home() {
   return (
     <div className="home-page">
       <PageHeader eyebrow="YOUR WORKSPACE" title={`Hello${user?.full_name ? `, ${user.full_name}` : ''}`} description={`Here’s what’s happening at ${current?.name}.`} actions={can(role, 'billing.create') ? <Link className="primary button" to="/billing/new">New invoice <span aria-hidden="true">↗</span></Link> : undefined} />
+      <WorkspaceSearch>
+      <NeedsAction />
       {can(role, 'products.edit') && <GettingStarted />}
       {can(role, 'reports.view') ? <DailySummary /> : <section className="staff-welcome"><div><p className="eyebrow">READY FOR THE DAY</p><h2>Everything you need at the counter.</h2><p>Look up a product, check its availability or start your next bill.</p></div><Link className="button secondary" to="/products">Browse products →</Link></section>}
       <section className="home-shortcuts" aria-labelledby="shortcuts-heading">
@@ -27,6 +33,7 @@ export function Home() {
         </div>
       </section>
       <footer className="home-footer"><span>Make Storely yours</span><div><Link to="/account">Profile settings</Link><Link to="/account/security">Security and sessions</Link></div></footer>
+      </WorkspaceSearch>
     </div>
   )
 }
@@ -47,20 +54,33 @@ function DailySummary() {
   </section>
 }
 
-/** For a shop with nothing in it yet: the three things to do first, in order. */
+/** A saved invoice, including a voided original, completes the first-invoice milestone. */
 function GettingStarted() {
+  const active = useBillingQuery<BillPage>('bills', 'bills?kind=invoice&cancelled=false&limit=1')
+  const hasInvoice = (page: BillPage | undefined) => page?.items.some(bill => bill.document_type === 'invoice') ?? false
+  const completed = hasInvoice(active.data)
+  // The existing API exposes active and voided records separately.
+  const cancelled = useBillingQuery<BillPage>('bills', 'bills?kind=invoice&cancelled=true&limit=1', !!active.data && !completed && !active.error && !active.isFetching)
+  if (completed || hasInvoice(cancelled.data)) return null
+  if (active.error || cancelled.error) return <section className="card wide" aria-label="Setup progress"><Alert>Could not check your first-invoice progress. <button type="button" className="link" onClick={() => { void active.refetch(); if (active.data) void cancelled.refetch() }}>Retry setup progress</button></Alert></section>
+  if (active.isPending || active.isFetching || cancelled.isPending || cancelled.isFetching) return <section className="card wide" aria-label="Setup progress"><Loading label="Checking first-invoice progress…" /></section>
+  return <FirstInvoiceSteps />
+}
+
+function FirstInvoiceSteps() {
   const products = useProducts({ q: '', category: '', low: false, expiring: false, noCode: false, out: false, sort: 'name', dir: 'asc', page: 0 })
-  if (!products.data || products.data.items.length > 0) return null
+  if (products.error) return <section className="card wide" aria-label="Setup progress"><Alert>Could not check your catalog. <button type="button" className="link" onClick={() => void products.refetch()}>Retry setup progress</button></Alert></section>
+  if (products.isPending || !products.data) return <section className="card wide" aria-label="Setup progress"><Loading label="Checking your catalog…" /></section>
+  const hasProducts = products.data.items.length > 0
   return <section className="card wide getting-started" aria-labelledby="start-heading">
     <h2 id="start-heading">Get your shop ready</h2>
-    <p className="muted">Five steps and you can invoice your first customer.</p>
+    <p className="muted">{hasProducts ? 'Your catalog has products. Check stock and record your first invoice.' : 'Start with a product and its selling price. Enter actual opening stock for tracked products, or receive stock before selling.'}</p>
+    <p><Link className="button primary" to={hasProducts ? '/billing/new' : '/products?new=1'}>{hasProducts ? 'Create your first invoice' : 'Add your first product'}</Link></p>
+    <p className="muted">You can review these setup details at any time.</p>
     <ol>
       <li><Link to="/settings?tab=shop"><strong>Shop identity</strong><span>Name, address, phone and GSTIN, as they print on invoices.</span></Link></li>
       <li><Link to="/settings?tab=pricing"><strong>Tax configuration</strong><span>Regular GST, composition or not registered, and default rates.</span></Link></li>
       <li><Link to="/settings?tab=printing"><strong>Invoice and printing</strong><span>Choose A4, A5 or a receipt roll and preview the layout.</span></Link></li>
-      <li><Link to="/products?new=1"><strong>Add your first product</strong><span>Name and price are enough to start; or import a file from Products.</span></Link></li>
-      <li><Link to="/billing/new"><strong>Create your first invoice</strong><span>Pick products, take payment and print or share the invoice.</span></Link></li>
     </ol>
   </section>
 }
-

@@ -1,0 +1,9 @@
+# E03 return quantity validation
+
+22 November 2026. The credit-note editor previously filtered quantities using Number(q)>0 and relied on HTML number input limits. It now validates positive selected lines through the shared sale decimal contract (>0, <=1,000,000, <=3 meaningful fractional digits), canonicalizes new preview/post payloads and preserves raw invalid text in the open editor. Blank and plain decimal zero mean unselected. Signs/exponents remain invalid.
+
+Known remaining quantities come from the server preview (or the original line quantity before preview) and are compared exactly using decimal integer arithmetic. Invalid precision/range/syntax or known over-return blocks preview/post and shows inline feedback. Server final transaction validation remains authoritative against concurrent returns. The original immutable attempt is reused unchanged on uncertain retry; this change does not recalculate its body.
+
+Tests cover invalid raw editing without new preview/post, prior-return remaining cap, zero selection, normalization of trailing zeros, identical normalized preview/save and exact comparison at fractional boundaries. No new persistence guarantee is made for the return modal across reload; raw values are retained while editing.
+
+Verification: 135 targeted tests passed across billing/quantity; typecheck/lint passed. Real Chromium against current localhost Vite and Docker API passed via `e2e/return-quantity.cjs`: invalid values retained without requests, zero unselected, `0.5000` posted as `0.5`, source invoice reopened with remaining `1.5`. Coordinator provisioned/cleaned the isolated shop; no demo changes. Initial test harness timeout used an explicit-role selector for a native dialog; corrected to native dialog selector and full run passed. No emulator claim in this web slice.

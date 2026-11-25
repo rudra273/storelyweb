@@ -21,7 +21,7 @@ function words(code: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-const METHODS: Record<string, string> = { cash: 'Cash', upi: 'UPI', card: 'Card', bank: 'Bank transfer', online: 'Online', credit: 'Credit', cheque: 'Cheque' }
+const METHODS: Record<string, string> = { cash: 'Cash', upi: 'UPI', card: 'Card', bank: 'Bank transfer', bank_transfer: 'Bank transfer', online: 'Online', credit: 'Credit', cheque: 'Cheque' }
 export const paymentMethod = (code: string | null | undefined) => (code ? METHODS[code] ?? words(code) : '—')
 
 export const paymentStatus = (code: string) => PAYMENT_STATUS[code] ?? words(code)

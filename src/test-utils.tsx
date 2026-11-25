@@ -17,11 +17,12 @@ export function fakeApi(routes: Route[]) {
   const calls: { method: string; path: string; body: unknown; headers: Headers }[] = []
   vi.stubGlobal('fetch', async (path: string, init: RequestInit) => {
     const method = init.method ?? 'GET'
-    calls.push({ method, path, body: init.body ? JSON.parse(init.body as string) : undefined, headers: new Headers(init.headers) })
+    const inputBody = init.body ? JSON.parse(init.body as string) : undefined
+    calls.push({ method, path, body: inputBody, headers: new Headers(init.headers) })
     const route = routes.find((r) => r.method === method && (typeof r.path === 'string' ? r.path === path : r.path.test(path)))
     if (!route) return new Response(JSON.stringify({ error: { code: 'unexpected', message: `no fake for ${method} ${path}` } }), { status: 599 })
     const status = route.status ?? 200
-    return new Response(status === 204 ? null : JSON.stringify(typeof route.body === 'function' ? (route.body as (path: string) => unknown)(path) : route.body ?? {}), { status })
+    return new Response(status === 204 ? null : JSON.stringify(typeof route.body === 'function' ? (route.body as (path: string, body: unknown) => unknown)(path, inputBody) : route.body ?? {}), { status })
   })
   return calls
 }
@@ -57,4 +58,4 @@ export const PAID_SHOP: Route[] = [
   ok('GET', /^\/v1\/shops\/[^/]+\/entitlement$/, (path: string) => ({ ...ACTIVE_ENTITLEMENT, shop_id: path.split('/')[3] })),
 ]
 
-export const SIGNED_IN: Route[] = [...ACCOUNT_SESSION, ...PAID_SHOP, ok('GET', /^\/v1\/shops\/[^/]+\/capabilities$/, (path: string) => ({ contract_version: 1, shop_id: path.split('/')[3], role: 'owner', features: { operation_lookup: 1, supplier_payment_proof: 1, supplier_payment_binding: 2, product_expected_updated_at: 1, settings_revision: 1 } }))]
+export const SIGNED_IN: Route[] = [...ACCOUNT_SESSION, ...PAID_SHOP, ok('GET', /^\/v1\/shops\/[^/]+\/capabilities$/, (path: string) => ({ contract_version: 1, shop_id: path.split('/')[3], role: 'owner', features: { operation_lookup: 1, supplier_payment_proof: 1, supplier_payment_binding: 2, product_expected_updated_at: 1, settings_revision: 1 } })), ok('GET', /^\/v1\/shops\/[^/]+\/preferences\/theme$/, { theme: 'system' }), ok('PUT', /^\/v1\/shops\/[^/]+\/preferences\/theme$/, (_path: string, body: unknown) => body)]

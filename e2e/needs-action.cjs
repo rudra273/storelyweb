@@ -1,0 +1,72 @@
+// Root-seeded disposable fixture A(owner East+West), B(staff East). No writes required.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const fs = require('node:fs')
+const assert = require('node:assert/strict')
+const origin = process.env.STORELY_WEB_ORIGIN || 'http://127.0.0.1:5173'
+if (!['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) throw new Error('Localhost required')
+if (!process.env.STORELY_FIXTURE) throw new Error('Disposable fixture required')
+const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
+;(async () => {
+  const browser = await chromium.launch({ ...(process.env.CHROME_EXECUTABLE ? { executablePath: process.env.CHROME_EXECUTABLE } : {}) })
+  const context = await browser.newContext({ ignoreHTTPSErrors: true })
+  const page = await context.newPage()
+  page.setDefaultTimeout(15000)
+  try {
+    const [east, west] = fixture.shops
+    await page.goto(origin + '/login')
+    async function login(account) {
+      await page.getByLabel('Email', { exact: true }).fill(account.email)
+      await page.getByLabel('Password', { exact: true }).fill(account.password)
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+      await page.getByLabel('Search workspace', { exact: true }).waitFor()
+    }
+    await login(fixture.a)
+    await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption(east.id)
+    const region = page.getByRole('region', { name: 'Needs action', exact: true })
+    const overdue = region.getByRole('link', { name: '1 customer owes for over 30 days · ₹118.25', exact: true })
+    await overdue.waitFor()
+    await region.getByRole('link', { name: '1 batch expires this week', exact: true }).waitFor()
+    assert.equal(await region.getByRole('link').count(), 2)
+    await overdue.click()
+    await page.waitForURL(url => url.pathname === '/reports/receivables' && url.searchParams.get('overdue') === '1')
+    assert.equal(await page.getByLabel('Over 30 days only', { exact: true }).isChecked(), true)
+    await page.getByRole('link', { name: 'Overdue Alert Buyer', exact: true }).waitFor()
+    assert.equal(await page.getByRole('link', { name: 'Recent Alert Buyer', exact: true }).count(), 0)
+    assert.match(await page.getByRole('table').innerText(), /118\.25/)
+    await page.getByLabel('Over 30 days only', { exact: true }).click()
+    await page.waitForURL(url => !url.searchParams.has('overdue'))
+    await page.getByRole('link', { name: 'Recent Alert Buyer', exact: true }).waitFor()
+    await page.goto(origin + '/')
+    await region.getByRole('link', { name: '1 batch expires this week', exact: true }).click()
+    await page.waitForURL(url => url.pathname === '/reports/expiring' && url.searchParams.get('days') === '7')
+    assert.equal(await page.getByLabel('Expiring within', { exact: true }).inputValue(), '7')
+    await page.getByRole('link', { name: 'Expiry Alert Milk', exact: true }).waitFor()
+    assert.match(await page.getByRole('table').innerText(), /ALERT-MILK/)
+    let fail = true
+    await page.route('**/reports/receivables-ageing?*', async route => fail ? route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'unavailable', message: 'Injected overdue outage' } }) }) : route.continue())
+    await page.goto(origin + '/')
+    await region.getByRole('button', { name: 'Retry overdue alerts', exact: true }).waitFor()
+    assert.equal(await region.getByRole('link', { name: '1 batch expires this week', exact: true }).count(), 1)
+    assert.equal(await region.getByText(/All caught up/).count(), 0)
+    fail = false
+    await region.getByRole('button', { name: 'Retry overdue alerts', exact: true }).click()
+    await overdue.waitFor()
+    await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption(west.id)
+    await region.getByText(/All caught up/).waitFor()
+    assert.equal(await region.getByRole('link').count(), 0, 'East alerts do not cross shop boundary')
+    await page.locator('.account-toggle').click()
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+    await page.getByLabel('Email', { exact: true }).waitFor()
+    const reports = []
+    page.on('request', request => { if (new URL(request.url()).pathname.includes('/reports/')) reports.push(request.url()) })
+    await login(fixture.b)
+    await page.getByText('Everything you need at the counter.', { exact: true }).waitFor()
+    assert.equal(await region.count(), 0)
+    assert.equal(reports.length, 0, 'Staff issues no report alert requests')
+    if (process.env.STORELY_ARTIFACT_DIR) {
+      fs.mkdirSync(process.env.STORELY_ARTIFACT_DIR, { recursive: true })
+      await page.screenshot({ path: `${process.env.STORELY_ARTIFACT_DIR}/staff-alert-guard.png`, fullPage: true })
+    }
+    process.stdout.write('PASS real31-day118.25 overdue versus30-day89.50 exclusion, exact report routing,7-day expiry batch, partial failure retry, empty tenant isolation and staff guard\n')
+  } finally { await browser.close() }
+})().catch(error => { process.stderr.write(String(error) + '\n'); process.exitCode = 1 })

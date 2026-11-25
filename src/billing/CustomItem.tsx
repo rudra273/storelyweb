@@ -1,3 +1,4 @@
+import { saleQuantity, SALE_QUANTITY_ERROR } from './checkout/quantity'
 import { useState, type FormEvent } from 'react'
 import { Button } from '../components/ui/workspace'
 import { Modal } from '../components/ui/Modal'
@@ -20,7 +21,7 @@ export function CustomItemEditor({ onClose, onAdd, initialName = '' }: { onClose
     if (!form.name.trim()) found.name = 'Enter what you are selling.'
     if (!isAmount(form.unit_price)) found.unit_price = 'Enter the price, like 50 or 49.5.'
     if (!form.gst_percent) found.gst_percent = 'Choose the GST rate (0% if none).'
-    if (!isAmount(form.quantity) || Number(form.quantity) <= 0) found.quantity = 'Enter a quantity above 0.'
+    if (saleQuantity(form.quantity) === null) found.quantity = SALE_QUANTITY_ERROR
     if (form.cost.trim() && !isAmount(form.cost)) found.cost = 'Cost must be a number, like 20.'
     setProblems(found)
     if (Object.keys(found).length) return

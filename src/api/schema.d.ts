@@ -781,6 +781,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Native Sale
+         * @description Atomically publish a matching recorded invoice, using its original durable IDs.
+         */
+        post: operations["post_native_sale_v1_shops__shop_id__bills_native_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/native/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Native Sale Preflight
+         * @description Compare an issued offline sale with current rules without posting or adopting it.
+         */
+        post: operations["native_sale_preflight_v1_shops__shop_id__bills_native_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/preview": {
         parameters: {
             query?: never;
@@ -923,7 +963,7 @@ export interface paths {
         };
         /**
          * Shop Capabilities
-         * @description Negotiate supported contracts without opening paid business-data access.
+         * @description Negotiate support and optional own-device proof, without granting paid access.
          */
         get: operations["shop_capabilities_v1_shops__shop_id__capabilities_get"];
         put?: never;
@@ -1305,6 +1345,24 @@ export interface paths {
          */
         get: operations["get_operation_status_v1_shops__shop_id__operations__operation_key__get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/preferences/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Theme */
+        get: operations["get_theme_v1_shops__shop_id__preferences_theme_get"];
+        /** Put Theme */
+        put: operations["put_theme_v1_shops__shop_id__preferences_theme_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2509,6 +2567,8 @@ export interface components {
              */
             contract_version: 1;
             features: components["schemas"]["ContractFeatures"];
+            /** Native Sale Device Registered */
+            native_sale_device_registered?: boolean | null;
             /**
              * Role
              * @enum {string}
@@ -2621,6 +2681,18 @@ export interface components {
          */
         ContractFeatures: {
             /**
+             * Native Sale Posting
+             * @default 1
+             * @constant
+             */
+            native_sale_posting: 1;
+            /**
+             * Native Sale Snapshot Proof
+             * @default 1
+             * @constant
+             */
+            native_sale_snapshot_proof: 1;
+            /**
              * Operation Lookup
              * @default 1
              * @constant
@@ -2664,7 +2736,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            refund_method: "cash" | "upi" | "card" | "bank" | "online";
+            refund_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /**
              * Settlement
              * @default refund
@@ -3066,7 +3138,7 @@ export interface components {
             /** Notes */
             notes?: string | null;
             /** Payment Method */
-            payment_method?: ("cash" | "upi" | "card" | "bank") | null;
+            payment_method?: ("cash" | "upi" | "card" | "bank" | "bank_transfer") | null;
         };
         /** ExpenseIn */
         ExpenseIn: {
@@ -3086,7 +3158,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer";
         };
         /** ExpenseOut */
         ExpenseOut: {
@@ -3944,6 +4016,176 @@ export interface components {
              */
             uuid: string;
         };
+        /** NativeSaleLineSnapshot */
+        NativeSaleLineSnapshot: {
+            /** Cost Snapshot */
+            cost_snapshot: number | string;
+            /** Hsn Code Snapshot */
+            hsn_code_snapshot: string | null;
+            /** Hsn Type Snapshot */
+            hsn_type_snapshot: string | null;
+            /** Profit Snapshot */
+            profit_snapshot: number | string;
+            /** Purchase Price Snapshot */
+            purchase_price_snapshot: number | string;
+            /** Unit Name */
+            unit_name: string | null;
+        };
+        /** NativeSalePostIn */
+        NativeSalePostIn: {
+            /**
+             * Allow Unassigned Credit
+             * @default false
+             */
+            allow_unassigned_credit: boolean;
+            /** Balance Due */
+            balance_due: number | string;
+            cart: components["schemas"]["CartIn"];
+            /** Cgst Amount */
+            cgst_amount: number | string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Device Id */
+            device_id: string;
+            /** Discount Amount */
+            discount_amount: number | string;
+            /** Igst Amount */
+            igst_amount: number | string;
+            /** Invoice Number */
+            invoice_number: string;
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /** Lines */
+            lines: components["schemas"]["NativeSalePostLine"][];
+            /** Paid Amount */
+            paid_amount: number | string;
+            payment: components["schemas"]["Payment"];
+            /** Payment Uuid */
+            payment_uuid?: string | null;
+            /** Round Off Amount */
+            round_off_amount: number | string;
+            /**
+             * Settlement Choice
+             * @enum {string}
+             */
+            settlement_choice: "full" | "partial" | "unpaid";
+            /** Sgst Amount */
+            sgst_amount: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
+        };
+        /** NativeSalePostLine */
+        NativeSalePostLine: {
+            /**
+             * Line Uuid
+             * Format: uuid
+             */
+            line_uuid: string;
+            /** Movement Uuid */
+            movement_uuid?: string | null;
+            /** Name */
+            name: string;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            snapshot?: components["schemas"]["NativeSaleLineSnapshot"] | null;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Tax Amount */
+            tax_amount: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
+        };
+        /** NativeSalePostOut */
+        NativeSalePostOut: {
+            bill: components["schemas"]["BillSummary"];
+            /** Credit Notes */
+            credit_notes: components["schemas"]["NoteRow"][];
+            /** History */
+            history: components["schemas"]["HistoryRow"][];
+            /** Items */
+            items: components["schemas"]["BillLine"][];
+            /** Native Sale Snapshot Verified */
+            native_sale_snapshot_verified?: 1 | null;
+            /** Payments */
+            payments: components["schemas"]["PaymentRow"][];
+        };
+        /** NativeSalePreflightIn */
+        NativeSalePreflightIn: {
+            /** Balance Due */
+            balance_due: number | string;
+            cart: components["schemas"]["CartIn"];
+            /** Cgst Amount */
+            cgst_amount: number | string;
+            /** Discount Amount */
+            discount_amount: number | string;
+            /** Igst Amount */
+            igst_amount: number | string;
+            /** Invoice Number */
+            invoice_number: string;
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /** Lines */
+            lines: components["schemas"]["NativeSaleRecordedLine"][];
+            /** Paid Amount */
+            paid_amount: number | string;
+            /** Round Off Amount */
+            round_off_amount: number | string;
+            /** Sgst Amount */
+            sgst_amount: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
+        };
+        /** NativeSalePreflightOut */
+        NativeSalePreflightOut: {
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "matched_recorded_amounts";
+        };
+        /** NativeSaleRecordedLine */
+        NativeSaleRecordedLine: {
+            /** Name */
+            name: string;
+            /** Product Uuid */
+            product_uuid?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Subtotal */
+            subtotal: number | string;
+            /** Tax Amount */
+            tax_amount: number | string;
+            /** Taxable Amount */
+            taxable_amount: number | string;
+            /** Total Amount */
+            total_amount: number | string;
+        };
         /** NewReceiptProduct */
         "NewReceiptProduct-Input": {
             /** Barcode */
@@ -4060,7 +4302,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            method: "cash" | "upi" | "card" | "bank" | "online";
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Reference */
             reference?: string | null;
         };
@@ -4087,7 +4329,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            method: "cash" | "upi" | "card" | "bank" | "online";
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Notes */
             notes?: string | null;
             /** Reference */
@@ -4747,7 +4989,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /**
              * Purchase Date
              * Format: date
@@ -5224,7 +5466,7 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            method: "cash" | "upi" | "card" | "bank" | "online";
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Reference */
             reference?: string | null;
             /** Review Key */
@@ -5434,7 +5676,7 @@ export interface components {
              * Payment Method
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /** Purchase Uuid */
             purchase_uuid?: string | null;
             /** Reference */
@@ -5578,12 +5820,20 @@ export interface components {
              * @default cash
              * @enum {string}
              */
-            payment_method: "cash" | "upi" | "card" | "bank_transfer" | "online";
+            payment_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
             /**
              * Tax Amount
              * @default 0
              */
             tax_amount: number | string;
+        };
+        /** ThemePreference */
+        ThemePreference: {
+            /**
+             * Theme
+             * @enum {string}
+             */
+            theme: "system" | "light" | "dark";
         };
         /** TokenOut */
         TokenOut: {
@@ -7137,6 +7387,7 @@ export interface operations {
                 status?: ("paid" | "partial" | "unpaid") | null;
                 kind?: ("invoice" | "credit_note") | null;
                 q?: string | null;
+                workspace_search?: boolean;
                 cancelled?: boolean;
                 unassigned_credit?: boolean;
                 limit?: number;
@@ -7194,6 +7445,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_native_sale_v1_shops__shop_id__bills_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSalePostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSalePostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    native_sale_preflight_v1_shops__shop_id__bills_native_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSalePreflightIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSalePreflightOut"];
                 };
             };
             /** @description Validation Error */
@@ -7458,7 +7781,9 @@ export interface operations {
     };
     shop_capabilities_v1_shops__shop_id__capabilities_get: {
         parameters: {
-            query?: never;
+            query?: {
+                device_id?: string | null;
+            };
             header?: never;
             path: {
                 shop_id: string;
@@ -7693,6 +8018,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string | null;
+                workspace_search?: boolean;
                 owing?: boolean;
                 limit?: number;
                 offset?: number;
@@ -8496,10 +8822,77 @@ export interface operations {
             };
         };
     };
+    get_theme_v1_shops__shop_id__preferences_theme_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThemePreference"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_theme_v1_shops__shop_id__preferences_theme_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThemePreference"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThemePreference"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_products_v1_shops__shop_id__products_get: {
         parameters: {
             query?: {
                 q?: string | null;
+                workspace_search?: boolean;
                 category?: string | null;
                 low_stock?: boolean;
                 expiring_days?: number | null;

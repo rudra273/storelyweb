@@ -5,6 +5,10 @@ export interface ThemeValue {
   preference: ThemePreference
   resolved: ResolvedTheme
   setPreference: (preference: ThemePreference) => void
+  pending?: 'loading' | 'saving' | null
+  error?: string | null
+  disabled?: boolean
+  retry?: () => void
 }
 
 export const ThemeContext = createContext<ThemeValue | null>(null)
