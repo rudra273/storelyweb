@@ -1767,6 +1767,12 @@
    "ContractFeatures": {
     "description": "Service support versions, never a substitute for per-command authorization.",
     "properties": {
+     "native_billing_commands": {
+      "const": 1,
+      "default": 1,
+      "title": "Native Billing Commands",
+      "type": "integer"
+     },
      "native_sale_posting": {
       "const": 1,
       "default": 1,
@@ -5561,6 +5567,269 @@
      "shop_name"
     ],
     "title": "MyPremiumRequestOut",
+    "type": "object"
+   },
+   "NativeCancelIn": {
+    "additionalProperties": false,
+    "properties": {
+     "cancelled_at": {
+      "format": "date-time",
+      "title": "Cancelled At",
+      "type": "string"
+     },
+     "device_id": {
+      "maxLength": 64,
+      "minLength": 8,
+      "title": "Device Id",
+      "type": "string"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     }
+    },
+    "required": [
+     "device_id",
+     "cancelled_at"
+    ],
+    "title": "NativeCancelIn",
+    "type": "object"
+   },
+   "NativeCreditNoteIn": {
+    "additionalProperties": false,
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "credit_note_number": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Credit Note Number",
+      "type": "string"
+     },
+     "credit_note_uuid": {
+      "format": "uuid",
+      "title": "Credit Note Uuid",
+      "type": "string"
+     },
+     "device_id": {
+      "maxLength": 64,
+      "minLength": 8,
+      "title": "Device Id",
+      "type": "string"
+     },
+     "invoice_adjustment_payment_uuid": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Invoice Adjustment Payment Uuid"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/NativeCreditNoteLine"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+     },
+     "note_payment_uuid": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note Payment Uuid"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "refund_method": {
+      "default": "cash",
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank",
+       "bank_transfer",
+       "online"
+      ],
+      "title": "Refund Method",
+      "type": "string"
+     },
+     "settlement": {
+      "default": "refund",
+      "enum": [
+       "refund",
+       "adjust"
+      ],
+      "title": "Settlement",
+      "type": "string"
+     }
+    },
+    "required": [
+     "credit_note_uuid",
+     "credit_note_number",
+     "device_id",
+     "created_at",
+     "lines"
+    ],
+    "title": "NativeCreditNoteIn",
+    "type": "object"
+   },
+   "NativeCreditNoteLine": {
+    "additionalProperties": false,
+    "properties": {
+     "line_uuid": {
+      "format": "uuid",
+      "title": "Line Uuid",
+      "type": "string"
+     },
+     "movement_uuid": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Movement Uuid"
+     },
+     "original_item_uuid": {
+      "format": "uuid",
+      "title": "Original Item Uuid",
+      "type": "string"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 1000000.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     }
+    },
+    "required": [
+     "line_uuid",
+     "original_item_uuid",
+     "quantity"
+    ],
+    "title": "NativeCreditNoteLine",
+    "type": "object"
+   },
+   "NativePaymentIn": {
+    "additionalProperties": false,
+    "properties": {
+     "amount": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "maximum": 999999999.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Amount"
+     },
+     "device_id": {
+      "maxLength": 64,
+      "minLength": 8,
+      "title": "Device Id",
+      "type": "string"
+     },
+     "method": {
+      "default": "cash",
+      "enum": [
+       "cash",
+       "upi",
+       "card",
+       "bank",
+       "bank_transfer",
+       "online"
+      ],
+      "title": "Method",
+      "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "payment_uuid": {
+      "format": "uuid",
+      "title": "Payment Uuid",
+      "type": "string"
+     },
+     "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+     },
+     "reference": {
+      "anyOf": [
+       {
+        "maxLength": 100,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference"
+     }
+    },
+    "required": [
+     "payment_uuid",
+     "device_id",
+     "received_at",
+     "amount"
+    ],
+    "title": "NativePaymentIn",
     "type": "object"
    },
    "NativeReceiptIn": {
@@ -12550,7 +12819,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -12559,7 +12828,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -12574,7 +12843,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -12583,7 +12852,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -15180,6 +15449,84 @@
     ]
    }
   },
+  "/v1/shops/{shop_id}/bills/{bill_id}/cancel/native": {
+   "post": {
+    "description": "Atomically cancel an invoice or credit note recorded offline on a registered device.",
+    "operationId": "cancel_native_bill_v1_shops__shop_id__bills__bill_id__cancel_native_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeCancelIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BillDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cancel Native Bill",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
   "/v1/shops/{shop_id}/bills/{bill_id}/credit-note": {
    "post": {
     "description": "Return goods: a credit note for the chosen lines, refunded or taken off what is due.",
@@ -15253,6 +15600,84 @@
      }
     },
     "summary": "Credit Note",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/native": {
+   "post": {
+    "description": "Atomically publish an offline native credit note using its original durable IDs.",
+    "operationId": "create_native_credit_note_v1_shops__shop_id__bills__bill_id__credit_note_native_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativeCreditNoteIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BillDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Native Credit Note",
     "tags": [
      "billing"
     ]
@@ -15392,6 +15817,84 @@
      }
     },
     "summary": "Add Payment",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/bills/{bill_id}/payments/native": {
+   "post": {
+    "description": "Atomically record an offline native invoice payment using its original durable ID.",
+    "operationId": "add_native_payment_v1_shops__shop_id__bills__bill_id__payments_native_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "idempotency-key",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Idempotency-Key"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/NativePaymentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BillDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Add Native Payment",
     "tags": [
      "billing"
     ]

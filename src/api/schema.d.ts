@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -915,6 +915,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/{bill_id}/cancel/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Native Bill
+         * @description Atomically cancel an invoice or credit note recorded offline on a registered device.
+         */
+        post: operations["cancel_native_bill_v1_shops__shop_id__bills__bill_id__cancel_native_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/{bill_id}/credit-note": {
         parameters: {
             query?: never;
@@ -929,6 +949,26 @@ export interface paths {
          * @description Return goods: a credit note for the chosen lines, refunded or taken off what is due.
          */
         post: operations["credit_note_v1_shops__shop_id__bills__bill_id__credit_note_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Native Credit Note
+         * @description Atomically publish an offline native credit note using its original durable IDs.
+         */
+        post: operations["create_native_credit_note_v1_shops__shop_id__bills__bill_id__credit_note_native_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -966,6 +1006,26 @@ export interface paths {
         put?: never;
         /** Add Payment */
         post: operations["add_payment_v1_shops__shop_id__bills__bill_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/{bill_id}/payments/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Native Payment
+         * @description Atomically record an offline native invoice payment using its original durable ID.
+         */
+        post: operations["add_native_payment_v1_shops__shop_id__bills__bill_id__payments_native_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2721,6 +2781,12 @@ export interface components {
          */
         ContractFeatures: {
             /**
+             * Native Billing Commands
+             * @default 1
+             * @constant
+             */
+            native_billing_commands: 1;
+            /**
              * Native Sale Posting
              * @default 1
              * @constant
@@ -3988,6 +4054,99 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** NativeCancelIn */
+        NativeCancelIn: {
+            /**
+             * Cancelled At
+             * Format: date-time
+             */
+            cancelled_at: string;
+            /** Device Id */
+            device_id: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** NativeCreditNoteIn */
+        NativeCreditNoteIn: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Credit Note Number */
+            credit_note_number: string;
+            /**
+             * Credit Note Uuid
+             * Format: uuid
+             */
+            credit_note_uuid: string;
+            /** Device Id */
+            device_id: string;
+            /** Invoice Adjustment Payment Uuid */
+            invoice_adjustment_payment_uuid?: string | null;
+            /** Lines */
+            lines: components["schemas"]["NativeCreditNoteLine"][];
+            /** Note Payment Uuid */
+            note_payment_uuid?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Refund Method
+             * @default cash
+             * @enum {string}
+             */
+            refund_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
+            /**
+             * Settlement
+             * @default refund
+             * @enum {string}
+             */
+            settlement: "refund" | "adjust";
+        };
+        /** NativeCreditNoteLine */
+        NativeCreditNoteLine: {
+            /**
+             * Line Uuid
+             * Format: uuid
+             */
+            line_uuid: string;
+            /** Movement Uuid */
+            movement_uuid?: string | null;
+            /**
+             * Original Item Uuid
+             * Format: uuid
+             */
+            original_item_uuid: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /** NativePaymentIn */
+        NativePaymentIn: {
+            /** Amount */
+            amount: number | string;
+            /** Device Id */
+            device_id: string;
+            /**
+             * Method
+             * @default cash
+             * @enum {string}
+             */
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Payment Uuid
+             * Format: uuid
+             */
+            payment_uuid: string;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Reference */
+            reference?: string | null;
         };
         /** NativeReceiptIn */
         NativeReceiptIn: {
@@ -6065,7 +6224,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -6087,7 +6246,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -7825,6 +7984,44 @@ export interface operations {
             };
         };
     };
+    cancel_native_bill_v1_shops__shop_id__bills__bill_id__cancel_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeCancelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     credit_note_v1_shops__shop_id__bills__bill_id__credit_note_post: {
         parameters: {
             query?: never;
@@ -7840,6 +8037,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreditNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_native_credit_note_v1_shops__shop_id__bills__bill_id__credit_note_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeCreditNoteIn"];
             };
         };
         responses: {
@@ -7919,6 +8154,44 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_native_payment_v1_shops__shop_id__bills__bill_id__payments_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativePaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
