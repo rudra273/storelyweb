@@ -193,10 +193,10 @@ function allSettingsReview(base: BillingControlSettings, mine: BillingControlSet
 
 const GROUPS: { title: string; keys: [ShowKey, string][] }[] = [
   { title: 'Shop', keys: [['show_shop_name', 'Shop name'], ['show_shop_address', 'Address'], ['show_shop_phone', 'Phone'], ['show_shop_email', 'Email'], ['show_shop_gstin', 'GSTIN'], ['show_shop_logo', 'Logo']] },
-  { title: 'Customer', keys: [['show_customer_name', 'Name'], ['show_customer_legal_name', 'GST legal name'], ['show_customer_address', 'Address'], ['show_customer_phone', 'Phone'], ['show_customer_gstin', 'GSTIN'], ['show_customer_place_of_supply', 'State']] },
+  { title: 'Customer', keys: [['show_customer_name', 'Name'], ['show_customer_legal_name', 'GST legal name'], ['show_customer_trade_name', 'GST trade name'], ['show_customer_address', 'Address'], ['show_customer_phone', 'Phone'], ['show_customer_gstin', 'GSTIN'], ['show_customer_place_of_supply', 'State']] },
   { title: 'Invoice details', keys: [['show_invoice_title', 'Title'], ['show_invoice_number', 'Invoice number'], ['show_invoice_date', 'Date'], ['show_invoice_place_of_supply', 'Place of supply'], ['show_invoice_supply_type', 'Intra / inter-state']] },
   { title: 'Item columns', keys: [['show_item_serial_column', 'Serial number'], ['show_item_name_column', 'Item name'], ['show_hsn_column', 'HSN / SAC'], ['show_quantity_column', 'Quantity'], ['show_rate_column', 'Rate'], ['show_gst_percent_column', 'GST %'], ['show_gst_amount_column', 'GST amount'], ['show_amount_column', 'Amount']] },
-  { title: 'Totals', keys: [['show_subtotal', 'Subtotal'], ['show_discount', 'Discount'], ['show_taxable_amount', 'Taxable value'], ['show_cgst_sgst_igst', 'CGST / SGST / IGST'], ['show_grand_total', 'Grand total and round-off']] },
+  { title: 'Totals', keys: [['show_subtotal', 'Subtotal'], ['show_discount', 'Discount'], ['show_taxable_amount', 'Taxable value'], ['show_cgst_sgst_igst', 'CGST / SGST / IGST'], ['show_gst_breakdown', 'GST breakdown'], ['show_gst_total', 'Total GST'], ['show_grand_total', 'Grand total and round-off']] },
   { title: 'Extras', keys: [['show_amount_in_words', 'Amount in words'], ['show_hsn_summary', 'Tax summary by HSN'], ['show_payment_details', 'Payments and balance due'], ['show_upi_qr', 'UPI QR for the balance due'], ['show_footer_text', 'Footer text'], ['show_digital_signature', 'Signature']] },
 ]
 

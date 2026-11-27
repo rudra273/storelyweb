@@ -66,11 +66,15 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
     { key: 'show_amount_column', label: 'Amount', cell: (i: Item) => formatMoney(i.amount), thermal: true, num: true },
   ].filter(c => show(c.key) && (!thermal || c.thermal) && (!c.gst || hasGst) && (c.key !== 'show_hsn_column' || items.some(i => i.hsn_code)))
   const hsn = hasGst && show('show_hsn_summary') && !thermal ? hsnSummary(items) : []
+  const showBreakdown = show('show_cgst_sgst_igst') && show('show_gst_breakdown')
+  const totalGstPaise = (toPaise(b.cgst_amount) ?? 0n) + (toPaise(b.sgst_amount) ?? 0n) + (toPaise(b.igst_amount) ?? 0n)
   const totals: [string, string, string][] = ([
     ['show_subtotal', 'Subtotal', b.subtotal_amount],
     ['show_discount', discountLabel(b), b.discount_amount],
     ['show_taxable_amount', 'Taxable value', b.taxable_amount],
-    ...(show('show_cgst_sgst_igst') && hasGst ? (inter ? [['show_cgst_sgst_igst', 'IGST', b.igst_amount]] : [['show_cgst_sgst_igst', 'CGST', b.cgst_amount], ['show_cgst_sgst_igst', 'SGST', b.sgst_amount]]) : []),
+    ...(showBreakdown && hasGst
+      ? (inter ? [['show_cgst_sgst_igst', 'IGST', b.igst_amount]] : [['show_cgst_sgst_igst', 'CGST', b.cgst_amount], ['show_cgst_sgst_igst', 'SGST', b.sgst_amount]])
+      : (show('show_gst_total') && hasGst ? [['show_gst_total', 'Total GST', paiseToDecimal(totalGstPaise)]] : [])),
     ['show_grand_total', 'Round-off', b.round_off_amount],
   ] as [string, string, string][]).filter(([key, label, value]) => show(key) && !(label.startsWith('Discount') && !Number(value)) && !(label === 'Round-off' && !Number(value)) && !(label === 'Taxable value' && !hasGst))
 
@@ -93,6 +97,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
           <h4>Bill to</h4>
           {show('show_customer_name') && <p><strong>{b.customer_name}</strong></p>}
           {show('show_customer_legal_name') && b.customer_gst_legal_name && b.customer_gst_legal_name !== b.customer_name && <p>{b.customer_gst_legal_name}</p>}
+          {show('show_customer_trade_name') && b.customer_gst_trade_name && b.customer_gst_trade_name !== b.customer_name && b.customer_gst_trade_name !== b.customer_gst_legal_name && <p>{b.customer_gst_trade_name}</p>}
           {show('show_customer_address') && b.customer_address_snapshot && <p>{b.customer_address_snapshot}</p>}
           {show('show_customer_phone') && b.customer_phone && <p>Phone: {b.customer_phone}</p>}
           {show('show_customer_gstin') && b.customer_gstin && <p>GSTIN: {b.customer_gstin}</p>}
@@ -104,6 +109,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
           {b.original_bill_number && <><dt>Against invoice</dt><dd>{b.original_bill_number}</dd></>}
           {show('show_invoice_place_of_supply') && (b.place_of_supply_state_code || s.shop_gstin) && <><dt>Place of supply</dt><dd>{stateLabel(b.place_of_supply_state_code ?? s.shop_gstin?.slice(0, 2))}</dd></>}
           {show('show_invoice_supply_type') && hasGst && <><dt>Supply</dt><dd>{inter ? 'Inter-state (IGST)' : 'Intra-state (CGST + SGST)'}</dd></>}
+          {hasGst && <><dt>Tax mode</dt><dd>{b.tax_mode === 'exclusive' ? 'Prices excl. GST' : 'Prices incl. GST'}</dd></>}
         </dl>
       </section>
 
@@ -147,6 +153,7 @@ type BillingControlBill = BillDetail['bill'] & {
   round_off_mode?: 'none' | 'nearest' | 'up' | 'down'
   round_off_increment?: string
   notes?: string | null
+  customer_gst_trade_name?: string | null
 }
 
 type Item = BillDetail['items'][number] & {

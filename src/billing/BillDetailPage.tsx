@@ -18,7 +18,7 @@ import { BillAction, type BillActionKind } from './BillActions'
 import { documentKind, documentStatus } from './documentStatus'
 import { InvoiceSheet } from './invoice/Invoice'
 import { PAPERS, paperGuidance, useInvoicePaper } from './invoice/paper'
-import { downloadInvoicePdf } from './invoice/pdf'
+import { canSharePdfFile, downloadInvoicePdf, shareInvoicePdf } from './invoice/pdf'
 import { type Paper } from './invoice/InvoiceDocument'
 import { useBillingMutation, useBillingQuery, type BillDetail } from './queries'
 import { ShareDialog } from './ShareDialog'
@@ -105,6 +105,7 @@ function Detail({ detail }: { detail: BillDetail }) {
           <div className="rail-primary">
             <button type="button" className="primary" onClick={() => window.print()}>Print</button>
             <button type="button" disabled={pdf.busy} onClick={() => void pdf.run(() => downloadInvoicePdf(current?.shop_id ?? '', b.uuid, b.bill_number, paper))}>{pdf.busy ? 'Preparing PDF…' : 'Download PDF'}</button>
+            {canSharePdfFile() && <button type="button" disabled={pdf.busy} onClick={() => void pdf.run(() => shareInvoicePdf(current?.shop_id ?? '', b.uuid, b.bill_number, paper))}>Share PDF</button>}
             <button type="button" onClick={() => setSharing(true)}>Share on WhatsApp</button>
           </div>
           {pdf.error && <Alert>{pdf.error}</Alert>}
