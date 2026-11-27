@@ -1,7 +1,7 @@
 import { saleQuantity, SALE_QUANTITY_ERROR } from './checkout/quantity'
 import { PageHeader } from '../components/ui/workspace'
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { ApiError, api } from '../api/client'
 import { Alert } from '../components/ui/ui'
@@ -19,14 +19,184 @@ import type { Product, ProductDetail } from '../products/queries'
 import { useShop } from '../shops/context'
 import { can } from '../permissions'
 import { CustomItemEditor, type CustomLine } from './CustomItem'
-import { addOrIncrement, MAX_LINES, outOfStock, stockProblem, stockText, type CartItem } from './checkout/cart'
+import { addOrIncrement, MAX_LINES, outOfStock, stockProblem, stockText, type CartItem, type DiscountMode, type RoundOffMode, type TaxMode } from './checkout/cart'
 import { Completion } from './checkout/Completion'
 import { CustomerPanel } from './checkout/CustomerPanel'
 import { BLANK_CUSTOMER, type BillType, type CustomerFields } from './checkout/customerFields'
 import { PAY_FULL_ID, PaymentPanel, type PaymentFields } from './checkout/PaymentPanel'
 import { ScanBox } from './checkout/ScanBox'
 import { READY, type Status } from './checkout/scanStatus'
-import { createBill, useBillingMutation, type BillDetail, type BillInput, type CartInput, type Preview } from './queries'
+import { createBill, useBillingMutation, useBillingQuery, type BillDetail, type BillInput, type CartInput, type InvoiceSettings, type Preview } from './queries'
+
+type BillingControlSettings = InvoiceSettings & {
+  default_tax_mode?: TaxMode
+  round_off_mode?: RoundOffMode
+  round_off_increment?: string
+}
+
+type ExtendedCartLine = CartInput['items'][number] & {
+  discount_mode?: DiscountMode
+  discount_value?: string
+  tax_mode?: TaxMode | null
+}
+
+type ExtendedCartInput = Omit<CartInput, 'items'> & {
+  items: ExtendedCartLine[]
+  discount_mode?: DiscountMode
+  discount_value?: string
+  tax_mode?: TaxMode
+  round_off_mode?: RoundOffMode
+  round_off_increment?: string
+  bill_date?: string | null
+}
+
+type ExtendedBillInput = Omit<BillInput, 'items'> & {
+  items: ExtendedCartLine[]
+  discount_mode?: DiscountMode
+  discount_value?: string
+  tax_mode?: TaxMode
+  round_off_mode?: RoundOffMode
+  round_off_increment?: string
+  bill_date?: string | null
+  notes?: string | null
+}
+
+interface DraftHandoffSummary {
+  uuid: string
+  source_device_label: string
+  label: string
+  item_count: number
+  status?: string
+  created_at: string
+}
+
+interface DraftHandoffListOut {
+  items: DraftHandoffSummary[]
+}
+
+interface DraftHandoffOut extends DraftHandoffSummary {
+  items: Record<string, unknown>[]
+  metadata: Record<string, unknown>
+  claimed_by_device?: string | null
+  claimed_at?: string | null
+}
+
+const WEB_DEVICE_LABEL = 'Web browser'
+
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+const asString = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : fallback)
+const asNullableString = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : typeof v === 'number' ? String(v) : null)
+
+function parseHandoffItems(rawItems: Record<string, unknown>[]): { catalog: CartItem[]; customLines: CustomLine[] } {
+  const catalog: CartItem[] = []
+  const customLines: CustomLine[] = []
+  for (const raw of rawItems) {
+    if (!isRecord(raw)) continue
+    const discountMode: DiscountMode = raw.discount_mode === 'amount' ? 'amount' : 'percent'
+    const discountValue = asString(raw.discount_value)
+    const taxMode: TaxMode | null = raw.tax_mode === 'inclusive' || raw.tax_mode === 'exclusive' ? raw.tax_mode : null
+    const rawProduct = isRecord(raw.product) ? raw.product : null
+    const productUuid = asString(rawProduct?.uuid ?? raw.product_uuid).trim()
+    if (raw.kind !== 'custom' && productUuid) {
+      const product = (rawProduct
+        ? {
+            ...rawProduct,
+            uuid: productUuid,
+            name: asString(rawProduct.name ?? raw.name, 'Item'),
+            selling_price: asString(rawProduct.selling_price ?? raw.selling_price ?? raw.unit_price, '0'),
+            quantity: asString(rawProduct.quantity ?? raw.stock_quantity, '0'),
+          }
+        : {
+            uuid: productUuid,
+            name: asString(raw.name ?? raw.product_name, 'Item'),
+            selling_price: asString(raw.selling_price ?? raw.unit_price, '0'),
+            quantity: asString(raw.stock_quantity, '0'),
+            track_stock: false,
+            barcode: asNullableString(raw.barcode),
+            product_code: asNullableString(raw.product_code),
+            gst_percent: asString(raw.gst_percent, '0'),
+            unit_name: asNullableString(raw.unit_name ?? raw.unit),
+            mrp_price: asNullableString(raw.mrp_price),
+          }) as unknown as Product
+      catalog.push({
+        product,
+        quantity: asString(raw.quantity, '1') || '1',
+        discount_mode: discountMode,
+        discount_value: discountValue,
+        tax_mode: taxMode,
+      })
+    } else {
+      customLines.push({
+        key: asString(raw.key) || crypto.randomUUID(),
+        name: asString(raw.name, 'Custom item'),
+        unit_price: asString(raw.unit_price ?? raw.selling_price, '0'),
+        gst_percent: asString(raw.gst_percent, '0'),
+        quantity: asString(raw.quantity, '1') || '1',
+        cost: asString(raw.cost),
+        hsn_code: asString(raw.hsn_code),
+        unit: asString(raw.unit),
+        discount_mode: discountMode,
+        discount_value: discountValue,
+        tax_mode: taxMode,
+      })
+    }
+  }
+  return { catalog, customLines }
+}
+
+function parseHandoffCustomer(metadata: Record<string, unknown>): CustomerFields {
+  const src = isRecord(metadata.customer) ? metadata.customer : metadata
+  return {
+    customer_name: asString(src.customer_name),
+    customer_phone: asString(src.customer_phone),
+    customer_gstin: asString(src.customer_gstin),
+    customer_gst_legal_name: asString(src.customer_gst_legal_name),
+    customer_gst_trade_name: asString(src.customer_gst_trade_name),
+    customer_address: asString(src.customer_address),
+    place_of_supply_state_code: asString(src.place_of_supply_state_code),
+  }
+}
+
+function localToday(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const ROUND_OFF_INCREMENTS = [
+  { value: '0.50', label: '₹0.50' },
+  { value: '1.00', label: '₹1' },
+  { value: '5.00', label: '₹5' },
+  { value: '10.00', label: '₹10' },
+] as const
+
+const normalizeIncrement = (raw: string | number | null | undefined): string => {
+  if (raw === null || raw === undefined || raw === '') return '1.00'
+  const n = Number(raw)
+  if (n === 0.5) return '0.50'
+  if (n === 5) return '5.00'
+  if (n === 10) return '10.00'
+  return '1.00'
+}
+
+const lineDiscountOk = (mode: DiscountMode | undefined, value: string | undefined): boolean => {
+  if (value === undefined || value.trim() === '') return true
+  if (!isAmount(value)) return false
+  return (mode ?? 'percent') === 'percent' ? Number(value) <= 100 : true
+}
+
+const lineControlSummary = (mode: DiscountMode | undefined, value: string | undefined, taxMode: TaxMode | null | undefined): string => {
+  const parts: string[] = []
+  const trimmed = (value ?? '').trim()
+  if (trimmed && isAmount(trimmed) && Number(trimmed) > 0) {
+    parts.push((mode ?? 'percent') === 'percent' ? `Disc ${formatQty(trimmed)}%` : `Disc ${formatMoney(trimmed)}`)
+  }
+  if (taxMode === 'inclusive') parts.push('Tax incl.')
+  else if (taxMode === 'exclusive') parts.push('Tax excl.')
+  return parts.join(' · ')
+}
 
 export function NewBill() {
   const { current } = useShop()
@@ -43,7 +213,13 @@ interface BillDraft {
   custom: CustomLine[]
   customer: CustomerFields
   billType: BillType
+  billDate?: string
+  notes?: string
   discount: string
+  discountMode?: DiscountMode
+  taxMode?: TaxMode | null
+  roundOffMode?: RoundOffMode | null
+  roundOffIncrement?: string | null
   paid: PaymentFields['paid']
   amount: string
   method: PaymentFields['method']
@@ -60,10 +236,20 @@ interface BillDraft {
 function isBillDraft(value: unknown): value is BillDraft {
   const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
   const strings = (v: Record<string, unknown>, keys: string[]) => keys.every(key => typeof v[key] === 'string')
+  const validLineControls = (v: Record<string, unknown>) =>
+    (v.discount_mode === undefined || v.discount_mode === 'percent' || v.discount_mode === 'amount') &&
+    (v.discount_value === undefined || typeof v.discount_value === 'string') &&
+    (v.tax_mode === undefined || v.tax_mode === null || v.tax_mode === 'inclusive' || v.tax_mode === 'exclusive')
   if (!record(value) || !Array.isArray(value.items) || value.items.length > MAX_LINES || !Array.isArray(value.custom) || value.custom.length > MAX_LINES) return false
-  if (!value.items.every(item => record(item) && typeof item.quantity === 'string' && record(item.product) && strings(item.product, ['uuid', 'name', 'selling_price', 'quantity']))) return false
-  if (!value.custom.every(item => record(item) && strings(item, ['key', 'name', 'unit_price', 'gst_percent', 'quantity', 'cost', 'hsn_code', 'unit']))) return false
+  if (!value.items.every(item => record(item) && typeof item.quantity === 'string' && validLineControls(item) && record(item.product) && strings(item.product, ['uuid', 'name', 'selling_price', 'quantity']))) return false
+  if (!value.custom.every(item => record(item) && strings(item, ['key', 'name', 'unit_price', 'gst_percent', 'quantity', 'cost', 'hsn_code', 'unit']) && validLineControls(item))) return false
   if (!record(value.customer) || !strings(value.customer, Object.keys(BLANK_CUSTOMER)) || !strings(value, ['discount', 'amount', 'method', 'reference'])) return false
+  if (value.discountMode !== undefined && value.discountMode !== 'percent' && value.discountMode !== 'amount') return false
+  if (value.billDate !== undefined && typeof value.billDate !== 'string') return false
+  if (value.notes !== undefined && typeof value.notes !== 'string') return false
+  if (value.taxMode !== undefined && value.taxMode !== null && value.taxMode !== 'inclusive' && value.taxMode !== 'exclusive') return false
+  if (value.roundOffMode !== undefined && value.roundOffMode !== null && !['none', 'nearest', 'up', 'down'].includes(String(value.roundOffMode))) return false
+  if (value.roundOffIncrement !== undefined && value.roundOffIncrement !== null && typeof value.roundOffIncrement !== 'string') return false
   if (!['b2c', 'b2b'].includes(String(value.billType)) || ![null, 'full', 'part', 'none'].includes(value.paid as null | string)) return false
   if (!['cash', 'upi', 'card', 'bank', 'online'].includes(String(value.method))) return false
   if ((value.cash !== undefined && typeof value.cash !== 'string') || (value.allowUnassigned !== undefined && typeof value.allowUnassigned !== 'boolean')) return false
@@ -76,7 +262,7 @@ function isBillDraft(value: unknown): value is BillDraft {
 }
 
 function hasInvoiceDraft(draft: BillDraft): boolean {
-  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.discount !== '0' || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.pendingCatalogProduct || draft.attempt)
+  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.billDate || draft.notes || draft.discount !== '0' || draft.discountMode === 'amount' || draft.taxMode != null || draft.roundOffMode != null || draft.roundOffIncrement != null || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.pendingCatalogProduct || draft.attempt)
 }
 
 function BillForm({ another }: { another: () => void }) {
@@ -94,6 +280,8 @@ function BillForm({ another }: { another: () => void }) {
   const saved = restored?.data
   const canCustom = can(role, 'billing.custom')
   const canCreateProduct = can(role, 'products.edit')
+  const canBackdate = can(role, 'billing.cancel')
+  const today = localToday()
   const checkoutOwner = useRef({ userId, shop, allowed: canCreateProduct, blocked: false, uncertain: false, conflict: false })
   const [custom, setCustom] = useState<CustomLine[]>(saved?.custom ?? [])
   const [addingCustom, setAddingCustom] = useState(false)
@@ -108,7 +296,24 @@ function BillForm({ another }: { another: () => void }) {
   const [customer, setCustomer] = useState(saved?.customer ?? BLANK_CUSTOMER)
   const [customerOpen, setCustomerOpen] = useState(false)
   const [billType, setBillType] = useState<BillType>(saved?.billType ?? 'b2c')
+  const [billDate, setBillDate] = useState(saved?.billDate ?? '')
+  const [notes, setNotes] = useState(saved?.notes ?? '')
   const [discount, setDiscount] = useState(saved?.discount ?? '0')
+  const [discountMode, setDiscountMode] = useState<DiscountMode>(saved?.discountMode ?? 'percent')
+  const [taxMode, setTaxMode] = useState<TaxMode | null>(saved?.taxMode ?? null)
+  const [roundOffMode, setRoundOffMode] = useState<RoundOffMode | null>(saved?.roundOffMode ?? null)
+  const [roundOffIncrement, setRoundOffIncrement] = useState<string | null>(saved?.roundOffIncrement ?? null)
+  const [openLineKeys, setOpenLineKeys] = useState<Record<string, boolean>>({})
+  const shopSettings = useBillingQuery<BillingControlSettings>('invoice-settings', 'invoice-settings').data
+  const shopDefaultTaxMode: TaxMode = shopSettings?.default_tax_mode === 'exclusive' ? 'exclusive' : 'inclusive'
+  const shopDefaultRoundOffMode: RoundOffMode =
+    shopSettings?.round_off_mode === 'none' || shopSettings?.round_off_mode === 'nearest' || shopSettings?.round_off_mode === 'up' || shopSettings?.round_off_mode === 'down'
+      ? shopSettings.round_off_mode
+      : shopSettings?.round_off_total === false ? 'none' : 'nearest'
+  const shopDefaultRoundOffIncrement = normalizeIncrement(shopSettings?.round_off_increment)
+  const effectiveTaxMode: TaxMode = taxMode ?? shopDefaultTaxMode
+  const effectiveRoundOffMode: RoundOffMode = roundOffMode ?? shopDefaultRoundOffMode
+  const effectiveRoundOffIncrement = roundOffIncrement ?? shopDefaultRoundOffIncrement
   // No default: the cashier says how the customer paid, so an unpaid invoice is never an accident.
   const [payment, setPayment] = useState<PaymentFields>({ paid: saved?.paid ?? null, amount: saved?.amount ?? '', method: saved?.method ?? 'cash', reference: saved?.reference ?? '', cash: saved?.cash ?? '' })
   const [paidError, setPaidError] = useState('')
@@ -120,12 +325,23 @@ function BillForm({ another }: { another: () => void }) {
   const [done, setDone] = useState<BillDetail | null>(null)
   const sending = useRef(false)
   const [preparing, setPreparing] = useState(false)
+  const [handoffError, setHandoffError] = useState('')
+  const [handoffNotice, setHandoffNotice] = useState('')
+  const queryClient = useQueryClient()
+  const handoffsQuery = useQuery({
+    queryKey: ['draft-handoffs', shop, userId],
+    queryFn: ({ signal }) => api.get<DraftHandoffListOut>(`/v1/shops/${shop}/draft-handoffs`, { signal }),
+    enabled: !!shop && !!userId,
+    staleTime: 0,
+    retry: false,
+  })
+  const handoffs = handoffsQuery.data?.items ?? []
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
     return () => { mounted.current = false }
   }, [])
-  const draftText = JSON.stringify({ items, custom, customer, billType, discount, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, pendingCatalogProduct, attempt } satisfies BillDraft)
+  const draftText = JSON.stringify({ items, custom, customer, billType, billDate, notes, discount, discountMode, taxMode, roundOffMode, roundOffIncrement, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, pendingCatalogProduct, attempt } satisfies BillDraft)
   useEffect(() => {
     if (done || !userId || creating || preparing) return
     const draft = JSON.parse(draftText) as BillDraft
@@ -133,13 +349,17 @@ function BillForm({ another }: { another: () => void }) {
     // Storage is coordinated across tabs; the callback only reports an external failure.
     void (empty ? draftStore.clear({ isActive: () => mounted.current }) : draftStore.save(draft, { isActive: () => mounted.current })).catch(persistenceFailure)
   }, [draftText, userId, shop, done, draftStore, creating, preparing])
-  async function discard() {
-    try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
-    commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
+  function resetCartState() {
+    commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setBillDate(''); setNotes(''); setDiscount('0')
+    setDiscountMode('percent'); setTaxMode(null); setRoundOffMode(null); setRoundOffIncrement(null); setOpenLineKeys({})
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
     setAllowUnassigned(false); setConsentContext(null); setReviewedContext(null)
     setStorageError('')
     setRestored(null); setPendingCatalogProduct(null)
+  }
+  async function discard() {
+    try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
+    resetCartState()
   }
   const mutation = useBillingMutation(createBill)
 
@@ -155,25 +375,75 @@ function BillForm({ another }: { another: () => void }) {
     phone: checkCustomer || customer.customer_phone.replace(/\D/g, '').length >= 10 ? customerErrors.phone : null,
     gstin: checkCustomer || gstin.length >= 15 ? customerErrors.gstin : null,
   }
-  const lines = [...items.map(i => ({ product_uuid: i.product.uuid, quantity: saleQuantity(i.quantity) ?? i.quantity })), ...custom.map(c => ({ name: c.name, quantity: saleQuantity(c.quantity) ?? c.quantity, unit_price: c.unit_price, gst_percent: c.gst_percent, cost: c.cost || null, hsn_code: c.hsn_code || null, unit: c.unit || null }))]
-  const cart: CartInput = { ...customer, customer_phone: customerErrors.phone ? null : customer.customer_phone, customer_gstin: gstinProblem(gstin) ? null : gstin || null, place_of_supply_state_code: customer.place_of_supply_state_code || null, bill_type: billType, discount_percent: discount, items: lines }
+  const lines: ExtendedCartLine[] = [
+    ...items.map(i => ({
+      product_uuid: i.product.uuid,
+      quantity: saleQuantity(i.quantity) ?? i.quantity,
+      discount_mode: i.discount_mode ?? 'percent',
+      discount_value: (i.discount_value ?? '').trim() || '0',
+      tax_mode: i.tax_mode ?? null,
+    })),
+    ...custom.map(c => ({
+      name: c.name,
+      quantity: saleQuantity(c.quantity) ?? c.quantity,
+      unit_price: c.unit_price,
+      gst_percent: c.gst_percent,
+      cost: c.cost || null,
+      hsn_code: c.hsn_code || null,
+      unit: c.unit || null,
+      discount_mode: c.discount_mode ?? 'percent',
+      discount_value: (c.discount_value ?? '').trim() || '0',
+      tax_mode: c.tax_mode ?? null,
+    })),
+  ]
+  const discountPercentField = discountMode === 'percent' ? discount : '0'
+  const explicitBillDate = canBackdate && billDate.trim() ? billDate.trim() : undefined
+  const billDateOk = !explicitBillDate || (explicitBillDate >= '2000-01-01' && explicitBillDate <= today)
+  const cart: ExtendedCartInput = {
+    ...customer,
+    customer_phone: customerErrors.phone ? null : customer.customer_phone,
+    customer_gstin: gstinProblem(gstin) ? null : gstin || null,
+    place_of_supply_state_code: customer.place_of_supply_state_code || null,
+    bill_type: billType,
+    discount_percent: discountPercentField,
+    discount_mode: discountMode,
+    discount_value: discount,
+    tax_mode: effectiveTaxMode,
+    round_off_mode: effectiveRoundOffMode,
+    round_off_increment: effectiveRoundOffIncrement,
+    ...(explicitBillDate ? { bill_date: explicitBillDate } : {}),
+    items: lines,
+  }
   const lineCount = items.length + custom.length
   // Only what changes the price asks the server again; typing a name or phone does not.
-  const pricedText = JSON.stringify({ bill_type: billType, discount_percent: discount, customer_gstin: cart.customer_gstin, place_of_supply_state_code: cart.place_of_supply_state_code, items: lines })
+  const pricedText = JSON.stringify({
+    bill_type: billType,
+    discount_percent: discountPercentField,
+    discount_mode: discountMode,
+    discount_value: discount,
+    tax_mode: effectiveTaxMode,
+    round_off_mode: effectiveRoundOffMode,
+    round_off_increment: effectiveRoundOffIncrement,
+    ...(explicitBillDate ? { bill_date: explicitBillDate } : {}),
+    customer_gstin: cart.customer_gstin,
+    place_of_supply_state_code: cart.place_of_supply_state_code,
+    items: lines,
+  })
   const settledText = useDebounced(pricedText, 300)
   const priceCurrent = settledText === pricedText
   // A business invoice cannot be priced until its GSTIN is complete; say so instead of showing a refusal.
   const needsGstin = billType === 'b2b' && !!customerErrors.gstin
   const quantitiesOk = [...items, ...custom].every(i => saleQuantity(i.quantity) !== null)
-  const discountOk = isAmount(discount) && Number(discount) <= 100
+  const lineDiscountsOk = [...items, ...custom].every(i => lineDiscountOk(i.discount_mode, i.discount_value))
+  const discountOk = discountMode === 'percent' ? isAmount(discount) && Number(discount) <= 100 : isAmount(discount)
   // The server prices catalogue lines first, then the other lines in the order added.
   const preview = useQuery({
     queryKey: ['bill-preview', shop, settledText],
-    queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, JSON.parse(settledText) as CartInput),
-    enabled: lineCount > 0 && quantitiesOk && discountOk && !needsGstin && !attempt, retry: false, placeholderData: keepPreviousData,
+    queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, JSON.parse(settledText) as ExtendedCartInput),
+    enabled: lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !needsGstin && !attempt, retry: false, placeholderData: keepPreviousData,
   })
-  const pricing = lineCount > 0 && quantitiesOk && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
-  const totals = lineCount > 0 && quantitiesOk && !needsGstin ? preview.data : undefined
+  const pricing = lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
+  const totals = lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !needsGstin ? preview.data : undefined
   const locked = !!attempt || mutation.isPending || preparing || draftConflict || !!creating
   useLayoutEffect(() => {
     checkoutOwner.current = { userId, shop, allowed: canCreateProduct, blocked: locked, uncertain: !!attempt, conflict: draftConflict }
@@ -213,10 +483,15 @@ function BillForm({ another }: { another: () => void }) {
     return note(next.added ? `Added ${product.name}` : `${product.name} × ${formatQty(next.quantity)}`)
   }
   const setQuantity = (index: number, quantity: string) => commit(items.map((row, n) => n === index ? { ...row, quantity } : row))
+  const updateItem = (index: number, patch: Partial<Pick<CartItem, 'discount_mode' | 'discount_value' | 'tax_mode'>>) =>
+    commit(items.map((row, n) => n === index ? { ...row, ...patch } : row))
+  const updateCustom = (index: number, patch: Partial<Pick<CustomLine, 'discount_mode' | 'discount_value' | 'tax_mode'>>) =>
+    setCustom(custom.map((row, n) => n === index ? { ...row, ...patch } : row))
+  const toggleLineOptions = (key: string) => setOpenLineKeys(prev => ({ ...prev, [key]: !prev[key] }))
   // The payment options may only just have appeared (the first item), so look after this render.
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
   const unlinked = !!payment.paid && payment.paid !== 'full' && (paymentMinorUnits(totals?.total ?? '') ?? 0n) > 0n && !/\d/.test(customer.customer_phone)
-  const canCreate = quantitiesOk && !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
+  const canCreate = quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
     lineCount > 0 && (!payment.paid || reviewCurrent) && (!unlinked || consentCurrent)
 
   async function submit(e: FormEvent) {
@@ -244,11 +519,12 @@ function BillForm({ another }: { another: () => void }) {
     const next = attempt ?? {
       body: {
         ...cart,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
         settlement_choice: payment.paid === 'part' ? 'partial' : payment.paid === 'none' ? 'unpaid' : 'full',
         reviewed_context: totals!.reviewed_context,
         allow_unassigned_credit: unlinked && consentCurrent,
         payment: { amount: paidNow, method: payment.paid === 'none' ? 'cash' : payment.method, reference: payment.paid === 'none' ? null : reference },
-      },
+      } as ExtendedBillInput as BillInput,
       key: crypto.randomUUID(),
     }
     // React effects run later: durably freeze the exact key/body before sending.
@@ -303,6 +579,154 @@ function BillForm({ another }: { another: () => void }) {
       if (mounted.current) another()
     } catch (error) { persistenceFailure(error) }
     finally { sending.current = false; if (mounted.current) setPreparing(false) }
+  }
+  async function sendToAnotherDevice() {
+    if (sending.current || locked || lineCount === 0) return
+    sending.current = true; setPreparing(true); setHandoffError(''); setHandoffNotice('')
+    try {
+      const payloadItems = [
+        ...items.map(i => ({
+          kind: 'catalog',
+          product_uuid: i.product.uuid,
+          name: i.product.name,
+          quantity: saleQuantity(i.quantity) ?? i.quantity,
+          unit_price: i.product.selling_price,
+          selling_price: i.product.selling_price,
+          gst_percent: i.product.gst_percent ?? '0',
+          barcode: i.product.barcode ?? null,
+          product_code: i.product.product_code ?? null,
+          unit_name: i.product.unit_name ?? null,
+          discount_mode: i.discount_mode ?? 'percent',
+          discount_value: (i.discount_value ?? '').trim() || '0',
+          tax_mode: i.tax_mode ?? null,
+          product: i.product,
+        })),
+        ...custom.map(c => ({
+          kind: 'custom',
+          key: c.key,
+          name: c.name,
+          quantity: saleQuantity(c.quantity) ?? c.quantity,
+          unit_price: c.unit_price,
+          gst_percent: c.gst_percent,
+          cost: c.cost || '',
+          hsn_code: c.hsn_code || '',
+          unit: c.unit || '',
+          discount_mode: c.discount_mode ?? 'percent',
+          discount_value: (c.discount_value ?? '').trim() || '0',
+          tax_mode: c.tax_mode ?? null,
+        })),
+      ]
+      const label = (customer.customer_name.trim() || 'Walk-in customer').slice(0, 120)
+      await api.post<DraftHandoffOut>(`/v1/shops/${shop}/draft-handoffs`, {
+        source_device_label: WEB_DEVICE_LABEL,
+        label,
+        items: payloadItems,
+        metadata: {
+          customer,
+          billType,
+          discount,
+          discountMode,
+          taxMode,
+          roundOffMode,
+          roundOffIncrement,
+          billDate,
+          notes,
+        },
+      })
+      try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error) }
+      if (mounted.current) {
+        resetCartState()
+        setHandoffNotice('Draft sent to another device.')
+      }
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } catch (error) {
+      if (mounted.current) setHandoffError(describeError(error))
+    } finally {
+      sending.current = false
+      if (mounted.current) setPreparing(false)
+    }
+  }
+  async function claimHandoff(handoffId: string) {
+    if (sending.current || locked) return
+    sending.current = true; setPreparing(true); setHandoffError(''); setHandoffNotice('')
+    try {
+      const claimed = await api.post<DraftHandoffOut>(
+        `/v1/shops/${shop}/draft-handoffs/${encodeURIComponent(handoffId)}/claim`,
+        { device_label: WEB_DEVICE_LABEL },
+      )
+      if (!mounted.current) return
+      const { catalog, customLines } = parseHandoffItems(Array.isArray(claimed.items) ? claimed.items : [])
+      const meta = isRecord(claimed.metadata) ? claimed.metadata : {}
+      const nextBillType: BillType = meta.billType === 'b2b' || meta.bill_type === 'b2b' ? 'b2b' : 'b2c'
+      const nextDiscount = asString(meta.discount ?? meta.discount_value, '0') || '0'
+      const nextDiscountMode: DiscountMode = meta.discountMode === 'amount' || meta.discount_mode === 'amount' ? 'amount' : 'percent'
+      const rawTaxMode = meta.taxMode ?? meta.tax_mode
+      const nextTaxMode: TaxMode | null = rawTaxMode === 'inclusive' || rawTaxMode === 'exclusive' ? rawTaxMode : null
+      const rawRoundOffMode = meta.roundOffMode ?? meta.round_off_mode
+      const nextRoundOffMode: RoundOffMode | null =
+        rawRoundOffMode === 'none' || rawRoundOffMode === 'nearest' || rawRoundOffMode === 'up' || rawRoundOffMode === 'down'
+          ? rawRoundOffMode
+          : null
+      const rawRoundOffInc = meta.roundOffIncrement ?? meta.round_off_increment
+      const nextRoundOffInc = rawRoundOffInc === null || rawRoundOffInc === undefined || rawRoundOffInc === '' ? null : normalizeIncrement(asString(rawRoundOffInc))
+      const nextBillDate = asString(meta.billDate ?? meta.bill_date)
+      const nextNotes = asString(meta.notes)
+
+      commit(catalog)
+      setCustom(customLines)
+      setCustomer(parseHandoffCustomer(meta))
+      setBillType(nextBillType)
+      setBillDate(nextBillDate)
+      setNotes(nextNotes)
+      setDiscount(nextDiscount)
+      setDiscountMode(nextDiscountMode)
+      setTaxMode(nextTaxMode)
+      setRoundOffMode(nextRoundOffMode)
+      setRoundOffIncrement(nextRoundOffInc)
+      setOpenLineKeys({})
+      setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' })
+      setPaidError('')
+      setAllowUnassigned(false)
+      setConsentContext(null)
+      setReviewedContext(null)
+      setRestored(null)
+      setPendingCatalogProduct(null)
+      setHandoffNotice(`Took over draft from ${claimed.source_device_label}.`)
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } catch (error) {
+      if (mounted.current) {
+        if (error instanceof ApiError && error.status === 409 && error.code === 'draft_already_claimed') {
+          setHandoffError('This draft was already claimed on another device.')
+        } else {
+          setHandoffError(describeError(error))
+        }
+      }
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } finally {
+      sending.current = false
+      if (mounted.current) setPreparing(false)
+    }
+  }
+  async function discardHandoff(handoffId: string) {
+    if (sending.current || locked) return
+    sending.current = true; setPreparing(true); setHandoffError(''); setHandoffNotice('')
+    try {
+      await api.delete<void>(`/v1/shops/${shop}/draft-handoffs/${encodeURIComponent(handoffId)}`)
+      if (mounted.current) setHandoffNotice('Cloud handoff discarded.')
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } catch (error) {
+      if (mounted.current) {
+        if (error instanceof ApiError && error.status === 409 && error.code === 'draft_already_claimed') {
+          setHandoffError('This draft was already claimed on another device.')
+        } else {
+          setHandoffError(describeError(error))
+        }
+      }
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } finally {
+      sending.current = false
+      if (mounted.current) setPreparing(false)
+    }
   }
   async function openProduct(code: string) {
     const barcode = barcodeForCreation(code)
@@ -382,7 +806,23 @@ function BillForm({ another }: { another: () => void }) {
     </Alert>}
     <form className="checkout-grid" onSubmit={submit}>
       <fieldset className="checkout-main" disabled={locked}>
-        <div className="actions"><button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button></div>
+        <div className="actions">
+          <button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button>
+          <button type="button" className="secondary" disabled={locked || lineCount === 0} onClick={() => void sendToAnotherDevice()}>Send to another device</button>
+        </div>
+        {handoffError && <Alert>{handoffError}</Alert>}
+        {handoffNotice && <Alert kind="info">{handoffNotice}</Alert>}
+        {!!handoffs.length && <section className="card" aria-label="Cloud handoffs">
+          <h2>Cloud handoffs ({handoffs.length})</h2>
+          <p className="muted">Available on your account for this shop. Taking over claims the draft exclusively on this device.</p>
+          <ul>{handoffs.map(handoff => <li key={handoff.uuid}>
+            <strong>{handoff.label.trim() || 'Walk-in customer'}</strong> · {handoff.item_count} {handoff.item_count === 1 ? 'item' : 'items'} · From {handoff.source_device_label} · {new Date(handoff.created_at).toLocaleString()}
+            <div className="actions">
+              <button type="button" disabled={locked} onClick={() => void claimHandoff(handoff.uuid)}>Take over</button>
+              <button type="button" className="link" disabled={locked} onClick={() => void discardHandoff(handoff.uuid)}>Discard</button>
+            </div>
+          </li>)}</ul>
+        </section>}
         {!!draftStore.initialHeld.length && <section className="card" aria-label="Held invoices">
           <h2>Held invoices ({draftStore.initialHeld.length})</h2>
           <p className="muted">Saved in this browser for this account and shop. Resuming holds your current editable invoice in its place.</p>
@@ -408,19 +848,71 @@ function BillForm({ another }: { another: () => void }) {
             {items.map((i, index) => {
               const line = totals?.lines?.find(l => l.product_uuid === i.product.uuid)
               const problem = stockProblem(i.product, i.quantity)
+              const rowKey = `item:${i.product.uuid}`
+              const open = !!openLineKeys[rowKey]
+              const summary = lineControlSummary(i.discount_mode, i.discount_value, i.tax_mode)
+              const discValid = lineDiscountOk(i.discount_mode, i.discount_value)
               return <tr key={i.product.uuid}>
-                <td className="cart-item"><span className="cart-name">{i.product.name}</span><small className="muted">{[i.product.barcode || i.product.product_code, i.product.gst_percent != null ? `GST ${formatQty(i.product.gst_percent)}%` : ''].filter(Boolean).join(' · ')}</small>{problem ? <small className="field-error" role="alert">{problem}</small> : stockText(i.product) && <small className="muted">{stockText(i.product)}</small>}</td>
+                <td className="cart-item">
+                  <span className="cart-name">{i.product.name}</span>
+                  <small className="muted">{[i.product.barcode || i.product.product_code, i.product.gst_percent != null ? `GST ${formatQty(i.product.gst_percent)}%` : ''].filter(Boolean).join(' · ')}</small>
+                  {problem ? <small className="field-error" role="alert">{problem}</small> : stockText(i.product) && <small className="muted">{stockText(i.product)}</small>}
+                  <div className="line-meta">
+                    {summary && <small className="muted">{summary} · </small>}
+                    <button type="button" className="link" aria-expanded={open} aria-label={`Line options for ${i.product.name}`} onClick={() => toggleLineOptions(rowKey)}>{open ? 'Hide options' : 'Discount / tax'}</button>
+                  </div>
+                  {open && <div className="line-controls">
+                    <select aria-label={`Discount type for ${i.product.name}`} value={i.discount_mode ?? 'percent'} onChange={e => updateItem(index, { discount_mode: e.target.value as DiscountMode })}>
+                      <option value="percent">%</option>
+                      <option value="amount">₹</option>
+                    </select>
+                    <input className="qty" aria-label={`Discount for ${i.product.name}`} type="text" inputMode="decimal" placeholder="0" aria-invalid={!discValid || undefined} value={i.discount_value ?? ''} onChange={e => updateItem(index, { discount_value: e.target.value })} />
+                    <select aria-label={`Tax mode for ${i.product.name}`} value={i.tax_mode ?? ''} onChange={e => updateItem(index, { tax_mode: (e.target.value || null) as TaxMode | null })}>
+                      <option value="">Bill default</option>
+                      <option value="inclusive">Incl.</option>
+                      <option value="exclusive">Excl.</option>
+                    </select>
+                    {!discValid && <small className="field-error" role="alert">{(i.discount_mode ?? 'percent') === 'percent' ? 'Discount must be 0–100%.' : 'Enter a valid amount.'}</small>}
+                  </div>}
+                </td>
                 <td><input className="qty" aria-label={`Quantity for ${i.product.name}`} type="text" inputMode="decimal" aria-invalid={saleQuantity(i.quantity) === null} aria-describedby={saleQuantity(i.quantity) === null ? `quantity-error-${index}` : undefined} required value={i.quantity} onChange={e => setQuantity(index, e.target.value)} />{saleQuantity(i.quantity) === null && <small id={`quantity-error-${index}`} className="field-error" role="alert">{SALE_QUANTITY_ERROR}</small>}{i.product.unit_name && <small className="muted unit"> {i.product.unit_name}</small>}</td>
                 <td className="num hide-sm">{line ? formatMoney(line.unit_price) : '—'}</td>
                 <td className="num">{line ? formatMoney(line.amount) : '—'}</td>
                 <td><button type="button" className="link remove" aria-label={`Remove ${i.product.name}`} onClick={() => commit(items.filter((_, n) => n !== index))}>✕</button></td></tr>
             })}
-            {custom.map((c, index) => { const line = customPreview[index]; return <tr key={c.key}>
-              <td className="cart-item"><span className="cart-name">{c.name}</span><small className="muted">Not in the list · GST {c.gst_percent}%</small></td>
-              <td><input className="qty" aria-label={`Quantity for ${c.name}`} type="text" inputMode="decimal" aria-invalid={saleQuantity(c.quantity) === null} aria-describedby={saleQuantity(c.quantity) === null ? `custom-quantity-error-${index}` : undefined} required value={c.quantity} onChange={e => setCustom(custom.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} />{saleQuantity(c.quantity) === null && <small id={`custom-quantity-error-${index}`} className="field-error" role="alert">{SALE_QUANTITY_ERROR}</small>}</td>
-              <td className="num hide-sm">{line ? formatMoney(line.unit_price) : formatMoney(c.unit_price)}</td>
-              <td className="num">{line ? formatMoney(line.amount) : '—'}</td>
-              <td><button type="button" className="link remove" aria-label={`Remove ${c.name}`} onClick={() => setCustom(custom.filter((_, n) => n !== index))}>✕</button></td></tr> })}
+            {custom.map((c, index) => {
+              const line = customPreview[index]
+              const rowKey = `custom:${c.key}`
+              const open = !!openLineKeys[rowKey]
+              const summary = lineControlSummary(c.discount_mode, c.discount_value, c.tax_mode)
+              const discValid = lineDiscountOk(c.discount_mode, c.discount_value)
+              return <tr key={c.key}>
+                <td className="cart-item">
+                  <span className="cart-name">{c.name}</span>
+                  <small className="muted">Not in the list · GST {c.gst_percent}%</small>
+                  <div className="line-meta">
+                    {summary && <small className="muted">{summary} · </small>}
+                    <button type="button" className="link" aria-expanded={open} aria-label={`Line options for ${c.name}`} onClick={() => toggleLineOptions(rowKey)}>{open ? 'Hide options' : 'Discount / tax'}</button>
+                  </div>
+                  {open && <div className="line-controls">
+                    <select aria-label={`Discount type for ${c.name}`} value={c.discount_mode ?? 'percent'} onChange={e => updateCustom(index, { discount_mode: e.target.value as DiscountMode })}>
+                      <option value="percent">%</option>
+                      <option value="amount">₹</option>
+                    </select>
+                    <input className="qty" aria-label={`Discount for ${c.name}`} type="text" inputMode="decimal" placeholder="0" aria-invalid={!discValid || undefined} value={c.discount_value ?? ''} onChange={e => updateCustom(index, { discount_value: e.target.value })} />
+                    <select aria-label={`Tax mode for ${c.name}`} value={c.tax_mode ?? ''} onChange={e => updateCustom(index, { tax_mode: (e.target.value || null) as TaxMode | null })}>
+                      <option value="">Bill default</option>
+                      <option value="inclusive">Incl.</option>
+                      <option value="exclusive">Excl.</option>
+                    </select>
+                    {!discValid && <small className="field-error" role="alert">{(c.discount_mode ?? 'percent') === 'percent' ? 'Discount must be 0–100%.' : 'Enter a valid amount.'}</small>}
+                  </div>}
+                </td>
+                <td><input className="qty" aria-label={`Quantity for ${c.name}`} type="text" inputMode="decimal" aria-invalid={saleQuantity(c.quantity) === null} aria-describedby={saleQuantity(c.quantity) === null ? `custom-quantity-error-${index}` : undefined} required value={c.quantity} onChange={e => setCustom(custom.map((row, n) => n === index ? { ...row, quantity: e.target.value } : row))} />{saleQuantity(c.quantity) === null && <small id={`custom-quantity-error-${index}`} className="field-error" role="alert">{SALE_QUANTITY_ERROR}</small>}</td>
+                <td className="num hide-sm">{line ? formatMoney(line.unit_price) : formatMoney(c.unit_price)}</td>
+                <td className="num">{line ? formatMoney(line.amount) : '—'}</td>
+                <td><button type="button" className="link remove" aria-label={`Remove ${c.name}`} onClick={() => setCustom(custom.filter((_, n) => n !== index))}>✕</button></td></tr>
+            })}
           </tbody></table></div>}
           {cartProblem && <Alert>{describeError(preview.error)} Change the quantity or remove the item.</Alert>}
         </section>
@@ -428,6 +920,31 @@ function BillForm({ another }: { another: () => void }) {
       <aside className="checkout-summary" aria-label="Customer and payment">
         <fieldset className="bare" disabled={locked}>
           <CustomerPanel customer={customer} onChange={next => { setCustomer(next); setAllowUnassigned(false) }} billType={billType} onBillType={next => { setBillType(next); setAllowUnassigned(false) }} errors={shownErrors} open={customerOpen || !!(shownErrors.phone || shownErrors.gstin)} onOpen={setCustomerOpen} disabled={locked} />
+          <section className="card" aria-label="Invoice details">
+            <label>
+              Invoice date
+              <input
+                type="date"
+                max={today}
+                value={canBackdate ? (billDate || today) : today}
+                disabled={locked || !canBackdate}
+                aria-invalid={!billDateOk || undefined}
+                onChange={e => setBillDate(e.target.value === today ? '' : e.target.value)}
+              />
+            </label>
+            {!canBackdate && <small className="muted">Only owners and admins can backdate invoices.</small>}
+            {!billDateOk && <small className="field-error" role="alert">Choose a date on or before today (from 2000-01-01).</small>}
+            <label className="field-block">
+              Invoice notes
+              <textarea
+                rows={2}
+                maxLength={500}
+                placeholder="Optional note printed on the invoice"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+              />
+            </label>
+          </section>
         </fieldset>
         <section className="card checkout-totals" aria-label="Invoice total" aria-busy={pricing}>
           {!lineCount ? <p className="muted">Totals and payment appear once you add an item.</p> : <>
@@ -438,7 +955,29 @@ function BillForm({ another }: { another: () => void }) {
               <div className="row grand-total"><dt>Total</dt><dd>{totals ? formatMoney(totals.total) : '—'}</dd></div>
             </dl>
             <p className="pricing-note muted" role="status">{pricing ? 'Updating total…' : ''}</p>
-            <label className="discount">Discount (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" required value={discount} disabled={locked} onChange={e => setDiscount(e.target.value)} /></label>
+            <div className="billing-controls">
+              <div className="discount-row">
+                <label className="discount">Discount ({discountMode === 'percent' ? '%' : '₹'})<input type="number" inputMode="decimal" min="0" max={discountMode === 'percent' ? '100' : undefined} step="0.01" required value={discount} disabled={locked} aria-invalid={!discountOk || undefined} onChange={e => setDiscount(e.target.value)} /></label>
+                <select aria-label="Discount mode" value={discountMode} disabled={locked} onChange={e => setDiscountMode(e.target.value as DiscountMode)}>
+                  <option value="percent">%</option>
+                  <option value="amount">₹</option>
+                </select>
+              </div>
+              {!discountOk && <small className="field-error" role="alert">{discountMode === 'percent' ? 'Enter a discount between 0% and 100%.' : 'Enter a valid discount amount (0 or more).'}</small>}
+              <label>Tax mode<select value={effectiveTaxMode} disabled={locked} onChange={e => setTaxMode(e.target.value as TaxMode)}>
+                <option value="inclusive">Tax inclusive</option>
+                <option value="exclusive">Tax exclusive</option>
+              </select></label>
+              <label>Round-off<select value={effectiveRoundOffMode} disabled={locked} onChange={e => setRoundOffMode(e.target.value as RoundOffMode)}>
+                <option value="none">None</option>
+                <option value="nearest">Nearest</option>
+                <option value="up">Up</option>
+                <option value="down">Down</option>
+              </select></label>
+              {effectiveRoundOffMode !== 'none' && <label>Round-off increment<select value={effectiveRoundOffIncrement} disabled={locked} onChange={e => setRoundOffIncrement(e.target.value)}>
+                {ROUND_OFF_INCREMENTS.map(inc => <option key={inc.value} value={inc.value}>{inc.label}</option>)}
+              </select></label>}
+            </div>
             {items.some(i => { const line = totals?.lines?.find(l => l.product_uuid === i.product.uuid); return line && i.product.mrp_price != null && Number(line.unit_price) > Number(i.product.mrp_price) }) && <Alert kind="info">A product’s selling price is above its MRP. Check the price before creating the invoice.</Alert>}
             <PaymentPanel total={totals?.total} value={payment} onChange={next => { setAllowUnassigned(false); setReviewedContext(totals?.reviewed_context ?? null); setPayment(next); setPaidError('') }} error={paidError} disabled={locked} />
             {unlinked && !locked && <Alert kind="info">

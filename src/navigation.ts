@@ -45,8 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'business', label: 'Business', items: [
     { to: '/expenses', label: 'Expenses', needs: 'expenses.manage', icon: 'expenses', blurb: 'Record rent, salaries and other running costs.' },
     { to: '/reports', label: 'Reports', needs: 'reports.view', icon: 'reports', blurb: 'Understand sales, profit and outstanding payments.' },
-    // Only membership events are recorded today, so the name says so (refractor.md naming guide).
-    { to: '/activity', label: 'Team activity', needs: 'shop.events', icon: 'activity', blurb: 'Review who joined, left or changed role.' },
+    { to: '/activity', label: 'Activity & audit', needs: 'shop.events', icon: 'activity', blurb: 'Review business changes across bills, stock and settings, plus team security events.' },
   ] },
   { id: 'administration', label: 'Administration', items: [
     { to: '/settings', label: 'Shop settings', needs: 'shop.settings', icon: 'settings', blurb: 'Shop details, tax and how invoices look.' },

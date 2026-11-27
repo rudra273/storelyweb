@@ -821,6 +821,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/bills/native/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Native Sale
+         * @description Explicitly reconcile and post a stalled native sale with owner/admin approval.
+         */
+        post: operations["reconcile_native_sale_v1_shops__shop_id__bills_native_reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/native/reconcile/inspect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inspect Native Sale Reconcile
+         * @description Read-only inspection of a reserved native sale for reconciliation.
+         */
+        post: operations["inspect_native_sale_reconcile_v1_shops__shop_id__bills_native_reconcile_inspect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/bills/preview": {
         parameters: {
             query?: never;
@@ -855,7 +895,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit Bill Metadata
+         * @description Update non-financial buyer metadata and notes on a live posted bill.
+         */
+        patch: operations["edit_bill_metadata_v1_shops__shop_id__bills__bill_id__patch"];
         trace?: never;
     };
     "/v1/shops/{shop_id}/bills/{bill_id}/cancel": {
@@ -869,6 +913,26 @@ export interface paths {
         put?: never;
         /** Cancel Bill */
         post: operations["cancel_bill_v1_shops__shop_id__bills__bill_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/{bill_id}/cancel/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Native Bill
+         * @description Atomically cancel an invoice or credit note recorded offline on a registered device.
+         */
+        post: operations["cancel_native_bill_v1_shops__shop_id__bills__bill_id__cancel_native_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -889,6 +953,26 @@ export interface paths {
          * @description Return goods: a credit note for the chosen lines, refunded or taken off what is due.
          */
         post: operations["credit_note_v1_shops__shop_id__bills__bill_id__credit_note_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/{bill_id}/credit-note/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Native Credit Note
+         * @description Atomically publish an offline native credit note using its original durable IDs.
+         */
+        post: operations["create_native_credit_note_v1_shops__shop_id__bills__bill_id__credit_note_native_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -926,6 +1010,26 @@ export interface paths {
         put?: never;
         /** Add Payment */
         post: operations["add_payment_v1_shops__shop_id__bills__bill_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/bills/{bill_id}/payments/native": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Native Payment
+         * @description Atomically record an offline native invoice payment using its original durable ID.
+         */
+        post: operations["add_native_payment_v1_shops__shop_id__bills__bill_id__payments_native_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1120,6 +1224,70 @@ export interface paths {
         get: operations["customer_statement_v1_shops__shop_id__customers__customer_id__statement_csv_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/draft-handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Draft Handoffs
+         * @description List available cross-device draft handoffs for the signed-in user in this shop.
+         */
+        get: operations["list_draft_handoffs_v1_shops__shop_id__draft_handoffs_get"];
+        put?: never;
+        /**
+         * Publish Draft Handoff
+         * @description Publish a checkout draft snapshot so another device for the same user can claim it once.
+         */
+        post: operations["publish_draft_handoff_v1_shops__shop_id__draft_handoffs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/draft-handoffs/{handoff_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Discard Draft Handoff
+         * @description Discard an unclaimed draft handoff.
+         */
+        delete: operations["discard_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/draft-handoffs/{handoff_id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim Draft Handoff
+         * @description Atomically claim an available draft handoff (single-consumer).
+         */
+        post: operations["claim_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__claim_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1754,6 +1922,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Purchase Returns */
+        get: operations["list_purchase_returns_v1_shops__shop_id__purchase_receipts__receipt_id__returns_get"];
+        put?: never;
+        /**
+         * Create Purchase Return
+         * @description Return items from a posted purchase (debit note): stock decreases and payables adjust.
+         */
+        post: operations["create_purchase_return_v1_shops__shop_id__purchase_receipts__receipt_id__returns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
         parameters: {
             query?: never;
@@ -1973,6 +2162,26 @@ export interface paths {
         };
         /** Shop Security Events */
         get: operations["shop_security_events_v1_shops__shop_id__security_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/stock-movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shop Stock Ledger
+         * @description Shop-wide stock ledger across all products, newest first.
+         */
+        get: operations["shop_stock_ledger_v1_shops__shop_id__stock_movements_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2273,6 +2482,8 @@ export interface components {
         BillIn: {
             /** Allow Unassigned Credit */
             allow_unassigned_credit?: boolean | null;
+            /** Bill Date */
+            bill_date?: string | null;
             /**
              * Bill Type
              * @default b2c
@@ -2291,13 +2502,19 @@ export interface components {
             customer_name?: string | null;
             /** Customer Phone */
             customer_phone?: string | null;
+            /** Discount Mode */
+            discount_mode?: ("percent" | "amount") | null;
             /**
              * Discount Percent
              * @default 0
              */
             discount_percent: number | string;
+            /** Discount Value */
+            discount_value?: number | string | null;
             /** Items */
             items: components["schemas"]["CartItem"][];
+            /** Notes */
+            notes?: string | null;
             /**
              * @default {
              *       "amount": "0",
@@ -2309,8 +2526,14 @@ export interface components {
             place_of_supply_state_code?: string | null;
             /** Reviewed Context */
             reviewed_context?: string | null;
+            /** Round Off Increment */
+            round_off_increment?: number | string | null;
+            /** Round Off Mode */
+            round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
             /** Settlement Choice */
             settlement_choice?: ("full" | "partial" | "unpaid") | null;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
         };
         /** BillLine */
         BillLine: {
@@ -2320,6 +2543,22 @@ export interface components {
             cgst: string;
             /** Cost */
             cost?: string | null;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Gst */
             gst: string;
             /** Gst Percent */
@@ -2348,12 +2587,31 @@ export interface components {
             sgst: string;
             /** Subtotal */
             subtotal: string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Value */
             taxable_value: string;
             /** Unit */
             unit: string | null;
             /** Uuid */
             uuid: string;
+        };
+        /** BillMetadataPatchIn */
+        BillMetadataPatchIn: {
+            /** Customer Address */
+            customer_address?: string | null;
+            /** Customer Gst Legal Name */
+            customer_gst_legal_name?: string | null;
+            /** Customer Gst Trade Name */
+            customer_gst_trade_name?: string | null;
+            /** Customer Gstin */
+            customer_gstin?: string | null;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Customer Phone */
+            customer_phone?: string | null;
+            /** Notes */
+            notes?: string | null;
         };
         /** BillPage */
         BillPage: {
@@ -2384,6 +2642,8 @@ export interface components {
             customer_address_snapshot: string | null;
             /** Customer Gst Legal Name */
             customer_gst_legal_name: string | null;
+            /** Customer Gst Trade Name */
+            customer_gst_trade_name?: string | null;
             /** Customer Gstin */
             customer_gstin: string | null;
             /** Customer Name */
@@ -2392,8 +2652,19 @@ export interface components {
             customer_phone: string | null;
             /** Discount Amount */
             discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
             /** Discount Percent */
             discount_percent: string;
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Document Type */
             document_type: string;
             /** Igst Amount */
@@ -2402,6 +2673,8 @@ export interface components {
             item_count: number;
             /** Lifecycle Status */
             lifecycle_status: string;
+            /** Notes */
+            notes?: string | null;
             /** Original Bill Number */
             original_bill_number: string | null;
             /** Original Bill Uuid */
@@ -2416,10 +2689,27 @@ export interface components {
             place_of_supply_state_code: string | null;
             /** Round Off Amount */
             round_off_amount: string;
+            /**
+             * Round Off Increment
+             * @default 1.00
+             */
+            round_off_increment: string;
+            /**
+             * Round Off Mode
+             * @default nearest
+             * @enum {string}
+             */
+            round_off_mode: "none" | "nearest" | "up" | "down";
             /** Sgst Amount */
             sgst_amount: string;
             /** Subtotal Amount */
             subtotal_amount: string;
+            /**
+             * Tax Mode
+             * @default inclusive
+             * @enum {string}
+             */
+            tax_mode: "inclusive" | "exclusive";
             /** Taxable Amount */
             taxable_amount: string;
             /** Total Amount */
@@ -2579,6 +2869,8 @@ export interface components {
         };
         /** CartIn */
         CartIn: {
+            /** Bill Date */
+            bill_date?: string | null;
             /**
              * Bill Type
              * @default b2c
@@ -2597,15 +2889,25 @@ export interface components {
             customer_name?: string | null;
             /** Customer Phone */
             customer_phone?: string | null;
+            /** Discount Mode */
+            discount_mode?: ("percent" | "amount") | null;
             /**
              * Discount Percent
              * @default 0
              */
             discount_percent: number | string;
+            /** Discount Value */
+            discount_value?: number | string | null;
             /** Items */
             items: components["schemas"]["CartItem"][];
             /** Place Of Supply State Code */
             place_of_supply_state_code?: string | null;
+            /** Round Off Increment */
+            round_off_increment?: number | string | null;
+            /** Round Off Mode */
+            round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
         };
         /**
          * CartItem
@@ -2615,6 +2917,17 @@ export interface components {
         CartItem: {
             /** Cost */
             cost?: number | string | null;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: number | string;
             /** Gst Percent */
             gst_percent?: number | string | null;
             /** Hsn Code */
@@ -2625,6 +2938,8 @@ export interface components {
             product_uuid?: string | null;
             /** Quantity */
             quantity: number | string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Unit */
             unit?: string | null;
             /** Unit Price */
@@ -2681,11 +2996,41 @@ export interface components {
          */
         ContractFeatures: {
             /**
+             * Billing Controls
+             * @default 1
+             * @constant
+             */
+            billing_controls: 1;
+            /**
+             * Billing Metadata
+             * @default 1
+             * @constant
+             */
+            billing_metadata: 1;
+            /**
+             * Draft Handoff
+             * @default 1
+             * @constant
+             */
+            draft_handoff: 1;
+            /**
+             * Native Billing Commands
+             * @default 1
+             * @constant
+             */
+            native_billing_commands: 1;
+            /**
              * Native Sale Posting
              * @default 1
              * @constant
              */
             native_sale_posting: 1;
+            /**
+             * Native Sale Reconciliation
+             * @default 1
+             * @constant
+             */
+            native_sale_reconciliation: 1;
             /**
              * Native Sale Snapshot Proof
              * @default 1
@@ -2704,6 +3049,12 @@ export interface components {
              * @constant
              */
             product_expected_updated_at: 1;
+            /**
+             * Purchase Returns
+             * @default 1
+             * @constant
+             */
+            purchase_returns: 1;
             /**
              * Settings Revision
              * @default 1
@@ -3036,6 +3387,94 @@ export interface components {
         DeviceOut: {
             /** Code */
             code: string;
+        };
+        /** DraftHandoffClaimIn */
+        DraftHandoffClaimIn: {
+            /** Device Label */
+            device_label: string;
+        };
+        /** DraftHandoffIn */
+        DraftHandoffIn: {
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Source Device Label */
+            source_device_label: string;
+        };
+        /** DraftHandoffListOut */
+        DraftHandoffListOut: {
+            /** Items */
+            items: components["schemas"]["DraftHandoffSummary"][];
+        };
+        /** DraftHandoffOut */
+        DraftHandoffOut: {
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Claimed By Device */
+            claimed_by_device?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Item Count */
+            item_count: number;
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+            /** Label */
+            label: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Source Device Label */
+            source_device_label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "claimed" | "discarded";
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
+        };
+        /** DraftHandoffSummary */
+        DraftHandoffSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Item Count */
+            item_count: number;
+            /** Label */
+            label: string;
+            /** Source Device Label */
+            source_device_label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "claimed" | "discarded";
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
         };
         /** EmailChangeIn */
         EmailChangeIn: {
@@ -3422,10 +3861,21 @@ export interface components {
              * @default 0
              */
             default_profit_margin_percent: string;
+            /**
+             * Default Tax Mode
+             * @default inclusive
+             * @enum {string}
+             */
+            default_tax_mode: "inclusive" | "exclusive";
             /** Digital Signature */
             digital_signature?: string | null;
             /** Footer Text */
             footer_text: string;
+            /**
+             * Format Template
+             * @default INV/{FY}/{SEQ}
+             */
+            format_template: string;
             /** Gst Registered */
             gst_registered: boolean;
             /**
@@ -3440,12 +3890,49 @@ export interface components {
              * @default 5
              */
             low_stock_threshold: string;
+            /**
+             * Next Bill Number Preview
+             * @default
+             */
+            next_bill_number_preview: string;
+            /**
+             * Next Sequence
+             * @default 1
+             */
+            next_sequence: number;
             /** Paper Size */
             paper_size: string;
+            /**
+             * Reset Period
+             * @default financial_year
+             * @enum {string}
+             */
+            reset_period: "never" | "financial_year" | "monthly" | "daily";
             /** Revision */
             revision: string;
+            /**
+             * Round Off Increment
+             * @default 1.00
+             */
+            round_off_increment: string;
+            /**
+             * Round Off Mode
+             * @default nearest
+             * @enum {string}
+             */
+            round_off_mode: "none" | "nearest" | "up" | "down";
             /** Round Off Total */
             round_off_total: boolean;
+            /**
+             * Sequence Padding
+             * @default 4
+             */
+            sequence_padding: number;
+            /**
+             * Series Name
+             * @default Default
+             */
+            series_name: string;
             /** Shop Address */
             shop_address: string | null;
             /** Shop Email */
@@ -3480,22 +3967,38 @@ export interface components {
             default_overhead_cost?: number | string | null;
             /** Default Profit Margin Percent */
             default_profit_margin_percent?: number | string | null;
+            /** Default Tax Mode */
+            default_tax_mode?: ("inclusive" | "exclusive") | null;
             /** Digital Signature */
             digital_signature?: string | null;
             /** Expected Revision */
             expected_revision?: string | null;
             /** Footer Text */
             footer_text?: string | null;
+            /** Format Template */
+            format_template?: string | null;
             /** Gst Scheme */
             gst_scheme?: ("regular" | "composition" | "unregistered") | null;
             /** Invoice Title */
             invoice_title?: string | null;
             /** Low Stock Threshold */
             low_stock_threshold?: number | string | null;
+            /** Next Sequence */
+            next_sequence?: number | null;
             /** Paper Size */
             paper_size?: ("a4" | "a5" | "80mm" | "58mm") | null;
+            /** Reset Period */
+            reset_period?: ("never" | "financial_year" | "monthly" | "daily") | null;
+            /** Round Off Increment */
+            round_off_increment?: number | string | null;
+            /** Round Off Mode */
+            round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
             /** Round Off Total */
             round_off_total?: boolean | null;
+            /** Sequence Padding */
+            sequence_padding?: number | null;
+            /** Series Name */
+            series_name?: string | null;
             /** Shop Address */
             shop_address?: string | null;
             /** Shop Email */
@@ -3705,11 +4208,15 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "purchase" | "payment" | "purchase_reversal" | "payment_reversal";
+            kind: "purchase" | "payment" | "purchase_reversal" | "payment_reversal" | "purchase_return";
             /** Method */
             method: string | null;
+            /** Note */
+            note?: string | null;
             /** Reference */
             reference: string | null;
+            /** Reference Uuid */
+            reference_uuid?: string | null;
             /** Uuid */
             uuid: string;
         };
@@ -3730,7 +4237,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "bill" | "credit_note" | "purchase" | "purchase_reversal" | "phone_purchase";
+            kind: "bill" | "credit_note" | "purchase" | "purchase_reversal" | "purchase_return" | "phone_purchase";
             /** Label */
             label: string;
             /** Uuid */
@@ -3943,6 +4450,99 @@ export interface components {
              */
             updated_at: string;
         };
+        /** NativeCancelIn */
+        NativeCancelIn: {
+            /**
+             * Cancelled At
+             * Format: date-time
+             */
+            cancelled_at: string;
+            /** Device Id */
+            device_id: string;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** NativeCreditNoteIn */
+        NativeCreditNoteIn: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Credit Note Number */
+            credit_note_number: string;
+            /**
+             * Credit Note Uuid
+             * Format: uuid
+             */
+            credit_note_uuid: string;
+            /** Device Id */
+            device_id: string;
+            /** Invoice Adjustment Payment Uuid */
+            invoice_adjustment_payment_uuid?: string | null;
+            /** Lines */
+            lines: components["schemas"]["NativeCreditNoteLine"][];
+            /** Note Payment Uuid */
+            note_payment_uuid?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Refund Method
+             * @default cash
+             * @enum {string}
+             */
+            refund_method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
+            /**
+             * Settlement
+             * @default refund
+             * @enum {string}
+             */
+            settlement: "refund" | "adjust";
+        };
+        /** NativeCreditNoteLine */
+        NativeCreditNoteLine: {
+            /**
+             * Line Uuid
+             * Format: uuid
+             */
+            line_uuid: string;
+            /** Movement Uuid */
+            movement_uuid?: string | null;
+            /**
+             * Original Item Uuid
+             * Format: uuid
+             */
+            original_item_uuid: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /** NativePaymentIn */
+        NativePaymentIn: {
+            /** Amount */
+            amount: number | string;
+            /** Device Id */
+            device_id: string;
+            /**
+             * Method
+             * @default cash
+             * @enum {string}
+             */
+            method: "cash" | "upi" | "card" | "bank" | "bank_transfer" | "online";
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Payment Uuid
+             * Format: uuid
+             */
+            payment_uuid: string;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Reference */
+            reference?: string | null;
+        };
         /** NativeReceiptIn */
         NativeReceiptIn: {
             /**
@@ -4016,6 +4616,17 @@ export interface components {
              */
             uuid: string;
         };
+        /** NativeSaleFieldDiff */
+        NativeSaleFieldDiff: {
+            /** Current */
+            current?: string | null;
+            /** Field */
+            field: string;
+            /** Line Uuid */
+            line_uuid?: string | null;
+            /** Recorded */
+            recorded?: string | null;
+        };
         /** NativeSaleLineSnapshot */
         NativeSaleLineSnapshot: {
             /** Cost Snapshot */
@@ -4087,6 +4698,22 @@ export interface components {
         /** NativeSalePostLine */
         NativeSalePostLine: {
             /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: number | string;
+            /**
              * Line Uuid
              * Format: uuid
              */
@@ -4104,6 +4731,8 @@ export interface components {
             subtotal: number | string;
             /** Tax Amount */
             tax_amount: number | string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Amount */
             taxable_amount: number | string;
             /** Total Amount */
@@ -4169,8 +4798,74 @@ export interface components {
              */
             status: "matched_recorded_amounts";
         };
+        /** NativeSaleReconcileIn */
+        NativeSaleReconcileIn: {
+            /**
+             * Accept Recorded Snapshot
+             * @default false
+             */
+            accept_recorded_snapshot: boolean;
+            /**
+             * Allow Stock Shortage
+             * @default false
+             */
+            allow_stock_shortage: boolean;
+            /** Reason */
+            reason: string;
+            sale: components["schemas"]["NativeSalePostIn"];
+        };
+        /** NativeSaleReconcileInspectIn */
+        NativeSaleReconcileInspectIn: {
+            /** Attempt Id */
+            attempt_id: string;
+            sale: components["schemas"]["NativeSalePostIn"];
+        };
+        /** NativeSaleReconcileInspectOut */
+        NativeSaleReconcileInspectOut: {
+            /** Blocking Reasons */
+            blocking_reasons?: string[];
+            /** Can Reconcile */
+            can_reconcile: boolean;
+            committed_bill?: components["schemas"]["NativeSalePostOut"] | null;
+            /** Identity Conflicts */
+            identity_conflicts?: string[];
+            /**
+             * Invoice Uuid
+             * Format: uuid
+             */
+            invoice_uuid: string;
+            /** Operation Committed */
+            operation_committed: boolean;
+            /** Snapshot Mismatches */
+            snapshot_mismatches?: components["schemas"]["NativeSaleFieldDiff"][];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "already_committed" | "needs_reconciliation" | "identity_conflict" | "blocked";
+            /** Stock Shortages */
+            stock_shortages?: components["schemas"]["NativeSaleStockShortage"][];
+            /** Terms Mismatches */
+            terms_mismatches?: components["schemas"]["NativeSaleFieldDiff"][];
+        };
         /** NativeSaleRecordedLine */
         NativeSaleRecordedLine: {
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: number | string;
             /** Name */
             name: string;
             /** Product Uuid */
@@ -4181,10 +4876,25 @@ export interface components {
             subtotal: number | string;
             /** Tax Amount */
             tax_amount: number | string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Amount */
             taxable_amount: number | string;
             /** Total Amount */
             total_amount: number | string;
+        };
+        /** NativeSaleStockShortage */
+        NativeSaleStockShortage: {
+            /** Available Quantity */
+            available_quantity: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Recorded Quantity */
+            recorded_quantity: string;
+            /** Shortage Quantity */
+            shortage_quantity: string;
         };
         /** NewReceiptProduct */
         "NewReceiptProduct-Input": {
@@ -4549,6 +5259,17 @@ export interface components {
             cgst_amount: string;
             /** Discount Amount */
             discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Gst Registered */
             gst_registered: boolean;
             /** Igst Amount */
@@ -4561,10 +5282,27 @@ export interface components {
             reviewed_context: string;
             /** Round Off Amount */
             round_off_amount: string;
+            /**
+             * Round Off Increment
+             * @default 1.00
+             */
+            round_off_increment: string;
+            /**
+             * Round Off Mode
+             * @default nearest
+             * @enum {string}
+             */
+            round_off_mode: "none" | "nearest" | "up" | "down";
             /** Sgst Amount */
             sgst_amount: string;
             /** Subtotal */
             subtotal: string;
+            /**
+             * Tax Mode
+             * @default inclusive
+             * @enum {string}
+             */
+            tax_mode: "inclusive" | "exclusive";
             /** Taxable Amount */
             taxable_amount: string;
             /** Total */
@@ -4574,6 +5312,22 @@ export interface components {
         PreviewLine: {
             /** Amount */
             amount: string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Gst */
             gst: string;
             /** Name */
@@ -4582,6 +5336,8 @@ export interface components {
             product_uuid: string | null;
             /** Quantity */
             quantity: string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Value */
             taxable_value: string;
             /** Unit Price */
@@ -4862,6 +5618,91 @@ export interface components {
              */
             table: "shops" | "app_settings" | "bill_settings" | "categories" | "units" | "suppliers" | "customers" | "products" | "invoice_series" | "bills" | "bill_items" | "bill_payments" | "stock_movements" | "expenses" | "audit_log" | "held_bills" | "user_preferences";
         };
+        /** PurchaseReturnIn */
+        PurchaseReturnIn: {
+            /** Items */
+            items: components["schemas"]["PurchaseReturnItemIn"][];
+            /** Reason */
+            reason: string;
+            /** Refund Method */
+            refund_method?: ("cash" | "upi" | "card" | "bank" | "bank_transfer" | "online") | null;
+            /** Request Key */
+            request_key: string;
+            /**
+             * Return Date
+             * Format: date
+             */
+            return_date: string;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
+        };
+        /** PurchaseReturnItemIn */
+        PurchaseReturnItemIn: {
+            /** Purchase Item Uuid */
+            purchase_item_uuid: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /** PurchaseReturnItemOut */
+        PurchaseReturnItemOut: {
+            /** Amount */
+            amount: string;
+            /** Movement Uuid */
+            movement_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Purchase Item Uuid */
+            purchase_item_uuid: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Cost */
+            unit_cost: string;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** PurchaseReturnOut */
+        PurchaseReturnOut: {
+            /** Created At */
+            created_at: string;
+            /** Items */
+            items: components["schemas"]["PurchaseReturnItemOut"][];
+            /** Payable Credit */
+            payable_credit: string;
+            /** Purchase Uuid */
+            purchase_uuid: string;
+            /** Reason */
+            reason: string;
+            /** Refund Amount */
+            refund_amount: string;
+            /** Refund Method */
+            refund_method: string | null;
+            /**
+             * Return Date
+             * Format: date
+             */
+            return_date: string;
+            /** Return Number */
+            return_number: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Supplier Name */
+            supplier_name: string | null;
+            /** Supplier Uuid */
+            supplier_uuid: string | null;
+            /** Tax Amount */
+            tax_amount: string;
+            /** Total */
+            total: string;
+            /** Uuid */
+            uuid: string;
+        };
         /** PurchaseRow */
         PurchaseRow: {
             /** Amount */
@@ -5064,6 +5905,16 @@ export interface components {
             product_uuid: string;
             /** Quantity */
             quantity: string;
+            /**
+             * Returnable Quantity
+             * @default 0
+             */
+            returnable_quantity: string;
+            /**
+             * Returned Quantity
+             * @default 0
+             */
+            returned_quantity: string;
             /** Unit Cost */
             unit_cost: string;
             /** Unit Name */
@@ -5125,6 +5976,13 @@ export interface components {
              * Format: date
              */
             purchase_date: string;
+            /**
+             * Returned Total
+             * @default 0.00
+             */
+            returned_total: string;
+            /** Returns */
+            returns?: components["schemas"]["PurchaseReturnOut"][];
             /** Reversal Reason */
             reversal_reason?: string | null;
             /** Reversed At */
@@ -5525,6 +6383,38 @@ export interface components {
             role: string;
             /** Shop Id */
             shop_id: string;
+        };
+        /** ShopStockLedgerPage */
+        ShopStockLedgerPage: {
+            /** Items */
+            items: components["schemas"]["ShopStockMovementOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ShopStockMovementOut */
+        ShopStockMovementOut: {
+            /** Balance After */
+            balance_after: string;
+            /** Created At */
+            created_at: string;
+            /** Movement Type */
+            movement_type: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity Delta */
+            quantity_delta: string;
+            /** Reason */
+            reason: string | null;
+            /** Source Document Type */
+            source_document_type: string | null;
+            /** Source Document Uuid */
+            source_document_uuid: string | null;
+            /** Unit Cost */
+            unit_cost?: string | null;
+            /** Uuid */
+            uuid: string;
         };
         /** SignupIn */
         SignupIn: {
@@ -7347,6 +8237,9 @@ export interface operations {
         parameters: {
             query?: {
                 entity_type?: string | null;
+                action?: string | null;
+                from?: string | null;
+                to?: string | null;
                 q?: string | null;
                 limit?: number;
                 offset?: number;
@@ -7530,6 +8423,78 @@ export interface operations {
             };
         };
     };
+    reconcile_native_sale_v1_shops__shop_id__bills_native_reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSaleReconcileIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSalePostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_native_sale_reconcile_v1_shops__shop_id__bills_native_reconcile_inspect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeSaleReconcileInspectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeSaleReconcileInspectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_bill_v1_shops__shop_id__bills_preview_post: {
         parameters: {
             query?: never;
@@ -7597,6 +8562,42 @@ export interface operations {
             };
         };
     };
+    edit_bill_metadata_v1_shops__shop_id__bills__bill_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillMetadataPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cancel_bill_v1_shops__shop_id__bills__bill_id__cancel_post: {
         parameters: {
             query?: never;
@@ -7610,6 +8611,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CancelIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_native_bill_v1_shops__shop_id__bills__bill_id__cancel_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeCancelIn"];
             };
         };
         responses: {
@@ -7648,6 +8687,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreditNoteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_native_credit_note_v1_shops__shop_id__bills__bill_id__credit_note_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeCreditNoteIn"];
             };
         };
         responses: {
@@ -7727,6 +8804,44 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_native_payment_v1_shops__shop_id__bills__bill_id__payments_native_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativePaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8214,6 +9329,138 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_draft_handoffs_v1_shops__shop_id__draft_handoffs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftHandoffListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_draft_handoff_v1_shops__shop_id__draft_handoffs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftHandoffIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftHandoffOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftHandoffClaimIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftHandoffOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -9389,7 +10636,7 @@ export interface operations {
                 offset?: number;
                 supplier?: string | null;
                 q?: string | null;
-                status?: ("not_recorded" | "unpaid" | "partial" | "paid" | "open") | null;
+                status?: ("not_recorded" | "unpaid" | "partial" | "paid" | "open" | "reversed") | null;
                 overdue?: boolean;
                 from?: string | null;
                 to?: string | null;
@@ -9719,6 +10966,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_purchase_returns_v1_shops__shop_id__purchase_receipts__receipt_id__returns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseReturnOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_purchase_return_v1_shops__shop_id__purchase_receipts__receipt_id__returns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseReturnIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseReturnOut"];
                 };
             };
             /** @description Validation Error */
@@ -10162,7 +11477,10 @@ export interface operations {
     };
     shop_security_events_v1_shops__shop_id__security_events_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path: {
                 shop_id: string;
@@ -10178,6 +11496,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopEventOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shop_stock_ledger_v1_shops__shop_id__stock_movements_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                type?: ("purchase" | "sale" | "adjustment" | "return" | "void" | "stocktake") | null;
+                q?: string | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopStockLedgerPage"];
                 };
             };
             /** @description Validation Error */

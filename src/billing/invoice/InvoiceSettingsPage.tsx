@@ -21,16 +21,182 @@ import { findSettings, type SettingsSearchEntry } from './settingsSearch'
 import { lowStockThresholdProblem } from './lowStockThreshold'
 import { pricingSettingsProblems, PRICING_SETTING_KEYS } from './pricingDefaults'
 import { assertSettingsRevisionSupport, rebaseSettings, requireSettingsRevision, settingsChanges, settingsReview } from './settingsRevision'
+import type { RoundOffMode, TaxMode } from '../checkout/cart'
 
 type Change = components['schemas']['InvoiceSettingsIn']
 type ShowKey = keyof NonNullable<Change['show']>
+type ResetPeriod = 'never' | 'financial_year' | 'monthly' | 'daily'
+type BillingControlSettings = InvoiceSettings & {
+  default_tax_mode?: TaxMode
+  round_off_mode?: RoundOffMode
+  round_off_increment?: string
+  series_name?: string
+  format_template?: string
+  sequence_padding?: number
+  reset_period?: ResetPeriod
+  next_sequence?: number
+  next_bill_number_preview?: string
+}
+
+const RESET_PERIODS: { value: ResetPeriod; label: string }[] = [
+  { value: 'financial_year', label: 'Financial year (Apr–Mar)' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'never', label: 'Never' },
+]
+
+const ALLOWED_TEMPLATE_TOKENS = new Set(['FY', 'YYYY', 'YY', 'MM', 'DD', 'SEQ', 'DEVICE'])
+
+const effectiveFormatTemplate = (s: BillingControlSettings): string =>
+  s.format_template ?? 'INV/{FY}/{SEQ}'
+
+const effectiveSequencePadding = (s: BillingControlSettings): number =>
+  typeof s.sequence_padding === 'number' ? s.sequence_padding : 4
+
+const effectiveResetPeriod = (s: BillingControlSettings): ResetPeriod =>
+  s.reset_period === 'never' || s.reset_period === 'financial_year' || s.reset_period === 'monthly' || s.reset_period === 'daily'
+    ? s.reset_period
+    : 'financial_year'
+
+const effectiveNextSequence = (s: BillingControlSettings): number =>
+  typeof s.next_sequence === 'number' ? s.next_sequence : 1
+
+function formatTemplateProblem(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return 'Enter an invoice number format template.'
+  if (trimmed.length > 16) return 'Format template can be at most 16 characters.'
+  const tokens = [...trimmed.matchAll(/\{([^}]*)\}/g)]
+  for (const match of tokens) {
+    const token = match[1] ?? ''
+    if (!ALLOWED_TEMPLATE_TOKENS.has(token)) return `Unknown token {${token}}. Allowed: {FY}, {YYYY}, {YY}, {MM}, {DD}, {SEQ}, {DEVICE}.`
+  }
+  const stripped = trimmed.replace(/\{[^}]*\}/g, '')
+  if (stripped.includes('{') || stripped.includes('}')) return 'Unmatched brace in format template.'
+  return null
+}
+
+function computeBillNumberPreview(template: string, padding: number, nextSeq: number): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const d = now.getDate()
+  const fyStart = m >= 3 ? y : y - 1
+  const fy = `${String(fyStart % 100).padStart(2, '0')}${String((fyStart + 1) % 100).padStart(2, '0')}`
+  const pad = Number.isInteger(padding) ? Math.min(8, Math.max(1, padding)) : 4
+  const seqNum = Number.isInteger(nextSeq) && nextSeq >= 1 ? nextSeq : 1
+  const seq = String(seqNum).padStart(pad, '0')
+  return template
+    .replaceAll('{FY}', fy)
+    .replaceAll('{YYYY}', String(y))
+    .replaceAll('{YY}', String(y % 100).padStart(2, '0'))
+    .replaceAll('{MM}', String(m + 1).padStart(2, '0'))
+    .replaceAll('{DD}', String(d).padStart(2, '0'))
+    .replaceAll('{SEQ}', seq)
+    .replaceAll('{DEVICE}', '')
+}
+
+const ROUND_OFF_INCREMENTS = [
+  { value: '0.50', label: '₹0.50' },
+  { value: '1.00', label: '₹1' },
+  { value: '5.00', label: '₹5' },
+  { value: '10.00', label: '₹10' },
+] as const
+
+const effectiveTaxMode = (s: BillingControlSettings): TaxMode =>
+  s.default_tax_mode === 'exclusive' ? 'exclusive' : 'inclusive'
+
+const effectiveRoundOffMode = (s: BillingControlSettings): RoundOffMode => {
+  if (s.round_off_mode === 'none' || s.round_off_mode === 'nearest' || s.round_off_mode === 'up' || s.round_off_mode === 'down') {
+    return s.round_off_mode
+  }
+  return s.round_off_total ? 'nearest' : 'none'
+}
+
+const normalizeIncrement = (raw: string | number | null | undefined): string => {
+  if (raw === null || raw === undefined || raw === '') return '1.00'
+  const n = Number(raw)
+  if (n === 0.5) return '0.50'
+  if (n === 5) return '5.00'
+  if (n === 10) return '10.00'
+  return '1.00'
+}
+
+function allSettingsChanges(base: BillingControlSettings, mine: BillingControlSettings): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...settingsChanges(base, mine) }
+  if (effectiveTaxMode(mine) !== effectiveTaxMode(base)) out.default_tax_mode = effectiveTaxMode(mine)
+  if (effectiveRoundOffMode(mine) !== effectiveRoundOffMode(base)) {
+    const mode = effectiveRoundOffMode(mine)
+    out.round_off_mode = mode
+    out.round_off_total = mode !== 'none'
+  }
+  if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
+    out.round_off_increment = normalizeIncrement(mine.round_off_increment)
+  }
+  if (effectiveFormatTemplate(mine).trim() !== effectiveFormatTemplate(base).trim()) {
+    out.format_template = effectiveFormatTemplate(mine).trim()
+  }
+  if (effectiveSequencePadding(mine) !== effectiveSequencePadding(base)) {
+    out.sequence_padding = effectiveSequencePadding(mine)
+  }
+  if (effectiveResetPeriod(mine) !== effectiveResetPeriod(base)) {
+    out.reset_period = effectiveResetPeriod(mine)
+  }
+  if (effectiveNextSequence(mine) !== effectiveNextSequence(base)) {
+    out.next_sequence = effectiveNextSequence(mine)
+  }
+  return out
+}
+
+function allRebaseSettings(base: BillingControlSettings, mine: BillingControlSettings, latest: BillingControlSettings): BillingControlSettings {
+  const merged: BillingControlSettings = { ...rebaseSettings(base, mine, latest) }
+  if (effectiveTaxMode(mine) !== effectiveTaxMode(base)) merged.default_tax_mode = effectiveTaxMode(mine)
+  if (effectiveRoundOffMode(mine) !== effectiveRoundOffMode(base)) {
+    const mode = effectiveRoundOffMode(mine)
+    merged.round_off_mode = mode
+    merged.round_off_total = mode !== 'none'
+  }
+  if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
+    merged.round_off_increment = normalizeIncrement(mine.round_off_increment)
+  }
+  if (effectiveFormatTemplate(mine).trim() !== effectiveFormatTemplate(base).trim()) merged.format_template = effectiveFormatTemplate(mine).trim()
+  if (effectiveSequencePadding(mine) !== effectiveSequencePadding(base)) merged.sequence_padding = effectiveSequencePadding(mine)
+  if (effectiveResetPeriod(mine) !== effectiveResetPeriod(base)) merged.reset_period = effectiveResetPeriod(mine)
+  if (effectiveNextSequence(mine) !== effectiveNextSequence(base)) merged.next_sequence = effectiveNextSequence(mine)
+  return merged
+}
+
+function allSettingsReview(base: BillingControlSettings, mine: BillingControlSettings, latest: BillingControlSettings) {
+  const rows = [...settingsReview(base, mine, latest)]
+  if (effectiveTaxMode(mine) !== effectiveTaxMode(base)) {
+    rows.push({ label: 'Default rate tax mode', current: effectiveTaxMode(latest), mine: effectiveTaxMode(mine) })
+  }
+  if (effectiveRoundOffMode(mine) !== effectiveRoundOffMode(base)) {
+    rows.push({ label: 'Round-off mode', current: effectiveRoundOffMode(latest), mine: effectiveRoundOffMode(mine) })
+  }
+  if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
+    rows.push({ label: 'Round-off increment', current: normalizeIncrement(latest.round_off_increment), mine: normalizeIncrement(mine.round_off_increment) })
+  }
+  if (effectiveFormatTemplate(mine).trim() !== effectiveFormatTemplate(base).trim()) {
+    rows.push({ label: 'Format template', current: effectiveFormatTemplate(latest), mine: effectiveFormatTemplate(mine).trim() })
+  }
+  if (effectiveSequencePadding(mine) !== effectiveSequencePadding(base)) {
+    rows.push({ label: 'Sequence padding', current: String(effectiveSequencePadding(latest)), mine: String(effectiveSequencePadding(mine)) })
+  }
+  if (effectiveResetPeriod(mine) !== effectiveResetPeriod(base)) {
+    rows.push({ label: 'Reset period', current: effectiveResetPeriod(latest), mine: effectiveResetPeriod(mine) })
+  }
+  if (effectiveNextSequence(mine) !== effectiveNextSequence(base)) {
+    rows.push({ label: 'Next sequence', current: String(effectiveNextSequence(latest)), mine: String(effectiveNextSequence(mine)) })
+  }
+  return rows
+}
 
 const GROUPS: { title: string; keys: [ShowKey, string][] }[] = [
   { title: 'Shop', keys: [['show_shop_name', 'Shop name'], ['show_shop_address', 'Address'], ['show_shop_phone', 'Phone'], ['show_shop_email', 'Email'], ['show_shop_gstin', 'GSTIN'], ['show_shop_logo', 'Logo']] },
-  { title: 'Customer', keys: [['show_customer_name', 'Name'], ['show_customer_legal_name', 'GST legal name'], ['show_customer_address', 'Address'], ['show_customer_phone', 'Phone'], ['show_customer_gstin', 'GSTIN'], ['show_customer_place_of_supply', 'State']] },
+  { title: 'Customer', keys: [['show_customer_name', 'Name'], ['show_customer_legal_name', 'GST legal name'], ['show_customer_trade_name', 'GST trade name'], ['show_customer_address', 'Address'], ['show_customer_phone', 'Phone'], ['show_customer_gstin', 'GSTIN'], ['show_customer_place_of_supply', 'State']] },
   { title: 'Invoice details', keys: [['show_invoice_title', 'Title'], ['show_invoice_number', 'Invoice number'], ['show_invoice_date', 'Date'], ['show_invoice_place_of_supply', 'Place of supply'], ['show_invoice_supply_type', 'Intra / inter-state']] },
   { title: 'Item columns', keys: [['show_item_serial_column', 'Serial number'], ['show_item_name_column', 'Item name'], ['show_hsn_column', 'HSN / SAC'], ['show_quantity_column', 'Quantity'], ['show_rate_column', 'Rate'], ['show_gst_percent_column', 'GST %'], ['show_gst_amount_column', 'GST amount'], ['show_amount_column', 'Amount']] },
-  { title: 'Totals', keys: [['show_subtotal', 'Subtotal'], ['show_discount', 'Discount'], ['show_taxable_amount', 'Taxable value'], ['show_cgst_sgst_igst', 'CGST / SGST / IGST'], ['show_grand_total', 'Grand total and round-off']] },
+  { title: 'Totals', keys: [['show_subtotal', 'Subtotal'], ['show_discount', 'Discount'], ['show_taxable_amount', 'Taxable value'], ['show_cgst_sgst_igst', 'CGST / SGST / IGST'], ['show_gst_breakdown', 'GST breakdown'], ['show_gst_total', 'Total GST'], ['show_grand_total', 'Grand total and round-off']] },
   { title: 'Extras', keys: [['show_amount_in_words', 'Amount in words'], ['show_hsn_summary', 'Tax summary by HSN'], ['show_payment_details', 'Payments and balance due'], ['show_upi_qr', 'UPI QR for the balance due'], ['show_footer_text', 'Footer text'], ['show_digital_signature', 'Signature']] },
 ]
 
@@ -111,7 +277,7 @@ export function InvoiceSettingsPage() {
   </>
 }
 
-function Editor({ saved }: { saved: InvoiceSettings }) {
+function Editor({ saved }: { saved: BillingControlSettings }) {
   const shop = useShop().current?.shop_id ?? ''
   const client = useQueryClient()
   const { busy, error, run, setError, fieldErrors } = useAction()
@@ -125,10 +291,10 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   const [search, setSearch] = useState('')
   const [destination, setDestination] = useState<SettingsSearchEntry | null>(null)
   const searchResults = findSettings(search)
-  const [baseline, setBaseline] = useState<InvoiceSettings>(saved)
-  const [draft, setDraft] = useState<InvoiceSettings>(saved)
+  const [baseline, setBaseline] = useState<BillingControlSettings>(saved)
+  const [draft, setDraft] = useState<BillingControlSettings>(saved)
   const [stale, setStale] = useState(false)
-  const [latest, setLatest] = useState<InvoiceSettings | null>(null)
+  const [latest, setLatest] = useState<BillingControlSettings | null>(null)
   const sending = useRef(false)
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
@@ -137,7 +303,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     const heading = formRef.current?.querySelector<HTMLElement>(`[data-settings-section="${destination.id}"]`)
     heading?.focus(); heading?.scrollIntoView?.({ block: 'nearest' })
   }, [destination, formRef])
-  const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
+  const set = <K extends keyof BillingControlSettings>(key: K, value: BillingControlSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
   const err = (key: string) => problems[key] || fieldErrors[key] || undefined
   const text = (key: 'shop_name' | 'shop_address' | 'shop_phone' | 'shop_email' | 'shop_gstin' | 'invoice_title' | 'footer_text' | 'upi_id' | 'terms_text' | 'bank_details') =>
     (e: { target: { value: string } }) => set(key, (key === 'shop_gstin' ? e.target.value.toUpperCase() : e.target.value) as never)
@@ -152,19 +318,31 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     if (!draft.shop_name.trim()) found.shop_name = 'Enter the shop name.'
     const checks: [string, string | null][] = [['shop_phone', shopPhoneProblem(draft.shop_phone ?? '')], ['shop_email', emailProblem(draft.shop_email ?? '')], ['shop_gstin', gstinProblem(draft.shop_gstin ?? '')], ['upi_id', upiProblem(draft.upi_id ?? '')]]
     for (const [key, problem] of checks) if (problem) found[key] = problem
+    if (effectiveFormatTemplate(draft).trim() !== effectiveFormatTemplate(baseline).trim()) {
+      const tplErr = formatTemplateProblem(effectiveFormatTemplate(draft))
+      if (tplErr) found.format_template = tplErr
+    }
+    if (effectiveSequencePadding(draft) !== effectiveSequencePadding(baseline)) {
+      const pad = effectiveSequencePadding(draft)
+      if (!Number.isInteger(pad) || pad < 1 || pad > 8) found.sequence_padding = 'Enter a whole number from 1 to 8.'
+    }
+    if (effectiveNextSequence(draft) !== effectiveNextSequence(baseline)) {
+      const seq = effectiveNextSequence(draft)
+      if (!Number.isInteger(seq) || seq < 1) found.next_sequence = 'Enter a whole number of 1 or more.'
+    }
     setProblems(found)
-    if (Object.keys(found).length) { if (found.low_stock_threshold) setTab('shop'); else if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
+    if (Object.keys(found).length) { if (found.low_stock_threshold) setTab('shop'); else if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); else if (found.format_template || found.sequence_padding || found.next_sequence) setTab('invoice'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
     setError(null)
-    const change = settingsChanges(baseline, draft)
+    const change = allSettingsChanges(baseline, draft)
     if (!Object.keys(change).length) { setDone(true); return }
     sending.current = true
-    let result: InvoiceSettings | undefined
+    let result: BillingControlSettings | undefined
     try {
       result = await run(async () => {
         const revision = requireSettingsRevision(baseline)
         await assertSettingsRevisionSupport(shop)
         if (!mounted.current) return
-        try { return await api.patch<InvoiceSettings>(`/v1/shops/${shop}/invoice-settings`, { ...change, expected_revision: revision }) }
+        try { return await api.patch<BillingControlSettings>(`/v1/shops/${shop}/invoice-settings`, { ...change, expected_revision: revision }) }
         catch (failure) {
           if (mounted.current && failure instanceof ApiError && failure.code === 'settings_changed') { setStale(true); setLatest(null) }
           throw failure
@@ -182,7 +360,16 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     }
   }
 
-  const changed = Object.keys(settingsChanges(baseline, draft)).length > 0
+  const changed = Object.keys(allSettingsChanges(baseline, draft)).length > 0
+  const numberingChanged =
+    effectiveFormatTemplate(draft).trim() !== effectiveFormatTemplate(baseline).trim() ||
+    effectiveSequencePadding(draft) !== effectiveSequencePadding(baseline) ||
+    effectiveResetPeriod(draft) !== effectiveResetPeriod(baseline) ||
+    effectiveNextSequence(draft) !== effectiveNextSequence(baseline)
+  const nextBillPreview =
+    !numberingChanged && draft.next_bill_number_preview
+      ? draft.next_bill_number_preview
+      : computeBillNumberPreview(effectiveFormatTemplate(draft), effectiveSequencePadding(draft), effectiveNextSequence(draft))
   useDirtyClose(changed, () => undefined)
   const show = (id: TabId) => ({ hidden: tab !== id, role: 'tabpanel' as const, 'aria-labelledby': `tab-${id}` })
   return <div className="settings-page">
@@ -239,7 +426,36 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               <Field label="Default profit margin %" inputMode="decimal" value={draft.default_profit_margin_percent ?? '0'} onChange={e => set('default_profit_margin_percent', e.target.value)} error={err('default_profit_margin_percent')} hint="Added to total cost when product and category margins are unset. From 0 to 100%, with up to three decimal places." />
               <Field label="Default overhead cost (₹)" inputMode="decimal" value={draft.default_overhead_cost ?? '0'} onChange={e => set('default_overhead_cost', e.target.value)} error={err('default_overhead_cost')} hint="Per unit, when product and category overheads are unset. Up to two decimal places." />
             </div>
-            <label className="check"><input type="checkbox" checked={draft.round_off_total} onChange={e => set('round_off_total', e.target.checked)} />Round totals to the nearest rupee (new bills)</label>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="default-tax-mode">Default rate tax mode</label>
+                <select id="default-tax-mode" value={effectiveTaxMode(draft)} onChange={e => set('default_tax_mode', e.target.value as TaxMode)}>
+                  <option value="inclusive">GST inclusive</option>
+                  <option value="exclusive">GST exclusive</option>
+                </select>
+                <small className="hint">Applied to new bills. Staff can override per bill or per line.</small>
+              </div>
+              <div className="field">
+                <label htmlFor="round-off-mode">Round-off mode</label>
+                <select id="round-off-mode" value={effectiveRoundOffMode(draft)} onChange={e => {
+                  const mode = e.target.value as RoundOffMode
+                  setDraft({ ...draft, round_off_mode: mode, round_off_total: mode !== 'none' })
+                  setDone(false)
+                }}>
+                  <option value="none">None</option>
+                  <option value="nearest">Nearest</option>
+                  <option value="up">Round up</option>
+                  <option value="down">Round down</option>
+                </select>
+                <small className="hint">How new bill totals are rounded.</small>
+              </div>
+              {effectiveRoundOffMode(draft) !== 'none' && <div className="field">
+                <label htmlFor="round-off-increment">Round-off increment</label>
+                <select id="round-off-increment" value={normalizeIncrement(draft.round_off_increment)} onChange={e => set('round_off_increment', e.target.value)}>
+                  {ROUND_OFF_INCREMENTS.map(inc => <option key={inc.value} value={inc.value}>{inc.label}</option>)}
+                </select>
+              </div>}
+            </div>
             <Alert kind="info">Changing these affects new invoices only. Issued invoices keep their saved prices, tax and totals.</Alert>
           </section>
 
@@ -255,6 +471,49 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
           </section>
 
           <section className="card wide" {...show('invoice')}>
+            <h2 tabIndex={-1} data-settings-section="numbering">Invoice numbering</h2>
+            <div className="form-grid">
+              <Field
+                label="Format template"
+                maxLength={16}
+                value={effectiveFormatTemplate(draft)}
+                error={err('format_template')}
+                hint="Tokens: {FY}, {YYYY}, {YY}, {MM}, {DD}, {SEQ}, {DEVICE}. Max 16 characters."
+                onChange={e => set('format_template', e.target.value)}
+              />
+              <Field
+                label="Sequence padding"
+                type="number"
+                min={1}
+                max={8}
+                step={1}
+                value={Number.isFinite(effectiveSequencePadding(draft)) ? String(effectiveSequencePadding(draft)) : ''}
+                error={err('sequence_padding')}
+                hint="Digits in {SEQ}, from 1 to 8."
+                onChange={e => set('sequence_padding', e.target.value === '' ? Number.NaN : Number(e.target.value))}
+              />
+              <div className="field">
+                <label htmlFor="reset-period">Reset period</label>
+                <select id="reset-period" value={effectiveResetPeriod(draft)} onChange={e => set('reset_period', e.target.value as ResetPeriod)}>
+                  {RESET_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+                <small className="hint">When the sequence restarts at 1.</small>
+              </div>
+              <Field
+                label="Next sequence"
+                type="number"
+                min={1}
+                step={1}
+                value={Number.isFinite(effectiveNextSequence(draft)) ? String(effectiveNextSequence(draft)) : ''}
+                error={err('next_sequence')}
+                hint="Next invoice number in the current period."
+                onChange={e => set('next_sequence', e.target.value === '' ? Number.NaN : Number(e.target.value))}
+              />
+            </div>
+            <p className="muted">Next invoice number preview: <strong data-testid="next-bill-number-preview">{nextBillPreview}</strong></p>
+          </section>
+
+          <section className="card wide" {...show('invoice')}>
             <h2 tabIndex={-1} data-settings-section="visibility">What the invoice shows</h2>
             <div className="show-groups">{GROUPS.map(g => <fieldset key={g.title}><legend>{g.title}</legend>{g.keys.map(([key, label]) => <label key={key} className="check"><input type="checkbox" checked={draft.show[key] !== false} onChange={e => set('show', { ...draft.show, [key]: e.target.checked })} />{label}</label>)}</fieldset>)}</div>
           </section>
@@ -264,7 +523,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
             <p className="muted">{paperGuidance(resolvePaper(draft.paper_size))}</p>
             <p className="muted">New invoices, reloads and the PDF open on this paper. Staff can pick another paper for a single print without changing it. Use the preview to check long names and line counts before printing on hardware.</p>
           </section>
-          <p className="muted">Team access is managed under <Link to="/team">Team &amp; permissions</Link>; plan and renewal under <Link to="/subscription">Subscription</Link>.</p>
+          <p className="muted">Team access is managed under <Link to="/team">Team &amp; permissions</Link>; plan and renewal under <Link to="/subscription">Subscription</Link>; history under <Link to="/activity">Activity &amp; audit</Link>.</p>
         </fieldset>
         <div className="settings-save">
           {error && <Alert>{error}</Alert>}
@@ -281,9 +540,9 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
           </>}
           {stale && latest && <section aria-label="Latest settings review">
             <p>These are your edited fields. Other changes in the latest settings will be kept.</p>
-            <div className="table-wrap"><table className="table"><thead><tr><th>Field</th><th>Latest value</th><th>Your value</th></tr></thead><tbody>{settingsReview(baseline, draft, latest).map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{row.current}</td><td>{row.mine}</td></tr>)}</tbody></table></div>
+            <div className="table-wrap"><table className="table"><thead><tr><th>Field</th><th>Latest value</th><th>Your value</th></tr></thead><tbody>{allSettingsReview(baseline, draft, latest).map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{row.current}</td><td>{row.mine}</td></tr>)}</tbody></table></div>
             <Button onClick={() => {
-              const merged = rebaseSettings(baseline, draft, latest)
+              const merged = allRebaseSettings(baseline, draft, latest)
               setDraft(merged); setBaseline(latest); setPaper(resolvePaper(merged.paper_size)); setLatest(null); setStale(false); setError(null); setDone(false)
             }}>Keep my edits with latest settings</Button>
           </section>}

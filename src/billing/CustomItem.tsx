@@ -5,8 +5,21 @@ import { Modal } from '../components/ui/Modal'
 import { Alert, Field } from '../components/ui/ui'
 import { isAmount } from '../lib/money'
 import { GST_RATES } from '../products/queries'
+import type { DiscountMode, TaxMode } from './checkout/cart'
 
-export interface CustomLine { key: string; name: string; unit_price: string; gst_percent: string; quantity: string; cost: string; hsn_code: string; unit: string }
+export interface CustomLine {
+  key: string
+  name: string
+  unit_price: string
+  gst_percent: string
+  quantity: string
+  cost: string
+  hsn_code: string
+  unit: string
+  discount_mode?: DiscountMode
+  discount_value?: string
+  tax_mode?: TaxMode | null
+}
 
 /** An item that is not in the product list (a service, a one-off). No stock moves for it.
  * The GST rate is always chosen here: nothing is applied without the owner seeing it. */

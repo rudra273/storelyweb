@@ -12,6 +12,7 @@ import { ListsManager } from './components/ListsManager'
 import { ProductDetailPanel } from './components/ProductDetailPanel'
 import { ProductForm } from './components/ProductForm'
 import { ProductRow } from './components/ProductRow'
+import { ShopStockLedger } from './components/ShopStockLedger'
 import { BulkDialog, type BulkKind } from './components/BulkDialog'
 import { TriCheckbox } from './components/TriCheckbox'
 import { BULK_LIMIT, NONE, liveSelection, pageState, scopeOf, selectAllMatching, selectedCount, toggleOne, togglePage, type Filters, type Selection } from './selection'
@@ -52,7 +53,7 @@ function ProductsWorkspace() {
 
   const [search, setSearch] = useState(query.q)
   const settled = useDebounced(search, 300)
-  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels'>(null)
+  const [dialog, setDialog] = useState<null | 'new' | 'import' | 'lists' | 'labels' | 'ledger'>(null)
   const toast = useToast()
   // A link from Home ("Add your first product") opens the form straight away.
   useEffect(() => {
@@ -119,6 +120,7 @@ function ProductsWorkspace() {
         <PageHeader eyebrow="INVENTORY" title="Products" description="Your catalogue, stock and pricing in one place." actions={<>
           {canEdit && <Button variant="primary" onClick={() => setDialog('new')}>Add product</Button>}
           {canEdit && <Button onClick={() => setDialog('import')}>Import</Button>}
+          <Button onClick={() => setDialog('ledger')}>Stock ledger</Button>
           <Button disabled={chosen === 0 || chosen > BULK_LIMIT} onClick={() => setDialog('labels')}>Print labels{chosen ? ` (${chosen.toLocaleString('en-IN')})` : ''}</Button>
           {(canEdit || canExport) && <ActionMenu>
             {canExport && <>
@@ -248,6 +250,7 @@ function ProductsWorkspace() {
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog === 'lists' && <ListsManager onClose={() => setDialog(null)} />}
       {dialog === 'labels' && <Labels scope={scopeOf(sel)} onClose={() => setDialog(null)} />}
+      {dialog === 'ledger' && <ShopStockLedger onClose={() => setDialog(null)} />}
       {bulk && <BulkDialog kind={bulk} scope={scopeOf(sel)} count={chosen} categories={categories.data ?? []} onClose={() => setBulk(null)} onApplied={() => { if (bulk === 'archive') setSelection(NONE) }} onPrintLabels={() => { setBulk(null); setDialog('labels') }} />}
     </div>
   )

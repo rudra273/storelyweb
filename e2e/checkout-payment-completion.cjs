@@ -3,7 +3,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const fs = require('node:fs')
 const assert = require('node:assert/strict')
 const origin = process.env.STORELY_WEB_ORIGIN || 'http://127.0.0.1:5173'
-if (!['localhost', '127.0.0.1'].includes(new URL(origin).hostname)) throw new Error('Localhost origin required')
+if (!['localhost', '127.0.0.1', 'app.storely.localhost'].includes(new URL(origin).hostname)) throw new Error('Localhost origin required')
 if (!process.env.STORELY_FIXTURE) throw new Error('Run-owned STORELY_FIXTURE required')
 const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
 

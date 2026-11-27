@@ -5,6 +5,8 @@ import { useShop } from '../shops/context'
 import type { ImportPreview, Receipt, ReceiptInput } from './composer/contracts'
 
 export type PurchaseSummary = components['schemas']['PurchaseSummary']
+export type PurchaseReturn = components['schemas']['PurchaseReturnOut']
+export type PurchaseReturnInput = components['schemas']['PurchaseReturnIn']
 export const RECEIPT_PAGE_SIZE = 25
 
 /** What narrows the purchase list. The same filters narrow the summary, so the two always agree. */
@@ -72,6 +74,18 @@ export function useReversePurchase(id: string) {
   const client = useQueryClient()
   return useMutation({ retry: false,
     mutationFn: (reason: string) => api.post<Receipt>(`/v1/shops/${shop}/purchase-receipts/${id}/reverse`, { reason }),
+    onSuccess: () => {
+      for (const key of [...PURCHASE_VIEWS, 'products', 'product', 'report']) void client.invalidateQueries({ queryKey: [key, shop] })
+    },
+  })
+}
+
+/** Records a partial or full purchase return (debit note): stock decreases and payables adjust. */
+export function useCreatePurchaseReturn(purchaseId: string) {
+  const shop = useShop().current?.shop_id ?? ''
+  const client = useQueryClient()
+  return useMutation({ retry: false,
+    mutationFn: (input: PurchaseReturnInput) => api.post<PurchaseReturn>(`/v1/shops/${shop}/purchase-receipts/${purchaseId}/returns`, input),
     onSuccess: () => {
       for (const key of [...PURCHASE_VIEWS, 'products', 'product', 'report']) void client.invalidateQueries({ queryKey: [key, shop] })
     },

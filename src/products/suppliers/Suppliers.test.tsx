@@ -371,3 +371,49 @@ for (const method of ['bank', 'bank_transfer']) {
     await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/payments'))?.body).toMatchObject({ payment_method: 'bank_transfer' }))
   })
 }
+
+test('supplier statement renders purchase_return debit note entries linked to the purchase', async () => {
+  const withReturn = {
+    ...STATEMENT,
+    ledger: [
+      ...STATEMENT.ledger,
+      {
+        kind: 'purchase_return',
+        uuid: 'ret1',
+        reference_uuid: 'r1',
+        date: '2026-09-25',
+        reference: 'DN/2627/0001',
+        note: 'Refund ₹8.00 via Cash',
+        method: null,
+        debit: '0',
+        credit: '10.00',
+        balance: '90.00',
+      },
+    ],
+  }
+  fakeApi([
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', '/v1/shops/s1/suppliers', [supplier]),
+    ok('GET', '/v1/shops/s1/suppliers/vendor1/statement', withReturn),
+  ])
+  renderApp('/suppliers/vendor1')
+  const statement = within(await screen.findByRole('region', { name: 'Statement' }))
+  const link = statement.getByRole('link', { name: 'Purchase return (Debit note)' })
+  expect(link).toHaveAttribute('href', '/purchases/r1')
+  expect(statement.getByText('DN/2627/0001')).toBeInTheDocument()
+  expect(statement.getByText('Refund ₹8.00 via Cash')).toBeInTheDocument()
+})
+
+test('supplier payment sends optional notes in payload', async () => {
+  const calls = setup()
+  renderApp('/suppliers/vendor1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Record payment' }))
+  await userEvent.type(screen.getByLabelText('Amount (₹)'), '25')
+  await userEvent.type(screen.getByLabelText('Notes (optional)'), 'Paid in shop counter')
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Record payment' }))
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/payments'))?.body).toMatchObject({
+    amount: '25',
+    notes: 'Paid in shop counter',
+  }))
+})

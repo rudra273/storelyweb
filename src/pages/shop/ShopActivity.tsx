@@ -34,12 +34,16 @@ export function ShopActivity() {
   const [tab, setTab] = useState<Tab>('business')
   const [entityType, setEntityType] = useState('')
   const [search, setSearch] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [page, setPage] = useState(0)
   const q = useDebounced(search.trim(), 250)
 
   const auditParams = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE) })
   if (entityType) auditParams.set('entity_type', entityType)
   if (q) auditParams.set('q', q)
+  if (fromDate) auditParams.set('from', fromDate)
+  if (toDate) auditParams.set('to', toDate)
 
   const auditQuery = useQuery({
     queryKey: ['shop-audit', shopId, auditParams.toString()],
@@ -72,12 +76,25 @@ export function ShopActivity() {
             <select aria-label="Area" value={entityType} onChange={e => { setEntityType(e.target.value); setPage(0) }}>
               {ENTITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            <label>
+              From
+              <input type="date" aria-label="From" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(0) }} />
+            </label>
+            <label>
+              To
+              <input type="date" aria-label="To" value={toDate} onChange={e => { setToDate(e.target.value); setPage(0) }} />
+            </label>
+            {(entityType || q || fromDate || toDate) && (
+              <button type="button" className="link" onClick={() => { setSearch(''); setEntityType(''); setFromDate(''); setToDate(''); setPage(0) }}>
+                Clear filters
+              </button>
+            )}
           </Toolbar>
           {auditQuery.isPending && <Loading />}
           {auditQuery.error && <Alert>{describeError(auditQuery.error)} <button type="button" className="link" onClick={() => void auditQuery.refetch()}>Retry</button></Alert>}
           {auditQuery.data && auditQuery.data.items.length === 0 && (
-            <Empty title={entityType || q ? 'No matching changes' : 'Nothing recorded yet'}>
-              {entityType || q ? 'Try clearing the area filter or search text.' : 'Changes to bills, products, stock, purchases, expenses and settings will appear here.'}
+            <Empty title={entityType || q || fromDate || toDate ? 'No matching changes' : 'Nothing recorded yet'}>
+              {entityType || q || fromDate || toDate ? 'Try clearing the filters or expanding the date range.' : 'Changes to bills, products, stock, purchases, expenses and settings will appear here.'}
             </Empty>
           )}
           {!!auditQuery.data?.items.length && (

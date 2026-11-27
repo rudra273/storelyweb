@@ -2,7 +2,17 @@ import { saleQuantity } from './quantity'
 import { formatQty } from '../../lib/money'
 import type { Product } from '../../products/queries'
 
-export interface CartItem { product: Product; quantity: string }
+export type DiscountMode = 'percent' | 'amount'
+export type TaxMode = 'inclusive' | 'exclusive'
+export type RoundOffMode = 'none' | 'nearest' | 'up' | 'down'
+
+export interface CartItem {
+  product: Product
+  quantity: string
+  discount_mode?: DiscountMode
+  discount_value?: string
+  tax_mode?: TaxMode | null
+}
 
 /** Most lines one invoice may carry (the API refuses more). */
 export const MAX_LINES = 200
