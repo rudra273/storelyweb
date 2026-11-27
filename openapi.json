@@ -2197,6 +2197,12 @@
       "title": "Billing Metadata",
       "type": "integer"
      },
+     "draft_handoff": {
+      "const": 1,
+      "default": 1,
+      "title": "Draft Handoff",
+      "type": "integer"
+     },
      "native_billing_commands": {
       "const": 1,
       "default": 1,
@@ -3318,6 +3324,204 @@
      "code"
     ],
     "title": "DeviceOut",
+    "type": "object"
+   },
+   "DraftHandoffClaimIn": {
+    "additionalProperties": false,
+    "properties": {
+     "device_label": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Device Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "device_label"
+    ],
+    "title": "DraftHandoffClaimIn",
+    "type": "object"
+   },
+   "DraftHandoffIn": {
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "label": {
+      "default": "",
+      "maxLength": 120,
+      "title": "Label",
+      "type": "string"
+     },
+     "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+     },
+     "source_device_label": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Source Device Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source_device_label",
+     "items"
+    ],
+    "title": "DraftHandoffIn",
+    "type": "object"
+   },
+   "DraftHandoffListOut": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/DraftHandoffSummary"
+      },
+      "title": "Items",
+      "type": "array"
+     }
+    },
+    "required": [
+     "items"
+    ],
+    "title": "DraftHandoffListOut",
+    "type": "object"
+   },
+   "DraftHandoffOut": {
+    "properties": {
+     "claimed_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Claimed At"
+     },
+     "claimed_by_device": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Claimed By Device"
+     },
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "item_count": {
+      "title": "Item Count",
+      "type": "integer"
+     },
+     "items": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+     },
+     "source_device_label": {
+      "title": "Source Device Label",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "available",
+       "claimed",
+       "discarded"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "uuid": {
+      "format": "uuid",
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "source_device_label",
+     "label",
+     "item_count",
+     "status",
+     "created_at",
+     "items",
+     "metadata"
+    ],
+    "title": "DraftHandoffOut",
+    "type": "object"
+   },
+   "DraftHandoffSummary": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "item_count": {
+      "title": "Item Count",
+      "type": "integer"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "source_device_label": {
+      "title": "Source Device Label",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "available",
+       "claimed",
+       "discarded"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "uuid": {
+      "format": "uuid",
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "source_device_label",
+     "label",
+     "item_count",
+     "status",
+     "created_at"
+    ],
+    "title": "DraftHandoffSummary",
     "type": "object"
    },
    "EmailChangeIn": {
@@ -17783,6 +17987,209 @@
     "summary": "Customer Statement",
     "tags": [
      "customers"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/draft-handoffs": {
+   "get": {
+    "description": "List available cross-device draft handoffs for the signed-in user in this shop.",
+    "operationId": "list_draft_handoffs_v1_shops__shop_id__draft_handoffs_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DraftHandoffListOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Draft Handoffs",
+    "tags": [
+     "billing"
+    ]
+   },
+   "post": {
+    "description": "Publish a checkout draft snapshot so another device for the same user can claim it once.",
+    "operationId": "publish_draft_handoff_v1_shops__shop_id__draft_handoffs_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DraftHandoffIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DraftHandoffOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Publish Draft Handoff",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/draft-handoffs/{handoff_id}": {
+   "delete": {
+    "description": "Discard an unclaimed draft handoff.",
+    "operationId": "discard_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "handoff_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Handoff Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Discard Draft Handoff",
+    "tags": [
+     "billing"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/draft-handoffs/{handoff_id}/claim": {
+   "post": {
+    "description": "Atomically claim an available draft handoff (single-consumer).",
+    "operationId": "claim_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__claim_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "handoff_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Handoff Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DraftHandoffClaimIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DraftHandoffOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Claim Draft Handoff",
+    "tags": [
+     "billing"
     ]
    }
   },

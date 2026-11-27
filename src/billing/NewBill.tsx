@@ -1,7 +1,7 @@
 import { saleQuantity, SALE_QUANTITY_ERROR } from './checkout/quantity'
 import { PageHeader } from '../components/ui/workspace'
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { ApiError, api } from '../api/client'
 import { Alert } from '../components/ui/ui'
@@ -59,6 +59,102 @@ type ExtendedBillInput = Omit<BillInput, 'items'> & {
   round_off_increment?: string
   bill_date?: string | null
   notes?: string | null
+}
+
+interface DraftHandoffSummary {
+  uuid: string
+  source_device_label: string
+  label: string
+  item_count: number
+  status?: string
+  created_at: string
+}
+
+interface DraftHandoffListOut {
+  items: DraftHandoffSummary[]
+}
+
+interface DraftHandoffOut extends DraftHandoffSummary {
+  items: Record<string, unknown>[]
+  metadata: Record<string, unknown>
+  claimed_by_device?: string | null
+  claimed_at?: string | null
+}
+
+const WEB_DEVICE_LABEL = 'Web browser'
+
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
+const asString = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : fallback)
+const asNullableString = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : typeof v === 'number' ? String(v) : null)
+
+function parseHandoffItems(rawItems: Record<string, unknown>[]): { catalog: CartItem[]; customLines: CustomLine[] } {
+  const catalog: CartItem[] = []
+  const customLines: CustomLine[] = []
+  for (const raw of rawItems) {
+    if (!isRecord(raw)) continue
+    const discountMode: DiscountMode = raw.discount_mode === 'amount' ? 'amount' : 'percent'
+    const discountValue = asString(raw.discount_value)
+    const taxMode: TaxMode | null = raw.tax_mode === 'inclusive' || raw.tax_mode === 'exclusive' ? raw.tax_mode : null
+    const rawProduct = isRecord(raw.product) ? raw.product : null
+    const productUuid = asString(rawProduct?.uuid ?? raw.product_uuid).trim()
+    if (raw.kind !== 'custom' && productUuid) {
+      const product = (rawProduct
+        ? {
+            ...rawProduct,
+            uuid: productUuid,
+            name: asString(rawProduct.name ?? raw.name, 'Item'),
+            selling_price: asString(rawProduct.selling_price ?? raw.selling_price ?? raw.unit_price, '0'),
+            quantity: asString(rawProduct.quantity ?? raw.stock_quantity, '0'),
+          }
+        : {
+            uuid: productUuid,
+            name: asString(raw.name ?? raw.product_name, 'Item'),
+            selling_price: asString(raw.selling_price ?? raw.unit_price, '0'),
+            quantity: asString(raw.stock_quantity, '0'),
+            track_stock: false,
+            barcode: asNullableString(raw.barcode),
+            product_code: asNullableString(raw.product_code),
+            gst_percent: asString(raw.gst_percent, '0'),
+            unit_name: asNullableString(raw.unit_name ?? raw.unit),
+            mrp_price: asNullableString(raw.mrp_price),
+          }) as unknown as Product
+      catalog.push({
+        product,
+        quantity: asString(raw.quantity, '1') || '1',
+        discount_mode: discountMode,
+        discount_value: discountValue,
+        tax_mode: taxMode,
+      })
+    } else {
+      customLines.push({
+        key: asString(raw.key) || crypto.randomUUID(),
+        name: asString(raw.name, 'Custom item'),
+        unit_price: asString(raw.unit_price ?? raw.selling_price, '0'),
+        gst_percent: asString(raw.gst_percent, '0'),
+        quantity: asString(raw.quantity, '1') || '1',
+        cost: asString(raw.cost),
+        hsn_code: asString(raw.hsn_code),
+        unit: asString(raw.unit),
+        discount_mode: discountMode,
+        discount_value: discountValue,
+        tax_mode: taxMode,
+      })
+    }
+  }
+  return { catalog, customLines }
+}
+
+function parseHandoffCustomer(metadata: Record<string, unknown>): CustomerFields {
+  const src = isRecord(metadata.customer) ? metadata.customer : metadata
+  return {
+    customer_name: asString(src.customer_name),
+    customer_phone: asString(src.customer_phone),
+    customer_gstin: asString(src.customer_gstin),
+    customer_gst_legal_name: asString(src.customer_gst_legal_name),
+    customer_gst_trade_name: asString(src.customer_gst_trade_name),
+    customer_address: asString(src.customer_address),
+    place_of_supply_state_code: asString(src.place_of_supply_state_code),
+  }
 }
 
 function localToday(): string {
@@ -229,6 +325,17 @@ function BillForm({ another }: { another: () => void }) {
   const [done, setDone] = useState<BillDetail | null>(null)
   const sending = useRef(false)
   const [preparing, setPreparing] = useState(false)
+  const [handoffError, setHandoffError] = useState('')
+  const [handoffNotice, setHandoffNotice] = useState('')
+  const queryClient = useQueryClient()
+  const handoffsQuery = useQuery({
+    queryKey: ['draft-handoffs', shop, userId],
+    queryFn: ({ signal }) => api.get<DraftHandoffListOut>(`/v1/shops/${shop}/draft-handoffs`, { signal }),
+    enabled: !!shop && !!userId,
+    staleTime: 0,
+    retry: false,
+  })
+  const handoffs = handoffsQuery.data?.items ?? []
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -242,14 +349,17 @@ function BillForm({ another }: { another: () => void }) {
     // Storage is coordinated across tabs; the callback only reports an external failure.
     void (empty ? draftStore.clear({ isActive: () => mounted.current }) : draftStore.save(draft, { isActive: () => mounted.current })).catch(persistenceFailure)
   }, [draftText, userId, shop, done, draftStore, creating, preparing])
-  async function discard() {
-    try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
+  function resetCartState() {
     commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setBillDate(''); setNotes(''); setDiscount('0')
     setDiscountMode('percent'); setTaxMode(null); setRoundOffMode(null); setRoundOffIncrement(null); setOpenLineKeys({})
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
     setAllowUnassigned(false); setConsentContext(null); setReviewedContext(null)
     setStorageError('')
     setRestored(null); setPendingCatalogProduct(null)
+  }
+  async function discard() {
+    try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
+    resetCartState()
   }
   const mutation = useBillingMutation(createBill)
 
@@ -470,6 +580,154 @@ function BillForm({ another }: { another: () => void }) {
     } catch (error) { persistenceFailure(error) }
     finally { sending.current = false; if (mounted.current) setPreparing(false) }
   }
+  async function sendToAnotherDevice() {
+    if (sending.current || locked || lineCount === 0) return
+    sending.current = true; setPreparing(true); setHandoffError(''); setHandoffNotice('')
+    try {
+      const payloadItems = [
+        ...items.map(i => ({
+          kind: 'catalog',
+          product_uuid: i.product.uuid,
+          name: i.product.name,
+          quantity: saleQuantity(i.quantity) ?? i.quantity,
+          unit_price: i.product.selling_price,
+          selling_price: i.product.selling_price,
+          gst_percent: i.product.gst_percent ?? '0',
+          barcode: i.product.barcode ?? null,
+          product_code: i.product.product_code ?? null,
+          unit_name: i.product.unit_name ?? null,
+          discount_mode: i.discount_mode ?? 'percent',
+          discount_value: (i.discount_value ?? '').trim() || '0',
+          tax_mode: i.tax_mode ?? null,
+          product: i.product,
+        })),
+        ...custom.map(c => ({
+          kind: 'custom',
+          key: c.key,
+          name: c.name,
+          quantity: saleQuantity(c.quantity) ?? c.quantity,
+          unit_price: c.unit_price,
+          gst_percent: c.gst_percent,
+          cost: c.cost || '',
+          hsn_code: c.hsn_code || '',
+          unit: c.unit || '',
+          discount_mode: c.discount_mode ?? 'percent',
+          discount_value: (c.discount_value ?? '').trim() || '0',
+          tax_mode: c.tax_mode ?? null,
+        })),
+      ]
+      const label = (customer.customer_name.trim() || 'Walk-in customer').slice(0, 120)
+      await api.post<DraftHandoffOut>(`/v1/shops/${shop}/draft-handoffs`, {
+        source_device_label: WEB_DEVICE_LABEL,
+        label,
+        items: payloadItems,
+        metadata: {
+          customer,
+          billType,
+          discount,
+          discountMode,
+          taxMode,
+          roundOffMode,
+          roundOffIncrement,
+          billDate,
+          notes,
+        },
+      })
+      try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error) }
+      if (mounted.current) {
+        resetCartState()
+        setHandoffNotice('Draft sent to another device.')
+      }
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } catch (error) {
+      if (mounted.current) setHandoffError(describeError(error))
+    } finally {
+      sending.current = false
+      if (mounted.current) setPreparing(false)
+    }
+  }
+  async function claimHandoff(handoffId: string) {
+    if (sending.current || locked) return
+    sending.current = true; setPreparing(true); setHandoffError(''); setHandoffNotice('')
+    try {
+      const claimed = await api.post<DraftHandoffOut>(
+        `/v1/shops/${shop}/draft-handoffs/${encodeURIComponent(handoffId)}/claim`,
+        { device_label: WEB_DEVICE_LABEL },
+      )
+      if (!mounted.current) return
+      const { catalog, customLines } = parseHandoffItems(Array.isArray(claimed.items) ? claimed.items : [])
+      const meta = isRecord(claimed.metadata) ? claimed.metadata : {}
+      const nextBillType: BillType = meta.billType === 'b2b' || meta.bill_type === 'b2b' ? 'b2b' : 'b2c'
+      const nextDiscount = asString(meta.discount ?? meta.discount_value, '0') || '0'
+      const nextDiscountMode: DiscountMode = meta.discountMode === 'amount' || meta.discount_mode === 'amount' ? 'amount' : 'percent'
+      const rawTaxMode = meta.taxMode ?? meta.tax_mode
+      const nextTaxMode: TaxMode | null = rawTaxMode === 'inclusive' || rawTaxMode === 'exclusive' ? rawTaxMode : null
+      const rawRoundOffMode = meta.roundOffMode ?? meta.round_off_mode
+      const nextRoundOffMode: RoundOffMode | null =
+        rawRoundOffMode === 'none' || rawRoundOffMode === 'nearest' || rawRoundOffMode === 'up' || rawRoundOffMode === 'down'
+          ? rawRoundOffMode
+          : null
+      const rawRoundOffInc = meta.roundOffIncrement ?? meta.round_off_increment
+      const nextRoundOffInc = rawRoundOffInc === null || rawRoundOffInc === undefined || rawRoundOffInc === '' ? null : normalizeIncrement(asString(rawRoundOffInc))
+      const nextBillDate = asString(meta.billDate ?? meta.bill_date)
+      const nextNotes = asString(meta.notes)
+
+      commit(catalog)
+      setCustom(customLines)
+      setCustomer(parseHandoffCustomer(meta))
+      setBillType(nextBillType)
+      setBillDate(nextBillDate)
+      setNotes(nextNotes)
+      setDiscount(nextDiscount)
+      setDiscountMode(nextDiscountMode)
+      setTaxMode(nextTaxMode)
+      setRoundOffMode(nextRoundOffMode)
+      setRoundOffIncrement(nextRoundOffInc)
+      setOpenLineKeys({})
+      setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' })
+      setPaidError('')
+      setAllowUnassigned(false)
+      setConsentContext(null)
+      setReviewedContext(null)
+      setRestored(null)
+      setPendingCatalogProduct(null)
+      setHandoffNotice(`Took over draft from ${claimed.source_device_label}.`)
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } catch (error) {
+      if (mounted.current) {
+        if (error instanceof ApiError && error.status === 409 && error.code === 'draft_already_claimed') {
+          setHandoffError('This draft was already claimed on another device.')
+        } else {
+          setHandoffError(describeError(error))
+        }
+      }
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } finally {
+      sending.current = false
+      if (mounted.current) setPreparing(false)
+    }
+  }
+  async function discardHandoff(handoffId: string) {
+    if (sending.current || locked) return
+    sending.current = true; setPreparing(true); setHandoffError(''); setHandoffNotice('')
+    try {
+      await api.delete<void>(`/v1/shops/${shop}/draft-handoffs/${encodeURIComponent(handoffId)}`)
+      if (mounted.current) setHandoffNotice('Cloud handoff discarded.')
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } catch (error) {
+      if (mounted.current) {
+        if (error instanceof ApiError && error.status === 409 && error.code === 'draft_already_claimed') {
+          setHandoffError('This draft was already claimed on another device.')
+        } else {
+          setHandoffError(describeError(error))
+        }
+      }
+      void queryClient.invalidateQueries({ queryKey: ['draft-handoffs', shop, userId] })
+    } finally {
+      sending.current = false
+      if (mounted.current) setPreparing(false)
+    }
+  }
   async function openProduct(code: string) {
     const barcode = barcodeForCreation(code)
     if (!barcode || locked || sending.current || !canCreateProduct || pendingCatalogProduct) return
@@ -548,7 +806,23 @@ function BillForm({ another }: { another: () => void }) {
     </Alert>}
     <form className="checkout-grid" onSubmit={submit}>
       <fieldset className="checkout-main" disabled={locked}>
-        <div className="actions"><button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button></div>
+        <div className="actions">
+          <button type="button" className="secondary" disabled={locked || !hasDraft} onClick={() => void moveDraft('hold')}>Hold invoice</button>
+          <button type="button" className="secondary" disabled={locked || lineCount === 0} onClick={() => void sendToAnotherDevice()}>Send to another device</button>
+        </div>
+        {handoffError && <Alert>{handoffError}</Alert>}
+        {handoffNotice && <Alert kind="info">{handoffNotice}</Alert>}
+        {!!handoffs.length && <section className="card" aria-label="Cloud handoffs">
+          <h2>Cloud handoffs ({handoffs.length})</h2>
+          <p className="muted">Available on your account for this shop. Taking over claims the draft exclusively on this device.</p>
+          <ul>{handoffs.map(handoff => <li key={handoff.uuid}>
+            <strong>{handoff.label.trim() || 'Walk-in customer'}</strong> · {handoff.item_count} {handoff.item_count === 1 ? 'item' : 'items'} · From {handoff.source_device_label} · {new Date(handoff.created_at).toLocaleString()}
+            <div className="actions">
+              <button type="button" disabled={locked} onClick={() => void claimHandoff(handoff.uuid)}>Take over</button>
+              <button type="button" className="link" disabled={locked} onClick={() => void discardHandoff(handoff.uuid)}>Discard</button>
+            </div>
+          </li>)}</ul>
+        </section>}
         {!!draftStore.initialHeld.length && <section className="card" aria-label="Held invoices">
           <h2>Held invoices ({draftStore.initialHeld.length})</h2>
           <p className="muted">Saved in this browser for this account and shop. Resuming holds your current editable invoice in its place.</p>

@@ -1230,6 +1230,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/draft-handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Draft Handoffs
+         * @description List available cross-device draft handoffs for the signed-in user in this shop.
+         */
+        get: operations["list_draft_handoffs_v1_shops__shop_id__draft_handoffs_get"];
+        put?: never;
+        /**
+         * Publish Draft Handoff
+         * @description Publish a checkout draft snapshot so another device for the same user can claim it once.
+         */
+        post: operations["publish_draft_handoff_v1_shops__shop_id__draft_handoffs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/draft-handoffs/{handoff_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Discard Draft Handoff
+         * @description Discard an unclaimed draft handoff.
+         */
+        delete: operations["discard_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/shops/{shop_id}/draft-handoffs/{handoff_id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim Draft Handoff
+         * @description Atomically claim an available draft handoff (single-consumer).
+         */
+        post: operations["claim_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/entitlement": {
         parameters: {
             query?: never;
@@ -2923,6 +2987,12 @@ export interface components {
              */
             billing_metadata: 1;
             /**
+             * Draft Handoff
+             * @default 1
+             * @constant
+             */
+            draft_handoff: 1;
+            /**
              * Native Billing Commands
              * @default 1
              * @constant
@@ -3290,6 +3360,94 @@ export interface components {
         DeviceOut: {
             /** Code */
             code: string;
+        };
+        /** DraftHandoffClaimIn */
+        DraftHandoffClaimIn: {
+            /** Device Label */
+            device_label: string;
+        };
+        /** DraftHandoffIn */
+        DraftHandoffIn: {
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Source Device Label */
+            source_device_label: string;
+        };
+        /** DraftHandoffListOut */
+        DraftHandoffListOut: {
+            /** Items */
+            items: components["schemas"]["DraftHandoffSummary"][];
+        };
+        /** DraftHandoffOut */
+        DraftHandoffOut: {
+            /** Claimed At */
+            claimed_at?: string | null;
+            /** Claimed By Device */
+            claimed_by_device?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Item Count */
+            item_count: number;
+            /** Items */
+            items: {
+                [key: string]: unknown;
+            }[];
+            /** Label */
+            label: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Source Device Label */
+            source_device_label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "claimed" | "discarded";
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
+        };
+        /** DraftHandoffSummary */
+        DraftHandoffSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Item Count */
+            item_count: number;
+            /** Label */
+            label: string;
+            /** Source Device Label */
+            source_device_label: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "claimed" | "discarded";
+            /**
+             * Uuid
+             * Format: uuid
+             */
+            uuid: string;
         };
         /** EmailChangeIn */
         EmailChangeIn: {
@@ -9038,6 +9196,138 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_draft_handoffs_v1_shops__shop_id__draft_handoffs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftHandoffListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_draft_handoff_v1_shops__shop_id__draft_handoffs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftHandoffIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftHandoffOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_draft_handoff_v1_shops__shop_id__draft_handoffs__handoff_id__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftHandoffClaimIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftHandoffOut"];
+                };
             };
             /** @description Validation Error */
             422: {
