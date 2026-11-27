@@ -1,7 +1,7 @@
 import { imageSrc } from '../../lib/images'
 import { QRCodeSVG } from 'qrcode.react'
 import { paymentMethod } from '../../components/labels'
-import { formatMoney, formatQty } from '../../lib/money'
+import { formatMoney, formatQty, paiseToDecimal, toPaise } from '../../lib/money'
 import { stateLabel } from '../../lib/states'
 import { amountInWords } from '../../lib/words'
 import { documentTitle } from './invoiceTitle'
@@ -19,10 +19,12 @@ function day(value: string): string {
  * following the shop's invoice settings (the same switches as the phone app). */
 export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDetail; settings: InvoiceSettings; paper: Paper }) {
   const show = (key: string) => s.show[key] !== false
-  const b = detail.bill
+  const b = detail.bill as BillingControlBill
+  const items = detail.items as Item[]
   const thermal = paper === '80mm' || paper === '58mm'
   const inter = Number(b.igst_amount) !== 0
   const hasGst = Number(b.cgst_amount) !== 0 || Number(b.sgst_amount) !== 0 || inter
+  const hasLineDiscount = items.some(i => (toPaise(i.discount_amount) ?? 0n) !== 0n)
   // A voided invoice is owed nothing, so it shows no balance and asks for no payment.
   const due = Number(b.balance_due) > 0 && !b.cancelled
   const logo = show('show_shop_logo') ? imageSrc(s.shop_logo) : null
@@ -33,19 +35,40 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
   // Columns that wrap on a till roll are dropped there: item, quantity, rate and amount stay.
   const columns = [
     { key: 'show_item_serial_column', label: '#', cell: (_: unknown, n: number) => n + 1, thermal: false },
-    { key: 'show_item_name_column', label: 'Item', cell: (i: Item) => i.product_name, thermal: true },
+    {
+      key: 'show_item_name_column',
+      label: 'Item',
+      cell: (i: Item) => {
+        const disc = toPaise(i.discount_amount) ?? 0n
+        return thermal && disc !== 0n ? <>{i.product_name}<br /><small className="muted">Disc: {formatMoney(i.discount_amount)}</small></> : i.product_name
+      },
+      thermal: true,
+    },
     { key: 'show_hsn_column', label: 'HSN/SAC', cell: (i: Item) => i.hsn_code ?? '', thermal: false },
     { key: 'show_quantity_column', label: 'Qty', cell: (i: Item) => `${formatQty(i.quantity)}${i.unit ? ` ${i.unit}` : ''}`, thermal: true, num: true },
     { key: 'show_rate_column', label: 'Rate', cell: (i: Item) => formatMoney(i.selling_price), thermal: true, num: true },
+    ...(hasLineDiscount ? [{
+      key: 'show_discount',
+      label: 'Disc.',
+      cell: (i: Item) => {
+        const disc = toPaise(i.discount_amount) ?? 0n
+        if (disc === 0n) return '—'
+        return i.discount_mode === 'percent' && Number(i.discount_value ?? 0) > 0
+          ? `${formatMoney(i.discount_amount)} (${formatQty(i.discount_value)}%)`
+          : formatMoney(i.discount_amount)
+      },
+      thermal: false,
+      num: true,
+    }] : []),
     { key: 'show_taxable_amount', label: 'Taxable', cell: (i: Item) => formatMoney(i.line_taxable_value), thermal: false, num: true, gst: true },
     { key: 'show_gst_percent_column', label: 'GST %', cell: (i: Item) => i.gst_percent != null ? `${formatQty(i.gst_percent)}%` : '', thermal: false, num: true, gst: true },
     { key: 'show_gst_amount_column', label: 'GST', cell: (i: Item) => formatMoney(i.line_gst), thermal: false, num: true, gst: true },
     { key: 'show_amount_column', label: 'Amount', cell: (i: Item) => formatMoney(i.amount), thermal: true, num: true },
-  ].filter(c => show(c.key) && (!thermal || c.thermal) && (!c.gst || hasGst) && (c.key !== 'show_hsn_column' || detail.items.some(i => i.hsn_code)))
-  const hsn = hasGst && show('show_hsn_summary') && !thermal ? hsnSummary(detail.items) : []
+  ].filter(c => show(c.key) && (!thermal || c.thermal) && (!c.gst || hasGst) && (c.key !== 'show_hsn_column' || items.some(i => i.hsn_code)))
+  const hsn = hasGst && show('show_hsn_summary') && !thermal ? hsnSummary(items) : []
   const totals: [string, string, string][] = ([
     ['show_subtotal', 'Subtotal', b.subtotal_amount],
-    ['show_discount', `Discount${Number(b.discount_percent) ? ` (${formatQty(b.discount_percent)}%)` : ''}`, b.discount_amount],
+    ['show_discount', discountLabel(b), b.discount_amount],
     ['show_taxable_amount', 'Taxable value', b.taxable_amount],
     ...(show('show_cgst_sgst_igst') && hasGst ? (inter ? [['show_cgst_sgst_igst', 'IGST', b.igst_amount]] : [['show_cgst_sgst_igst', 'CGST', b.cgst_amount], ['show_cgst_sgst_igst', 'SGST', b.sgst_amount]]) : []),
     ['show_grand_total', 'Round-off', b.round_off_amount],
@@ -86,7 +109,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
 
       <div className="invoice-table"><table className="table">
         <thead><tr>{columns.map(c => <th key={c.key} className={c.num ? 'num' : undefined}>{c.label}</th>)}</tr></thead>
-        <tbody>{detail.items.map((item, n) => <tr key={item.uuid}>{columns.map(c => <td key={c.key} className={c.num ? 'num' : undefined}>{c.cell(item, n)}</td>)}</tr>)}</tbody>
+        <tbody>{items.map((item, n) => <tr key={item.uuid}>{columns.map(c => <td key={c.key} className={c.num ? 'num' : undefined}>{c.cell(item, n)}</td>)}</tr>)}</tbody>
       </table></div>
 
       <div className="invoice-summary">
@@ -103,7 +126,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
         </dl>
       </div>
 
-      {hsn.length > 0 && <table className="table hsn-summary"><caption>Tax summary by HSN</caption><thead><tr><th>HSN/SAC</th><th className="num">Taxable value</th><th className="num">GST rate</th><th className="num">Tax</th></tr></thead><tbody>{hsn.map(h => <tr key={`${h.hsn}-${h.rate}`}><td>{h.hsn || '—'}</td><td className="num">{formatMoney(h.taxable.toFixed(2))}</td><td className="num">{h.rate}%</td><td className="num">{formatMoney(h.tax.toFixed(2))}</td></tr>)}</tbody></table>}
+      {hsn.length > 0 && <table className="table hsn-summary"><caption>Tax summary by HSN</caption><thead><tr><th>HSN/SAC</th><th className="num">Taxable value</th><th className="num">GST rate</th><th className="num">Tax</th></tr></thead><tbody>{hsn.map(h => <tr key={`${h.hsn}-${h.rate}`}><td>{h.hsn || '—'}</td><td className="num">{formatMoney(paiseToDecimal(h.taxable))}</td><td className="num">{h.rate}%</td><td className="num">{formatMoney(paiseToDecimal(h.tax))}</td></tr>)}</tbody></table>}
       {show('show_payment_details') && detail.payments.length > 0 && <p className="invoice-payments">{b.document_type === 'credit_note' ? 'Refunded' : 'Received'}: {detail.payments.map(p => `${formatMoney(b.document_type === 'credit_note' ? String(Math.abs(Number(p.amount))) : p.amount)} ${p.payment_method === 'credit_note' ? 'applied to the invoice' : `by ${paymentMethod(p.payment_method)}`}${p.payment_reference && p.payment_method !== 'credit_note' ? ` (${p.payment_reference})` : ''}`).join(', ')}</p>}
       <section className="invoice-extras">
         {upi && <div className="invoice-upi"><QRCodeSVG value={upi} size={thermal ? 96 : 112} level="M" marginSize={2} role="img" aria-label={`UPI QR code to pay ${formatMoney(b.balance_due)}`} /><small>Scan to pay {formatMoney(b.balance_due)}<br />{s.upi_id}</small></div>}
@@ -116,17 +139,39 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
   )
 }
 
-type Item = BillDetail['items'][number]
+type BillingControlBill = BillDetail['bill'] & {
+  discount_mode?: 'percent' | 'amount'
+  discount_value?: string
+  tax_mode?: 'inclusive' | 'exclusive'
+  round_off_mode?: 'none' | 'nearest' | 'up' | 'down'
+  round_off_increment?: string
+}
 
-/** Tax by HSN and rate, from the server's line values (display grouping only). */
+type Item = BillDetail['items'][number] & {
+  discount_mode?: 'percent' | 'amount'
+  discount_value?: string
+  discount_amount?: string
+  tax_mode?: 'inclusive' | 'exclusive' | null
+}
+
+function discountLabel(bill: BillingControlBill): string {
+  if (bill.discount_mode === 'amount') {
+    const val = toPaise(bill.discount_value) ?? 0n
+    return val > 0n ? `Discount (${formatMoney(bill.discount_value)} off)` : 'Discount'
+  }
+  const pct = bill.discount_value ?? bill.discount_percent
+  return Number(pct) ? `Discount (${formatQty(pct)}%)` : 'Discount'
+}
+
+/** Tax by HSN and rate, from the server's line values in exact BigInt paise (display grouping only). */
 function hsnSummary(items: Item[]) {
-  const groups = new Map<string, { hsn: string; rate: string; taxable: number; tax: number }>()
+  const groups = new Map<string, { hsn: string; rate: string; taxable: bigint; tax: bigint }>()
   for (const i of items) {
     const rate = i.gst_percent != null ? formatQty(i.gst_percent) : '0'
     const key = `${i.hsn_code ?? ''}|${rate}`
-    const g = groups.get(key) ?? { hsn: i.hsn_code ?? '', rate, taxable: 0, tax: 0 }
-    g.taxable += Number(i.line_taxable_value)
-    g.tax += Number(i.line_gst)
+    const g = groups.get(key) ?? { hsn: i.hsn_code ?? '', rate, taxable: 0n, tax: 0n }
+    g.taxable += toPaise(i.line_taxable_value) ?? 0n
+    g.tax += toPaise(i.line_gst) ?? 0n
     groups.set(key, g)
   }
   return [...groups.values()]

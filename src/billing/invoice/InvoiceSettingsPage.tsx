@@ -21,9 +21,83 @@ import { findSettings, type SettingsSearchEntry } from './settingsSearch'
 import { lowStockThresholdProblem } from './lowStockThreshold'
 import { pricingSettingsProblems, PRICING_SETTING_KEYS } from './pricingDefaults'
 import { assertSettingsRevisionSupport, rebaseSettings, requireSettingsRevision, settingsChanges, settingsReview } from './settingsRevision'
+import type { RoundOffMode, TaxMode } from '../checkout/cart'
 
 type Change = components['schemas']['InvoiceSettingsIn']
 type ShowKey = keyof NonNullable<Change['show']>
+type BillingControlSettings = InvoiceSettings & {
+  default_tax_mode?: TaxMode
+  round_off_mode?: RoundOffMode
+  round_off_increment?: string
+}
+
+const ROUND_OFF_INCREMENTS = [
+  { value: '0.50', label: '₹0.50' },
+  { value: '1.00', label: '₹1' },
+  { value: '5.00', label: '₹5' },
+  { value: '10.00', label: '₹10' },
+] as const
+
+const effectiveTaxMode = (s: BillingControlSettings): TaxMode =>
+  s.default_tax_mode === 'exclusive' ? 'exclusive' : 'inclusive'
+
+const effectiveRoundOffMode = (s: BillingControlSettings): RoundOffMode => {
+  if (s.round_off_mode === 'none' || s.round_off_mode === 'nearest' || s.round_off_mode === 'up' || s.round_off_mode === 'down') {
+    return s.round_off_mode
+  }
+  return s.round_off_total ? 'nearest' : 'none'
+}
+
+const normalizeIncrement = (raw: string | number | null | undefined): string => {
+  if (raw === null || raw === undefined || raw === '') return '1.00'
+  const n = Number(raw)
+  if (n === 0.5) return '0.50'
+  if (n === 5) return '5.00'
+  if (n === 10) return '10.00'
+  return '1.00'
+}
+
+function allSettingsChanges(base: BillingControlSettings, mine: BillingControlSettings): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...settingsChanges(base, mine) }
+  if (effectiveTaxMode(mine) !== effectiveTaxMode(base)) out.default_tax_mode = effectiveTaxMode(mine)
+  if (effectiveRoundOffMode(mine) !== effectiveRoundOffMode(base)) {
+    const mode = effectiveRoundOffMode(mine)
+    out.round_off_mode = mode
+    out.round_off_total = mode !== 'none'
+  }
+  if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
+    out.round_off_increment = normalizeIncrement(mine.round_off_increment)
+  }
+  return out
+}
+
+function allRebaseSettings(base: BillingControlSettings, mine: BillingControlSettings, latest: BillingControlSettings): BillingControlSettings {
+  const merged: BillingControlSettings = { ...rebaseSettings(base, mine, latest) }
+  if (effectiveTaxMode(mine) !== effectiveTaxMode(base)) merged.default_tax_mode = effectiveTaxMode(mine)
+  if (effectiveRoundOffMode(mine) !== effectiveRoundOffMode(base)) {
+    const mode = effectiveRoundOffMode(mine)
+    merged.round_off_mode = mode
+    merged.round_off_total = mode !== 'none'
+  }
+  if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
+    merged.round_off_increment = normalizeIncrement(mine.round_off_increment)
+  }
+  return merged
+}
+
+function allSettingsReview(base: BillingControlSettings, mine: BillingControlSettings, latest: BillingControlSettings) {
+  const rows = [...settingsReview(base, mine, latest)]
+  if (effectiveTaxMode(mine) !== effectiveTaxMode(base)) {
+    rows.push({ label: 'Default rate tax mode', current: effectiveTaxMode(latest), mine: effectiveTaxMode(mine) })
+  }
+  if (effectiveRoundOffMode(mine) !== effectiveRoundOffMode(base)) {
+    rows.push({ label: 'Round-off mode', current: effectiveRoundOffMode(latest), mine: effectiveRoundOffMode(mine) })
+  }
+  if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
+    rows.push({ label: 'Round-off increment', current: normalizeIncrement(latest.round_off_increment), mine: normalizeIncrement(mine.round_off_increment) })
+  }
+  return rows
+}
 
 const GROUPS: { title: string; keys: [ShowKey, string][] }[] = [
   { title: 'Shop', keys: [['show_shop_name', 'Shop name'], ['show_shop_address', 'Address'], ['show_shop_phone', 'Phone'], ['show_shop_email', 'Email'], ['show_shop_gstin', 'GSTIN'], ['show_shop_logo', 'Logo']] },
@@ -111,7 +185,7 @@ export function InvoiceSettingsPage() {
   </>
 }
 
-function Editor({ saved }: { saved: InvoiceSettings }) {
+function Editor({ saved }: { saved: BillingControlSettings }) {
   const shop = useShop().current?.shop_id ?? ''
   const client = useQueryClient()
   const { busy, error, run, setError, fieldErrors } = useAction()
@@ -125,10 +199,10 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
   const [search, setSearch] = useState('')
   const [destination, setDestination] = useState<SettingsSearchEntry | null>(null)
   const searchResults = findSettings(search)
-  const [baseline, setBaseline] = useState<InvoiceSettings>(saved)
-  const [draft, setDraft] = useState<InvoiceSettings>(saved)
+  const [baseline, setBaseline] = useState<BillingControlSettings>(saved)
+  const [draft, setDraft] = useState<BillingControlSettings>(saved)
   const [stale, setStale] = useState(false)
-  const [latest, setLatest] = useState<InvoiceSettings | null>(null)
+  const [latest, setLatest] = useState<BillingControlSettings | null>(null)
   const sending = useRef(false)
   const mounted = useRef(true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
@@ -137,7 +211,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     const heading = formRef.current?.querySelector<HTMLElement>(`[data-settings-section="${destination.id}"]`)
     heading?.focus(); heading?.scrollIntoView?.({ block: 'nearest' })
   }, [destination, formRef])
-  const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
+  const set = <K extends keyof BillingControlSettings>(key: K, value: BillingControlSettings[K]) => { setDraft({ ...draft, [key]: value }); setDone(false); if (problems[key]) setProblems({ ...problems, [key]: '' }) }
   const err = (key: string) => problems[key] || fieldErrors[key] || undefined
   const text = (key: 'shop_name' | 'shop_address' | 'shop_phone' | 'shop_email' | 'shop_gstin' | 'invoice_title' | 'footer_text' | 'upi_id' | 'terms_text' | 'bank_details') =>
     (e: { target: { value: string } }) => set(key, (key === 'shop_gstin' ? e.target.value.toUpperCase() : e.target.value) as never)
@@ -155,16 +229,16 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     setProblems(found)
     if (Object.keys(found).length) { if (found.low_stock_threshold) setTab('shop'); else if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
     setError(null)
-    const change = settingsChanges(baseline, draft)
+    const change = allSettingsChanges(baseline, draft)
     if (!Object.keys(change).length) { setDone(true); return }
     sending.current = true
-    let result: InvoiceSettings | undefined
+    let result: BillingControlSettings | undefined
     try {
       result = await run(async () => {
         const revision = requireSettingsRevision(baseline)
         await assertSettingsRevisionSupport(shop)
         if (!mounted.current) return
-        try { return await api.patch<InvoiceSettings>(`/v1/shops/${shop}/invoice-settings`, { ...change, expected_revision: revision }) }
+        try { return await api.patch<BillingControlSettings>(`/v1/shops/${shop}/invoice-settings`, { ...change, expected_revision: revision }) }
         catch (failure) {
           if (mounted.current && failure instanceof ApiError && failure.code === 'settings_changed') { setStale(true); setLatest(null) }
           throw failure
@@ -182,7 +256,7 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
     }
   }
 
-  const changed = Object.keys(settingsChanges(baseline, draft)).length > 0
+  const changed = Object.keys(allSettingsChanges(baseline, draft)).length > 0
   useDirtyClose(changed, () => undefined)
   const show = (id: TabId) => ({ hidden: tab !== id, role: 'tabpanel' as const, 'aria-labelledby': `tab-${id}` })
   return <div className="settings-page">
@@ -239,7 +313,36 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
               <Field label="Default profit margin %" inputMode="decimal" value={draft.default_profit_margin_percent ?? '0'} onChange={e => set('default_profit_margin_percent', e.target.value)} error={err('default_profit_margin_percent')} hint="Added to total cost when product and category margins are unset. From 0 to 100%, with up to three decimal places." />
               <Field label="Default overhead cost (₹)" inputMode="decimal" value={draft.default_overhead_cost ?? '0'} onChange={e => set('default_overhead_cost', e.target.value)} error={err('default_overhead_cost')} hint="Per unit, when product and category overheads are unset. Up to two decimal places." />
             </div>
-            <label className="check"><input type="checkbox" checked={draft.round_off_total} onChange={e => set('round_off_total', e.target.checked)} />Round totals to the nearest rupee (new bills)</label>
+            <div className="form-grid">
+              <div className="field">
+                <label htmlFor="default-tax-mode">Default rate tax mode</label>
+                <select id="default-tax-mode" value={effectiveTaxMode(draft)} onChange={e => set('default_tax_mode', e.target.value as TaxMode)}>
+                  <option value="inclusive">GST inclusive</option>
+                  <option value="exclusive">GST exclusive</option>
+                </select>
+                <small className="hint">Applied to new bills. Staff can override per bill or per line.</small>
+              </div>
+              <div className="field">
+                <label htmlFor="round-off-mode">Round-off mode</label>
+                <select id="round-off-mode" value={effectiveRoundOffMode(draft)} onChange={e => {
+                  const mode = e.target.value as RoundOffMode
+                  setDraft({ ...draft, round_off_mode: mode, round_off_total: mode !== 'none' })
+                  setDone(false)
+                }}>
+                  <option value="none">None</option>
+                  <option value="nearest">Nearest</option>
+                  <option value="up">Round up</option>
+                  <option value="down">Round down</option>
+                </select>
+                <small className="hint">How new bill totals are rounded.</small>
+              </div>
+              {effectiveRoundOffMode(draft) !== 'none' && <div className="field">
+                <label htmlFor="round-off-increment">Round-off increment</label>
+                <select id="round-off-increment" value={normalizeIncrement(draft.round_off_increment)} onChange={e => set('round_off_increment', e.target.value)}>
+                  {ROUND_OFF_INCREMENTS.map(inc => <option key={inc.value} value={inc.value}>{inc.label}</option>)}
+                </select>
+              </div>}
+            </div>
             <Alert kind="info">Changing these affects new invoices only. Issued invoices keep their saved prices, tax and totals.</Alert>
           </section>
 
@@ -281,9 +384,9 @@ function Editor({ saved }: { saved: InvoiceSettings }) {
           </>}
           {stale && latest && <section aria-label="Latest settings review">
             <p>These are your edited fields. Other changes in the latest settings will be kept.</p>
-            <div className="table-wrap"><table className="table"><thead><tr><th>Field</th><th>Latest value</th><th>Your value</th></tr></thead><tbody>{settingsReview(baseline, draft, latest).map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{row.current}</td><td>{row.mine}</td></tr>)}</tbody></table></div>
+            <div className="table-wrap"><table className="table"><thead><tr><th>Field</th><th>Latest value</th><th>Your value</th></tr></thead><tbody>{allSettingsReview(baseline, draft, latest).map(row => <tr key={row.label}><th scope="row">{row.label}</th><td>{row.current}</td><td>{row.mine}</td></tr>)}</tbody></table></div>
             <Button onClick={() => {
-              const merged = rebaseSettings(baseline, draft, latest)
+              const merged = allRebaseSettings(baseline, draft, latest)
               setDraft(merged); setBaseline(latest); setPaper(resolvePaper(merged.paper_size)); setLatest(null); setStale(false); setError(null); setDone(false)
             }}>Keep my edits with latest settings</Button>
           </section>}

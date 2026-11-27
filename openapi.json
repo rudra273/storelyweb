@@ -426,6 +426,21 @@
       ],
       "title": "Customer Phone"
      },
+     "discount_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "percent",
+         "amount"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Discount Mode"
+     },
      "discount_percent": {
       "anyOf": [
        {
@@ -439,6 +454,22 @@
       ],
       "default": "0",
       "title": "Discount Percent"
+     },
+     "discount_value": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Discount Value"
      },
      "items": {
       "items": {
@@ -480,6 +511,39 @@
       ],
       "title": "Reviewed Context"
      },
+     "round_off_increment": {
+      "anyOf": [
+       {
+        "maximum": 10.0,
+        "minimum": 0.5,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Increment"
+     },
+     "round_off_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "none",
+         "nearest",
+         "up",
+         "down"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Mode"
+     },
      "settlement_choice": {
       "anyOf": [
        {
@@ -495,6 +559,21 @@
        }
       ],
       "title": "Settlement Choice"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      }
     },
     "required": [
@@ -523,6 +602,25 @@
        }
       ],
       "title": "Cost"
+     },
+     "discount_amount": {
+      "default": "0",
+      "title": "Discount Amount",
+      "type": "string"
+     },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
+     "discount_value": {
+      "default": "0",
+      "title": "Discount Value",
+      "type": "string"
      },
      "gst": {
       "title": "Gst",
@@ -614,6 +712,21 @@
      "subtotal": {
       "title": "Subtotal",
       "type": "string"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      },
      "taxable_value": {
       "title": "Taxable Value",
@@ -780,8 +893,22 @@
       "title": "Discount Amount",
       "type": "string"
      },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
      "discount_percent": {
       "title": "Discount Percent",
+      "type": "string"
+     },
+     "discount_value": {
+      "default": "0",
+      "title": "Discount Value",
       "type": "string"
      },
      "document_type": {
@@ -849,12 +976,37 @@
       "title": "Round Off Amount",
       "type": "string"
      },
+     "round_off_increment": {
+      "default": "1.00",
+      "title": "Round Off Increment",
+      "type": "string"
+     },
+     "round_off_mode": {
+      "default": "nearest",
+      "enum": [
+       "none",
+       "nearest",
+       "up",
+       "down"
+      ],
+      "title": "Round Off Mode",
+      "type": "string"
+     },
      "sgst_amount": {
       "title": "Sgst Amount",
       "type": "string"
      },
      "subtotal_amount": {
       "title": "Subtotal Amount",
+      "type": "string"
+     },
+     "tax_mode": {
+      "default": "inclusive",
+      "enum": [
+       "inclusive",
+       "exclusive"
+      ],
+      "title": "Tax Mode",
       "type": "string"
      },
      "taxable_amount": {
@@ -1419,6 +1571,21 @@
       ],
       "title": "Customer Phone"
      },
+     "discount_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "percent",
+         "amount"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Discount Mode"
+     },
      "discount_percent": {
       "anyOf": [
        {
@@ -1432,6 +1599,22 @@
       ],
       "default": "0",
       "title": "Discount Percent"
+     },
+     "discount_value": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Discount Value"
      },
      "items": {
       "items": {
@@ -1453,6 +1636,54 @@
        }
       ],
       "title": "Place Of Supply State Code"
+     },
+     "round_off_increment": {
+      "anyOf": [
+       {
+        "maximum": 10.0,
+        "minimum": 0.5,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Increment"
+     },
+     "round_off_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "none",
+         "nearest",
+         "up",
+         "down"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Mode"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      }
     },
     "required": [
@@ -1480,6 +1711,29 @@
        }
       ],
       "title": "Cost"
+     },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
+     "discount_value": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Value"
      },
      "gst_percent": {
       "anyOf": [
@@ -1547,6 +1801,21 @@
        }
       ],
       "title": "Quantity"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      },
      "unit": {
       "anyOf": [
@@ -1767,6 +2036,12 @@
    "ContractFeatures": {
     "description": "Service support versions, never a substitute for per-command authorization.",
     "properties": {
+     "billing_controls": {
+      "const": 1,
+      "default": 1,
+      "title": "Billing Controls",
+      "type": "integer"
+     },
      "native_billing_commands": {
       "const": 1,
       "default": 1,
@@ -3916,6 +4191,15 @@
       "title": "Default Profit Margin Percent",
       "type": "string"
      },
+     "default_tax_mode": {
+      "default": "inclusive",
+      "enum": [
+       "inclusive",
+       "exclusive"
+      ],
+      "title": "Default Tax Mode",
+      "type": "string"
+     },
      "digital_signature": {
       "anyOf": [
        {
@@ -3959,6 +4243,22 @@
      },
      "revision": {
       "title": "Revision",
+      "type": "string"
+     },
+     "round_off_increment": {
+      "default": "1.00",
+      "title": "Round Off Increment",
+      "type": "string"
+     },
+     "round_off_mode": {
+      "default": "nearest",
+      "enum": [
+       "none",
+       "nearest",
+       "up",
+       "down"
+      ],
+      "title": "Round Off Mode",
       "type": "string"
      },
      "round_off_total": {
@@ -4139,6 +4439,21 @@
       ],
       "title": "Default Profit Margin Percent"
      },
+     "default_tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Tax Mode"
+     },
      "digital_signature": {
       "anyOf": [
        {
@@ -4236,6 +4551,39 @@
        }
       ],
       "title": "Paper Size"
+     },
+     "round_off_increment": {
+      "anyOf": [
+       {
+        "maximum": 10.0,
+        "minimum": 0.5,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Increment"
+     },
+     "round_off_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "none",
+         "nearest",
+         "up",
+         "down"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Round Off Mode"
      },
      "round_off_total": {
       "anyOf": [
@@ -6318,8 +6666,8 @@
      "round_off_amount": {
       "anyOf": [
        {
-        "maximum": 1.0,
-        "minimum": -1.0,
+        "maximum": 10.0,
+        "minimum": -10.0,
         "type": "number"
        },
        {
@@ -6412,6 +6760,41 @@
    "NativeSalePostLine": {
     "additionalProperties": false,
     "properties": {
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Amount"
+     },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
+     "discount_value": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Value"
+     },
      "line_uuid": {
       "format": "uuid",
       "title": "Line Uuid",
@@ -6494,6 +6877,21 @@
        }
       ],
       "title": "Tax Amount"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      },
      "taxable_amount": {
       "anyOf": [
@@ -6677,8 +7075,8 @@
      "round_off_amount": {
       "anyOf": [
        {
-        "maximum": 1.0,
-        "minimum": -1.0,
+        "maximum": 10.0,
+        "minimum": -10.0,
         "type": "number"
        },
        {
@@ -6909,6 +7307,41 @@
    "NativeSaleRecordedLine": {
     "additionalProperties": false,
     "properties": {
+     "discount_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Amount"
+     },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
+     "discount_value": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Discount Value"
+     },
      "name": {
       "maxLength": 200,
       "minLength": 1,
@@ -6964,6 +7397,21 @@
        }
       ],
       "title": "Tax Amount"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      },
      "taxable_amount": {
       "anyOf": [
@@ -8220,6 +8668,20 @@
       "title": "Discount Amount",
       "type": "string"
      },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
+     "discount_value": {
+      "default": "0",
+      "title": "Discount Value",
+      "type": "string"
+     },
      "gst_registered": {
       "title": "Gst Registered",
       "type": "boolean"
@@ -8247,12 +8709,37 @@
       "title": "Round Off Amount",
       "type": "string"
      },
+     "round_off_increment": {
+      "default": "1.00",
+      "title": "Round Off Increment",
+      "type": "string"
+     },
+     "round_off_mode": {
+      "default": "nearest",
+      "enum": [
+       "none",
+       "nearest",
+       "up",
+       "down"
+      ],
+      "title": "Round Off Mode",
+      "type": "string"
+     },
      "sgst_amount": {
       "title": "Sgst Amount",
       "type": "string"
      },
      "subtotal": {
       "title": "Subtotal",
+      "type": "string"
+     },
+     "tax_mode": {
+      "default": "inclusive",
+      "enum": [
+       "inclusive",
+       "exclusive"
+      ],
+      "title": "Tax Mode",
       "type": "string"
      },
      "taxable_amount": {
@@ -8287,6 +8774,25 @@
       "title": "Amount",
       "type": "string"
      },
+     "discount_amount": {
+      "default": "0",
+      "title": "Discount Amount",
+      "type": "string"
+     },
+     "discount_mode": {
+      "default": "percent",
+      "enum": [
+       "percent",
+       "amount"
+      ],
+      "title": "Discount Mode",
+      "type": "string"
+     },
+     "discount_value": {
+      "default": "0",
+      "title": "Discount Value",
+      "type": "string"
+     },
      "gst": {
       "title": "Gst",
       "type": "string"
@@ -8309,6 +8815,21 @@
      "quantity": {
       "title": "Quantity",
       "type": "string"
+     },
+     "tax_mode": {
+      "anyOf": [
+       {
+        "enum": [
+         "inclusive",
+         "exclusive"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Mode"
      },
      "taxable_value": {
       "title": "Taxable Value",
@@ -12819,7 +13340,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -12828,7 +13349,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }
@@ -12843,7 +13364,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_get",
+    "operationId": "health_health_head",
     "responses": {
      "200": {
       "content": {
@@ -12852,7 +13373,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Get",
+         "title": "Response Health Health Head",
          "type": "object"
         }
        }

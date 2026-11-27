@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_get"];
+        get: operations["health_health_head"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_get"];
+        head: operations["health_health_head"];
         patch?: never;
         trace?: never;
     };
@@ -2391,11 +2391,15 @@ export interface components {
             customer_name?: string | null;
             /** Customer Phone */
             customer_phone?: string | null;
+            /** Discount Mode */
+            discount_mode?: ("percent" | "amount") | null;
             /**
              * Discount Percent
              * @default 0
              */
             discount_percent: number | string;
+            /** Discount Value */
+            discount_value?: number | string | null;
             /** Items */
             items: components["schemas"]["CartItem"][];
             /**
@@ -2409,8 +2413,14 @@ export interface components {
             place_of_supply_state_code?: string | null;
             /** Reviewed Context */
             reviewed_context?: string | null;
+            /** Round Off Increment */
+            round_off_increment?: number | string | null;
+            /** Round Off Mode */
+            round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
             /** Settlement Choice */
             settlement_choice?: ("full" | "partial" | "unpaid") | null;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
         };
         /** BillLine */
         BillLine: {
@@ -2420,6 +2430,22 @@ export interface components {
             cgst: string;
             /** Cost */
             cost?: string | null;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Gst */
             gst: string;
             /** Gst Percent */
@@ -2448,6 +2474,8 @@ export interface components {
             sgst: string;
             /** Subtotal */
             subtotal: string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Value */
             taxable_value: string;
             /** Unit */
@@ -2492,8 +2520,19 @@ export interface components {
             customer_phone: string | null;
             /** Discount Amount */
             discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
             /** Discount Percent */
             discount_percent: string;
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Document Type */
             document_type: string;
             /** Igst Amount */
@@ -2516,10 +2555,27 @@ export interface components {
             place_of_supply_state_code: string | null;
             /** Round Off Amount */
             round_off_amount: string;
+            /**
+             * Round Off Increment
+             * @default 1.00
+             */
+            round_off_increment: string;
+            /**
+             * Round Off Mode
+             * @default nearest
+             * @enum {string}
+             */
+            round_off_mode: "none" | "nearest" | "up" | "down";
             /** Sgst Amount */
             sgst_amount: string;
             /** Subtotal Amount */
             subtotal_amount: string;
+            /**
+             * Tax Mode
+             * @default inclusive
+             * @enum {string}
+             */
+            tax_mode: "inclusive" | "exclusive";
             /** Taxable Amount */
             taxable_amount: string;
             /** Total Amount */
@@ -2697,15 +2753,25 @@ export interface components {
             customer_name?: string | null;
             /** Customer Phone */
             customer_phone?: string | null;
+            /** Discount Mode */
+            discount_mode?: ("percent" | "amount") | null;
             /**
              * Discount Percent
              * @default 0
              */
             discount_percent: number | string;
+            /** Discount Value */
+            discount_value?: number | string | null;
             /** Items */
             items: components["schemas"]["CartItem"][];
             /** Place Of Supply State Code */
             place_of_supply_state_code?: string | null;
+            /** Round Off Increment */
+            round_off_increment?: number | string | null;
+            /** Round Off Mode */
+            round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
         };
         /**
          * CartItem
@@ -2715,6 +2781,17 @@ export interface components {
         CartItem: {
             /** Cost */
             cost?: number | string | null;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: number | string;
             /** Gst Percent */
             gst_percent?: number | string | null;
             /** Hsn Code */
@@ -2725,6 +2802,8 @@ export interface components {
             product_uuid?: string | null;
             /** Quantity */
             quantity: number | string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Unit */
             unit?: string | null;
             /** Unit Price */
@@ -2780,6 +2859,12 @@ export interface components {
          * @description Service support versions, never a substitute for per-command authorization.
          */
         ContractFeatures: {
+            /**
+             * Billing Controls
+             * @default 1
+             * @constant
+             */
+            billing_controls: 1;
             /**
              * Native Billing Commands
              * @default 1
@@ -3534,6 +3619,12 @@ export interface components {
              * @default 0
              */
             default_profit_margin_percent: string;
+            /**
+             * Default Tax Mode
+             * @default inclusive
+             * @enum {string}
+             */
+            default_tax_mode: "inclusive" | "exclusive";
             /** Digital Signature */
             digital_signature?: string | null;
             /** Footer Text */
@@ -3556,6 +3647,17 @@ export interface components {
             paper_size: string;
             /** Revision */
             revision: string;
+            /**
+             * Round Off Increment
+             * @default 1.00
+             */
+            round_off_increment: string;
+            /**
+             * Round Off Mode
+             * @default nearest
+             * @enum {string}
+             */
+            round_off_mode: "none" | "nearest" | "up" | "down";
             /** Round Off Total */
             round_off_total: boolean;
             /** Shop Address */
@@ -3592,6 +3694,8 @@ export interface components {
             default_overhead_cost?: number | string | null;
             /** Default Profit Margin Percent */
             default_profit_margin_percent?: number | string | null;
+            /** Default Tax Mode */
+            default_tax_mode?: ("inclusive" | "exclusive") | null;
             /** Digital Signature */
             digital_signature?: string | null;
             /** Expected Revision */
@@ -3606,6 +3710,10 @@ export interface components {
             low_stock_threshold?: number | string | null;
             /** Paper Size */
             paper_size?: ("a4" | "a5" | "80mm" | "58mm") | null;
+            /** Round Off Increment */
+            round_off_increment?: number | string | null;
+            /** Round Off Mode */
+            round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
             /** Round Off Total */
             round_off_total?: boolean | null;
             /** Shop Address */
@@ -4303,6 +4411,22 @@ export interface components {
         /** NativeSalePostLine */
         NativeSalePostLine: {
             /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: number | string;
+            /**
              * Line Uuid
              * Format: uuid
              */
@@ -4320,6 +4444,8 @@ export interface components {
             subtotal: number | string;
             /** Tax Amount */
             tax_amount: number | string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Amount */
             taxable_amount: number | string;
             /** Total Amount */
@@ -4437,6 +4563,22 @@ export interface components {
         };
         /** NativeSaleRecordedLine */
         NativeSaleRecordedLine: {
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: number | string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: number | string;
             /** Name */
             name: string;
             /** Product Uuid */
@@ -4447,6 +4589,8 @@ export interface components {
             subtotal: number | string;
             /** Tax Amount */
             tax_amount: number | string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Amount */
             taxable_amount: number | string;
             /** Total Amount */
@@ -4828,6 +4972,17 @@ export interface components {
             cgst_amount: string;
             /** Discount Amount */
             discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Gst Registered */
             gst_registered: boolean;
             /** Igst Amount */
@@ -4840,10 +4995,27 @@ export interface components {
             reviewed_context: string;
             /** Round Off Amount */
             round_off_amount: string;
+            /**
+             * Round Off Increment
+             * @default 1.00
+             */
+            round_off_increment: string;
+            /**
+             * Round Off Mode
+             * @default nearest
+             * @enum {string}
+             */
+            round_off_mode: "none" | "nearest" | "up" | "down";
             /** Sgst Amount */
             sgst_amount: string;
             /** Subtotal */
             subtotal: string;
+            /**
+             * Tax Mode
+             * @default inclusive
+             * @enum {string}
+             */
+            tax_mode: "inclusive" | "exclusive";
             /** Taxable Amount */
             taxable_amount: string;
             /** Total */
@@ -4853,6 +5025,22 @@ export interface components {
         PreviewLine: {
             /** Amount */
             amount: string;
+            /**
+             * Discount Amount
+             * @default 0
+             */
+            discount_amount: string;
+            /**
+             * Discount Mode
+             * @default percent
+             * @enum {string}
+             */
+            discount_mode: "percent" | "amount";
+            /**
+             * Discount Value
+             * @default 0
+             */
+            discount_value: string;
             /** Gst */
             gst: string;
             /** Name */
@@ -4861,6 +5049,8 @@ export interface components {
             product_uuid: string | null;
             /** Quantity */
             quantity: string;
+            /** Tax Mode */
+            tax_mode?: ("inclusive" | "exclusive") | null;
             /** Taxable Value */
             taxable_value: string;
             /** Unit Price */
@@ -6224,7 +6414,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
@@ -6246,7 +6436,7 @@ export interface operations {
             };
         };
     };
-    health_health_get: {
+    health_health_head: {
         parameters: {
             query?: never;
             header?: never;
