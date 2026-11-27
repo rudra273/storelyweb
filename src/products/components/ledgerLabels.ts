@@ -20,5 +20,6 @@ export function sourceTarget(source: LedgerEntry['source']): { label: string; to
   if (!source) return null
   if (source.kind === 'bill' || source.kind === 'credit_note') return { label: source.label, to: `/billing/${source.uuid}` }
   if (source.kind === 'purchase' || source.kind === 'purchase_reversal') return { label: source.label, to: `/purchases/${source.uuid}` }
+  if (source.kind === 'purchase_return') return { label: source.label || 'Purchase return', to: `/purchases/${source.uuid}` }
   return { label: source.label, to: null }
 }

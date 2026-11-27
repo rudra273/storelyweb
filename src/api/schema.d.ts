@@ -15,7 +15,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        get: operations["health_health_head"];
+        get: operations["health_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -24,7 +24,7 @@ export interface paths {
          * Health
          * @description Liveness: the process is up. Touches nothing else.
          */
-        head: operations["health_health_head"];
+        head: operations["health_health_get"];
         patch?: never;
         trace?: never;
     };
@@ -1922,6 +1922,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Purchase Returns */
+        get: operations["list_purchase_returns_v1_shops__shop_id__purchase_receipts__receipt_id__returns_get"];
+        put?: never;
+        /**
+         * Create Purchase Return
+         * @description Return items from a posted purchase (debit note): stock decreases and payables adjust.
+         */
+        post: operations["create_purchase_return_v1_shops__shop_id__purchase_receipts__receipt_id__returns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/reverse": {
         parameters: {
             query?: never;
@@ -3028,6 +3049,12 @@ export interface components {
              * @constant
              */
             product_expected_updated_at: 1;
+            /**
+             * Purchase Returns
+             * @default 1
+             * @constant
+             */
+            purchase_returns: 1;
             /**
              * Settings Revision
              * @default 1
@@ -4181,11 +4208,15 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "purchase" | "payment" | "purchase_reversal" | "payment_reversal";
+            kind: "purchase" | "payment" | "purchase_reversal" | "payment_reversal" | "purchase_return";
             /** Method */
             method: string | null;
+            /** Note */
+            note?: string | null;
             /** Reference */
             reference: string | null;
+            /** Reference Uuid */
+            reference_uuid?: string | null;
             /** Uuid */
             uuid: string;
         };
@@ -4206,7 +4237,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "bill" | "credit_note" | "purchase" | "purchase_reversal" | "phone_purchase";
+            kind: "bill" | "credit_note" | "purchase" | "purchase_reversal" | "purchase_return" | "phone_purchase";
             /** Label */
             label: string;
             /** Uuid */
@@ -5587,6 +5618,91 @@ export interface components {
              */
             table: "shops" | "app_settings" | "bill_settings" | "categories" | "units" | "suppliers" | "customers" | "products" | "invoice_series" | "bills" | "bill_items" | "bill_payments" | "stock_movements" | "expenses" | "audit_log" | "held_bills" | "user_preferences";
         };
+        /** PurchaseReturnIn */
+        PurchaseReturnIn: {
+            /** Items */
+            items: components["schemas"]["PurchaseReturnItemIn"][];
+            /** Reason */
+            reason: string;
+            /** Refund Method */
+            refund_method?: ("cash" | "upi" | "card" | "bank" | "bank_transfer" | "online") | null;
+            /** Request Key */
+            request_key: string;
+            /**
+             * Return Date
+             * Format: date
+             */
+            return_date: string;
+            /**
+             * Tax Amount
+             * @default 0
+             */
+            tax_amount: number | string;
+        };
+        /** PurchaseReturnItemIn */
+        PurchaseReturnItemIn: {
+            /** Purchase Item Uuid */
+            purchase_item_uuid: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /** PurchaseReturnItemOut */
+        PurchaseReturnItemOut: {
+            /** Amount */
+            amount: string;
+            /** Movement Uuid */
+            movement_uuid: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Purchase Item Uuid */
+            purchase_item_uuid: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Cost */
+            unit_cost: string;
+            /** Unit Name */
+            unit_name: string | null;
+            /** Uuid */
+            uuid: string;
+        };
+        /** PurchaseReturnOut */
+        PurchaseReturnOut: {
+            /** Created At */
+            created_at: string;
+            /** Items */
+            items: components["schemas"]["PurchaseReturnItemOut"][];
+            /** Payable Credit */
+            payable_credit: string;
+            /** Purchase Uuid */
+            purchase_uuid: string;
+            /** Reason */
+            reason: string;
+            /** Refund Amount */
+            refund_amount: string;
+            /** Refund Method */
+            refund_method: string | null;
+            /**
+             * Return Date
+             * Format: date
+             */
+            return_date: string;
+            /** Return Number */
+            return_number: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Supplier Name */
+            supplier_name: string | null;
+            /** Supplier Uuid */
+            supplier_uuid: string | null;
+            /** Tax Amount */
+            tax_amount: string;
+            /** Total */
+            total: string;
+            /** Uuid */
+            uuid: string;
+        };
         /** PurchaseRow */
         PurchaseRow: {
             /** Amount */
@@ -5789,6 +5905,16 @@ export interface components {
             product_uuid: string;
             /** Quantity */
             quantity: string;
+            /**
+             * Returnable Quantity
+             * @default 0
+             */
+            returnable_quantity: string;
+            /**
+             * Returned Quantity
+             * @default 0
+             */
+            returned_quantity: string;
             /** Unit Cost */
             unit_cost: string;
             /** Unit Name */
@@ -5850,6 +5976,13 @@ export interface components {
              * Format: date
              */
             purchase_date: string;
+            /**
+             * Returned Total
+             * @default 0.00
+             */
+            returned_total: string;
+            /** Returns */
+            returns?: components["schemas"]["PurchaseReturnOut"][];
             /** Reversal Reason */
             reversal_reason?: string | null;
             /** Reversed At */
@@ -6702,7 +6835,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -6724,7 +6857,7 @@ export interface operations {
             };
         };
     };
-    health_health_head: {
+    health_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -10503,7 +10636,7 @@ export interface operations {
                 offset?: number;
                 supplier?: string | null;
                 q?: string | null;
-                status?: ("not_recorded" | "unpaid" | "partial" | "paid" | "open") | null;
+                status?: ("not_recorded" | "unpaid" | "partial" | "paid" | "open" | "reversed") | null;
                 overdue?: boolean;
                 from?: string | null;
                 to?: string | null;
@@ -10833,6 +10966,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_purchase_returns_v1_shops__shop_id__purchase_receipts__receipt_id__returns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseReturnOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_purchase_return_v1_shops__shop_id__purchase_receipts__receipt_id__returns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseReturnIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseReturnOut"];
                 };
             };
             /** @description Validation Error */

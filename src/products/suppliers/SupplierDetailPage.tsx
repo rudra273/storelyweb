@@ -24,7 +24,13 @@ import '../../purchases/purchases.css'
 type Statement = components['schemas']['SupplierStatementOut']
 
 /** One supplier: what you owe, what is overdue, every purchase and payment, and a statement that adds up. */
-const ENTRY: Record<Statement['ledger'][number]['kind'], string> = { purchase: 'Purchase', payment: 'Payment', purchase_reversal: 'Purchase reversed', payment_reversal: 'Payment reversed' }
+const ENTRY: Record<Statement['ledger'][number]['kind'], string> = {
+  purchase: 'Purchase',
+  payment: 'Payment',
+  purchase_reversal: 'Purchase reversed',
+  payment_reversal: 'Payment reversed',
+  purchase_return: 'Purchase return (Debit note)',
+}
 function entryLabel(e: Statement['ledger'][number], joiner = ' ') {
   const base = ENTRY[e.kind]
   return e.method && e.kind.startsWith('payment') ? `${base}${joiner === ' ' ? ` (${paymentMethod(e.method)})` : ` · ${paymentMethod(e.method)}`}` : base
@@ -118,7 +124,13 @@ export function SupplierDetailPage() {
             <thead><tr><th>Date</th><th>Entry</th><th className="num">Purchases</th><th className="num">Payments</th><th className="num">Balance</th></tr></thead>
             <tbody>{s.ledger.map(e => <tr key={`${e.kind}:${e.uuid}`}>
               <td className="nowrap">{day(e.date)}</td>
-              <td>{entryLabel(e, ' · ')}{e.reference && <small className="stacked-note muted">{e.reference}</small>}</td>
+              <td>
+                {e.kind === 'purchase_return'
+                  ? <Link to={`/purchases/${e.reference_uuid || e.uuid}`}>{entryLabel(e, ' · ')}</Link>
+                  : entryLabel(e, ' · ')}
+                {e.reference && <small className="stacked-note muted">{e.reference}</small>}
+                {e.note && <small className="stacked-note muted">{e.note}</small>}
+              </td>
               <td className="num">{e.debit !== '0' ? receiptMoney(e.debit) : ''}</td>
               <td className="num">{e.credit !== '0' ? receiptMoney(e.credit) : ''}</td>
               <td className="num">{receiptMoney(e.balance)}</td>

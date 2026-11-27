@@ -570,3 +570,111 @@ test('the workspace and the purchase use the same words, and say what goes into 
   expect(screen.getAllByText(/Only the items are added to what each product costs/).length).toBeGreaterThan(0)
   expect(calls.some(c => c.path.endsWith('/preview'))).toBe(true)
 })
+
+test('PurchaseReturnDialog computes live credit and refund, requires refund_method when refund > 0, and posts the return', async () => {
+  const partialPaid = {
+    ...LIVE,
+    total: '36.00',
+    paid_amount: '26.00',
+    balance_due: '10.00',
+    payment_status: 'partial' as const,
+    items: [{ ...LIVE.items[0]!, quantity: '2', unit_cost: '18', amount: '36.00', returned_quantity: '0', returnable_quantity: '2' }],
+  }
+  const calls = fakeApi([
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, partialPaid),
+    ok('POST', `${BASE}/purchase-receipts/receipt1/returns`, {
+      uuid: 'ret1', purchase_uuid: 'receipt1', supplier_uuid: 'sup1', supplier_name: 'Alpha',
+      return_number: 'DN/2627/0001', return_date: '2026-10-05', reason: 'Damaged pack',
+      subtotal: '18.00', tax_amount: '0.00', total: '18.00', payable_credit: '10.00',
+      refund_amount: '8.00', refund_method: 'upi', created_at: '2026-10-05T10:00:00Z',
+      items: [{ uuid: 'ri1', purchase_item_uuid: 'l1', product_uuid: 'p1', product_name: 'Rice', unit_name: 'kg', quantity: '1', unit_cost: '18', amount: '18.00', movement_uuid: 'm2' }],
+    }, 201),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Return items' }))
+  const dialog = screen.getByRole('dialog', { name: 'Return items (Debit note)' })
+  await userEvent.type(within(dialog).getByLabelText('Return quantity for Rice'), '1')
+  const summary = within(dialog).getByRole('region', { name: 'Return summary' })
+  expect(within(summary).getByText('₹18.00', { selector: 'strong' })).toBeInTheDocument()
+  expect(within(summary).getByText('₹10.00')).toBeInTheDocument()
+  expect(within(summary).getByText('₹8.00', { selector: 'strong' })).toBeInTheDocument()
+
+  fireEvent.change(within(dialog).getByLabelText('Return date'), { target: { value: '2026-10-05' } })
+  await userEvent.type(within(dialog).getByLabelText('Reason for return'), 'Damaged pack')
+
+  // Refund > 0 requires refund method
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Record return' }))
+  expect(await within(dialog).findByText(/Select how the supplier refunded/)).toBeInTheDocument()
+  expect(calls.some(c => c.method === 'POST' && c.path.endsWith('/returns'))).toBe(false)
+
+  await userEvent.selectOptions(within(dialog).getByLabelText('Refund method'), 'upi')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Record return' }))
+
+  await waitFor(() => expect(calls.find(c => c.method === 'POST' && c.path.endsWith('/returns'))?.body).toMatchObject({
+    return_date: '2026-10-05',
+    reason: 'Damaged pack',
+    tax_amount: '0.00',
+    refund_method: 'upi',
+    items: [{ purchase_item_uuid: 'l1', quantity: '1' }],
+  }))
+  expect(typeof (calls.find(c => c.method === 'POST' && c.path.endsWith('/returns'))?.body as { request_key?: string } | undefined)?.request_key).toBe('string')
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Return items (Debit note)' })).not.toBeInTheDocument())
+})
+
+test('PurchaseReturnDialog explains stock-cost return with 0 payable credit for not_recorded purchases', async () => {
+  fakeApi([
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, RECEIPT),
+  ])
+  renderApp('/purchases/receipt1')
+  await userEvent.click(await screen.findByRole('button', { name: 'Return items' }))
+  const dialog = screen.getByRole('dialog', { name: 'Return items (Debit note)' })
+  await userEvent.type(within(dialog).getByLabelText('Return quantity for Rice'), '1')
+  expect(within(dialog).getByText(/adjusts stock cost only with ₹0\.00 payable credit/)).toBeInTheDocument()
+  expect(within(dialog).queryByLabelText('Refund method')).not.toBeInTheDocument()
+})
+
+test('PurchaseDetailPage displays Returns / Debit notes, returned quantities, and handles returns_recorded reversal guard', async () => {
+  const withReturn = {
+    ...LIVE,
+    returned_total: '18.00',
+    balance_due: '18.00',
+    items: [{ ...LIVE.items[0]!, returned_quantity: '1', returnable_quantity: '1' }],
+    returns: [{
+      uuid: 'ret1', purchase_uuid: 'receipt1', supplier_uuid: 'sup1', supplier_name: 'Alpha',
+      return_number: 'DN/2627/0001', return_date: '2026-10-05', reason: 'Damaged bag',
+      subtotal: '18.00', tax_amount: '0.00', total: '18.00', payable_credit: '10.00',
+      refund_amount: '8.00', refund_method: 'cash', created_at: '2026-10-05T10:00:00Z',
+      items: [{ uuid: 'ri1', purchase_item_uuid: 'l1', product_uuid: 'p1', product_name: 'Rice', unit_name: 'kg', quantity: '1', unit_cost: '18', amount: '18.00', movement_uuid: 'm2' }],
+    }],
+  }
+  fakeApi([
+    ...SIGNED_IN,
+    ok('GET', '/v1/shops', [{ shop_id: 's1', name: 'Shop', role: 'owner' }]),
+    ok('GET', `${BASE}/purchase-receipts/receipt1`, withReturn),
+    ok('POST', `${BASE}/purchase-receipts/receipt1/reverse`, { error: { code: 'returns_recorded', message: 'Returns have been recorded against this purchase.' } }, 409),
+  ])
+  renderApp('/purchases/receipt1')
+  const itemsSection = await screen.findByRole('region', { name: 'Items received' })
+  expect(within(itemsSection).getByText('Returned 1 kg')).toBeInTheDocument()
+  const totalsSection = screen.getByRole('region', { name: 'Totals' })
+  expect(within(totalsSection).getByText('Returned')).toBeInTheDocument()
+  expect(within(totalsSection).getByText('−₹18.00')).toBeInTheDocument()
+  const returnsSection = screen.getByRole('region', { name: 'Returns / Debit notes' })
+  expect(within(returnsSection).getByText('DN/2627/0001')).toBeInTheDocument()
+  expect(within(returnsSection).getByText(/Reason: Damaged bag/)).toBeInTheDocument()
+  expect(within(returnsSection).getByText(/Payable credit ₹10\.00/)).toBeInTheDocument()
+  expect(within(returnsSection).getByText(/Refund ₹8\.00 \(Cash\)/)).toBeInTheDocument()
+  expect(within(returnsSection).getByText(/Rice — 1 kg \(₹18\.00\)/)).toBeInTheDocument()
+
+  await userEvent.click(screen.getByText('More actions'))
+  await userEvent.click(screen.getByRole('button', { name: 'Reverse purchase…' }))
+  const dialog = screen.getByRole('dialog', { name: 'Reverse purchase' })
+  await userEvent.type(within(dialog).getByLabelText('Why is this being reversed?'), 'Entered wrong date')
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Reverse purchase' }))
+  expect(await within(dialog).findByText(/Returns have been recorded against this purchase/)).toBeInTheDocument()
+  expect(within(dialog).getByText(/Purchases with recorded returns \(debit notes\) cannot be reversed/)).toBeInTheDocument()
+})

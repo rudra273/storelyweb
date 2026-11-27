@@ -111,4 +111,10 @@
 .reversed-row td:first-child a { color: inherit; }
 .reverse-effects ul { margin: .25rem 0 .75rem 1.1rem; padding: 0; }
 .reverse-effects li { margin: .2rem 0; }
-#reversal-reason { font: inherit; width: 100%; padding: .6rem .7rem; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); color: inherit; resize: vertical; }
+#reversal-reason, #return-reason { font: inherit; width: 100%; padding: .6rem .7rem; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); color: inherit; resize: vertical; }
+.return-lines input { width: 7.5rem; max-width: 100%; text-align: right; padding: .35rem .5rem; }
+.return-meta { margin: 1rem 0 .75rem; }
+.return-list { display: grid; gap: .75rem; }
+.return-entry { padding-bottom: .75rem; border-bottom: 1px solid var(--line); }
+.return-entry:last-child { padding-bottom: 0; border-bottom: 0; }
+.return-entry-items { margin-top: .35rem; font-size: .9rem; color: var(--muted); }

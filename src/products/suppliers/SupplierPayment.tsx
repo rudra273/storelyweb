@@ -48,6 +48,7 @@ function SupplierPaymentForm({ supplier, owed, purchase, onClose }: SupplierPaym
   const [date, setDate] = useState(store.initial?.payment_date ?? todayInShop())
   const [method, setMethod] = useState<Payment['payment_method']>(store.initial?.payment_method ?? 'cash')
   const [reference, setReference] = useState(store.initial?.reference ?? '')
+  const [notes, setNotes] = useState(store.initial?.notes ?? '')
   const [error, setError] = useState<string | null>(store.initialError?.message ?? null)
   const [busy, setBusy] = useState(false)
   const sending = useRef(false)
@@ -62,7 +63,7 @@ function SupplierPaymentForm({ supplier, owed, purchase, onClose }: SupplierPaym
     setBusy(true)
     setError(null)
     const wasUncertain = pending !== null
-    const body: Payment = pending ?? { request_key: crypto.randomUUID(), payment_date: date, amount, payment_method: method, reference: reference.trim() || null, ...(purchase ? { purchase_uuid: purchase.uuid } : {}) }
+    const body: Payment = pending ?? { request_key: crypto.randomUUID(), payment_date: date, amount, payment_method: method, reference: reference.trim() || null, notes: notes.trim() || null, ...(purchase ? { purchase_uuid: purchase.uuid } : {}) }
     let sent = false
     try {
       await store.save(body, () => mounted.current)
@@ -103,6 +104,7 @@ function SupplierPaymentForm({ supplier, owed, purchase, onClose }: SupplierPaym
         <Field label="Payment date" type="date" max={todayInShop()} value={date} onChange={e => setDate(e.target.value)} required />
         <div className="field"><label htmlFor="pay-method">Payment method</label><select id="pay-method" value={method} onChange={e => setMethod(e.target.value as Payment['payment_method'])}>{METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
         <Field label="Reference (optional)" maxLength={100} value={reference} onChange={e => setReference(e.target.value)} />
+        <Field label="Notes (optional)" maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} />
       </fieldset>
       <div className="actions"><Button disabled={busy} onClick={onClose}>{pending ? 'Close' : 'Cancel'}</Button><Button type="submit" variant="primary" disabled={busy || blocked}>{busy ? 'Recording…' : pending ? 'Retry payment' : 'Record payment'}</Button></div>
     </form>

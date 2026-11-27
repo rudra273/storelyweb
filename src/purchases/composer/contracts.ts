@@ -41,8 +41,10 @@ export interface ReceiptLine extends ReceiptItemInput {
   amount: string
   movement_uuid: string
   line_number: number
+  returned_quantity?: string
+  returnable_quantity?: string
 }
-export interface Receipt extends Partial<Pick<components['schemas']['ReceiptOut'], 'tax_amount' | 'charges_amount' | 'discount_amount' | 'total' | 'due_date' | 'paid_amount' | 'balance_due' | 'payments' | 'reversed_at' | 'reversal_reason'>> {
+export interface Receipt extends Partial<Pick<components['schemas']['ReceiptOut'], 'tax_amount' | 'charges_amount' | 'discount_amount' | 'total' | 'due_date' | 'paid_amount' | 'balance_due' | 'payments' | 'reversed_at' | 'reversal_reason' | 'returned_total' | 'returns'>> {
   uuid: string
   supplier_uuid: string | null
   supplier_name: string | null

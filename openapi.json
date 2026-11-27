@@ -2239,6 +2239,12 @@
       "title": "Product Expected Updated At",
       "type": "integer"
      },
+     "purchase_returns": {
+      "const": 1,
+      "default": 1,
+      "title": "Purchase Returns",
+      "type": "integer"
+     },
      "settings_revision": {
       "const": 1,
       "default": 1,
@@ -5734,7 +5740,8 @@
        "purchase",
        "payment",
        "purchase_reversal",
-       "payment_reversal"
+       "payment_reversal",
+       "purchase_return"
       ],
       "title": "Kind",
       "type": "string"
@@ -5750,6 +5757,17 @@
       ],
       "title": "Method"
      },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
      "reference": {
       "anyOf": [
        {
@@ -5760,6 +5778,17 @@
        }
       ],
       "title": "Reference"
+     },
+     "reference_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reference Uuid"
      },
      "uuid": {
       "title": "Uuid",
@@ -5832,6 +5861,7 @@
        "credit_note",
        "purchase",
        "purchase_reversal",
+       "purchase_return",
        "phone_purchase"
       ],
       "title": "Kind",
@@ -10485,6 +10515,273 @@
     "title": "PullIn",
     "type": "object"
    },
+   "PurchaseReturnIn": {
+    "additionalProperties": false,
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PurchaseReturnItemIn"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+     },
+     "reason": {
+      "maxLength": 300,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+     },
+     "refund_method": {
+      "anyOf": [
+       {
+        "enum": [
+         "cash",
+         "upi",
+         "card",
+         "bank",
+         "bank_transfer",
+         "online"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Refund Method"
+     },
+     "request_key": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Request Key",
+      "type": "string"
+     },
+     "return_date": {
+      "format": "date",
+      "title": "Return Date",
+      "type": "string"
+     },
+     "tax_amount": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "default": "0",
+      "title": "Tax Amount"
+     }
+    },
+    "required": [
+     "request_key",
+     "return_date",
+     "reason",
+     "items"
+    ],
+    "title": "PurchaseReturnIn",
+    "type": "object"
+   },
+   "PurchaseReturnItemIn": {
+    "additionalProperties": false,
+    "properties": {
+     "purchase_item_uuid": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Purchase Item Uuid",
+      "type": "string"
+     },
+     "quantity": {
+      "anyOf": [
+       {
+        "exclusiveMinimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "title": "Quantity"
+     }
+    },
+    "required": [
+     "purchase_item_uuid",
+     "quantity"
+    ],
+    "title": "PurchaseReturnItemIn",
+    "type": "object"
+   },
+   "PurchaseReturnItemOut": {
+    "properties": {
+     "amount": {
+      "title": "Amount",
+      "type": "string"
+     },
+     "movement_uuid": {
+      "title": "Movement Uuid",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "title": "Product Uuid",
+      "type": "string"
+     },
+     "purchase_item_uuid": {
+      "title": "Purchase Item Uuid",
+      "type": "string"
+     },
+     "quantity": {
+      "title": "Quantity",
+      "type": "string"
+     },
+     "unit_cost": {
+      "title": "Unit Cost",
+      "type": "string"
+     },
+     "unit_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Name"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "purchase_item_uuid",
+     "product_uuid",
+     "product_name",
+     "unit_name",
+     "quantity",
+     "unit_cost",
+     "amount",
+     "movement_uuid"
+    ],
+    "title": "PurchaseReturnItemOut",
+    "type": "object"
+   },
+   "PurchaseReturnOut": {
+    "properties": {
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PurchaseReturnItemOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "payable_credit": {
+      "title": "Payable Credit",
+      "type": "string"
+     },
+     "purchase_uuid": {
+      "title": "Purchase Uuid",
+      "type": "string"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "refund_amount": {
+      "title": "Refund Amount",
+      "type": "string"
+     },
+     "refund_method": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Refund Method"
+     },
+     "return_date": {
+      "format": "date",
+      "title": "Return Date",
+      "type": "string"
+     },
+     "return_number": {
+      "title": "Return Number",
+      "type": "string"
+     },
+     "subtotal": {
+      "title": "Subtotal",
+      "type": "string"
+     },
+     "supplier_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Name"
+     },
+     "supplier_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Supplier Uuid"
+     },
+     "tax_amount": {
+      "title": "Tax Amount",
+      "type": "string"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "purchase_uuid",
+     "supplier_uuid",
+     "supplier_name",
+     "return_number",
+     "return_date",
+     "reason",
+     "subtotal",
+     "tax_amount",
+     "total",
+     "payable_credit",
+     "refund_amount",
+     "refund_method",
+     "created_at",
+     "items"
+    ],
+    "title": "PurchaseReturnOut",
+    "type": "object"
+   },
    "PurchaseRow": {
     "properties": {
      "amount": {
@@ -11192,6 +11489,16 @@
       "title": "Quantity",
       "type": "string"
      },
+     "returnable_quantity": {
+      "default": "0",
+      "title": "Returnable Quantity",
+      "type": "string"
+     },
+     "returned_quantity": {
+      "default": "0",
+      "title": "Returned Quantity",
+      "type": "string"
+     },
      "unit_cost": {
       "title": "Unit Cost",
       "type": "string"
@@ -11345,6 +11652,18 @@
       "format": "date",
       "title": "Purchase Date",
       "type": "string"
+     },
+     "returned_total": {
+      "default": "0.00",
+      "title": "Returned Total",
+      "type": "string"
+     },
+     "returns": {
+      "items": {
+       "$ref": "#/components/schemas/PurchaseReturnOut"
+      },
+      "title": "Returns",
+      "type": "array"
      },
      "reversal_reason": {
       "anyOf": [
@@ -13922,7 +14241,7 @@
   "/health": {
    "get": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -13931,7 +14250,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -13946,7 +14265,7 @@
    },
    "head": {
     "description": "Liveness: the process is up. Touches nothing else.",
-    "operationId": "health_health_head",
+    "operationId": "health_health_get",
     "responses": {
      "200": {
       "content": {
@@ -13955,7 +14274,7 @@
          "additionalProperties": {
           "type": "string"
          },
-         "title": "Response Health Health Head",
+         "title": "Response Health Health Get",
          "type": "object"
         }
        }
@@ -20402,7 +20721,8 @@
           "unpaid",
           "partial",
           "paid",
-          "open"
+          "open",
+          "reversed"
          ],
          "type": "string"
         },
@@ -21054,6 +21374,123 @@
      }
     },
     "summary": "Record Payment Terms",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/purchase-receipts/{receipt_id}/returns": {
+   "get": {
+    "operationId": "list_purchase_returns_v1_shops__shop_id__purchase_receipts__receipt_id__returns_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "receipt_id",
+      "required": true,
+      "schema": {
+       "title": "Receipt Id",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/PurchaseReturnOut"
+         },
+         "title": "Response List Purchase Returns V1 Shops  Shop Id  Purchase Receipts  Receipt Id  Returns Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Purchase Returns",
+    "tags": [
+     "catalog",
+     "purchases"
+    ]
+   },
+   "post": {
+    "description": "Return items from a posted purchase (debit note): stock decreases and payables adjust.",
+    "operationId": "create_purchase_return_v1_shops__shop_id__purchase_receipts__receipt_id__returns_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "receipt_id",
+      "required": true,
+      "schema": {
+       "title": "Receipt Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PurchaseReturnIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PurchaseReturnOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Purchase Return",
     "tags": [
      "catalog",
      "purchases"
