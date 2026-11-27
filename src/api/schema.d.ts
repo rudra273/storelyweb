@@ -895,7 +895,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Edit Bill Metadata
+         * @description Update non-financial buyer metadata and notes on a live posted bill.
+         */
+        patch: operations["edit_bill_metadata_v1_shops__shop_id__bills__bill_id__patch"];
         trace?: never;
     };
     "/v1/shops/{shop_id}/bills/{bill_id}/cancel": {
@@ -2081,6 +2085,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/shops/{shop_id}/stock-movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shop Stock Ledger
+         * @description Shop-wide stock ledger across all products, newest first.
+         */
+        get: operations["shop_stock_ledger_v1_shops__shop_id__stock_movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/shops/{shop_id}/suppliers": {
         parameters: {
             query?: never;
@@ -2373,6 +2397,8 @@ export interface components {
         BillIn: {
             /** Allow Unassigned Credit */
             allow_unassigned_credit?: boolean | null;
+            /** Bill Date */
+            bill_date?: string | null;
             /**
              * Bill Type
              * @default b2c
@@ -2402,6 +2428,8 @@ export interface components {
             discount_value?: number | string | null;
             /** Items */
             items: components["schemas"]["CartItem"][];
+            /** Notes */
+            notes?: string | null;
             /**
              * @default {
              *       "amount": "0",
@@ -2483,6 +2511,23 @@ export interface components {
             /** Uuid */
             uuid: string;
         };
+        /** BillMetadataPatchIn */
+        BillMetadataPatchIn: {
+            /** Customer Address */
+            customer_address?: string | null;
+            /** Customer Gst Legal Name */
+            customer_gst_legal_name?: string | null;
+            /** Customer Gst Trade Name */
+            customer_gst_trade_name?: string | null;
+            /** Customer Gstin */
+            customer_gstin?: string | null;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Customer Phone */
+            customer_phone?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
         /** BillPage */
         BillPage: {
             /** Items */
@@ -2512,6 +2557,8 @@ export interface components {
             customer_address_snapshot: string | null;
             /** Customer Gst Legal Name */
             customer_gst_legal_name: string | null;
+            /** Customer Gst Trade Name */
+            customer_gst_trade_name?: string | null;
             /** Customer Gstin */
             customer_gstin: string | null;
             /** Customer Name */
@@ -2541,6 +2588,8 @@ export interface components {
             item_count: number;
             /** Lifecycle Status */
             lifecycle_status: string;
+            /** Notes */
+            notes?: string | null;
             /** Original Bill Number */
             original_bill_number: string | null;
             /** Original Bill Uuid */
@@ -2735,6 +2784,8 @@ export interface components {
         };
         /** CartIn */
         CartIn: {
+            /** Bill Date */
+            bill_date?: string | null;
             /**
              * Bill Type
              * @default b2c
@@ -2865,6 +2916,12 @@ export interface components {
              * @constant
              */
             billing_controls: 1;
+            /**
+             * Billing Metadata
+             * @default 1
+             * @constant
+             */
+            billing_metadata: 1;
             /**
              * Native Billing Commands
              * @default 1
@@ -3629,6 +3686,11 @@ export interface components {
             digital_signature?: string | null;
             /** Footer Text */
             footer_text: string;
+            /**
+             * Format Template
+             * @default INV/{FY}/{SEQ}
+             */
+            format_template: string;
             /** Gst Registered */
             gst_registered: boolean;
             /**
@@ -3643,8 +3705,24 @@ export interface components {
              * @default 5
              */
             low_stock_threshold: string;
+            /**
+             * Next Bill Number Preview
+             * @default
+             */
+            next_bill_number_preview: string;
+            /**
+             * Next Sequence
+             * @default 1
+             */
+            next_sequence: number;
             /** Paper Size */
             paper_size: string;
+            /**
+             * Reset Period
+             * @default financial_year
+             * @enum {string}
+             */
+            reset_period: "never" | "financial_year" | "monthly" | "daily";
             /** Revision */
             revision: string;
             /**
@@ -3660,6 +3738,16 @@ export interface components {
             round_off_mode: "none" | "nearest" | "up" | "down";
             /** Round Off Total */
             round_off_total: boolean;
+            /**
+             * Sequence Padding
+             * @default 4
+             */
+            sequence_padding: number;
+            /**
+             * Series Name
+             * @default Default
+             */
+            series_name: string;
             /** Shop Address */
             shop_address: string | null;
             /** Shop Email */
@@ -3702,20 +3790,30 @@ export interface components {
             expected_revision?: string | null;
             /** Footer Text */
             footer_text?: string | null;
+            /** Format Template */
+            format_template?: string | null;
             /** Gst Scheme */
             gst_scheme?: ("regular" | "composition" | "unregistered") | null;
             /** Invoice Title */
             invoice_title?: string | null;
             /** Low Stock Threshold */
             low_stock_threshold?: number | string | null;
+            /** Next Sequence */
+            next_sequence?: number | null;
             /** Paper Size */
             paper_size?: ("a4" | "a5" | "80mm" | "58mm") | null;
+            /** Reset Period */
+            reset_period?: ("never" | "financial_year" | "monthly" | "daily") | null;
             /** Round Off Increment */
             round_off_increment?: number | string | null;
             /** Round Off Mode */
             round_off_mode?: ("none" | "nearest" | "up" | "down") | null;
             /** Round Off Total */
             round_off_total?: boolean | null;
+            /** Sequence Padding */
+            sequence_padding?: number | null;
+            /** Series Name */
+            series_name?: string | null;
             /** Shop Address */
             shop_address?: string | null;
             /** Shop Email */
@@ -5995,6 +6093,38 @@ export interface components {
             /** Shop Id */
             shop_id: string;
         };
+        /** ShopStockLedgerPage */
+        ShopStockLedgerPage: {
+            /** Items */
+            items: components["schemas"]["ShopStockMovementOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ShopStockMovementOut */
+        ShopStockMovementOut: {
+            /** Balance After */
+            balance_after: string;
+            /** Created At */
+            created_at: string;
+            /** Movement Type */
+            movement_type: string;
+            /** Product Name */
+            product_name: string;
+            /** Product Uuid */
+            product_uuid: string;
+            /** Quantity Delta */
+            quantity_delta: string;
+            /** Reason */
+            reason: string | null;
+            /** Source Document Type */
+            source_document_type: string | null;
+            /** Source Document Uuid */
+            source_document_uuid: string | null;
+            /** Unit Cost */
+            unit_cost?: string | null;
+            /** Uuid */
+            uuid: string;
+        };
         /** SignupIn */
         SignupIn: {
             /**
@@ -7816,6 +7946,9 @@ export interface operations {
         parameters: {
             query?: {
                 entity_type?: string | null;
+                action?: string | null;
+                from?: string | null;
+                to?: string | null;
                 q?: string | null;
                 limit?: number;
                 offset?: number;
@@ -8117,6 +8250,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_bill_metadata_v1_shops__shop_id__bills__bill_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shop_id: string;
+                bill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillMetadataPatchIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -10817,7 +10986,10 @@ export interface operations {
     };
     shop_security_events_v1_shops__shop_id__security_events_get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path: {
                 shop_id: string;
@@ -10833,6 +11005,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ShopEventOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shop_stock_ledger_v1_shops__shop_id__stock_movements_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                type?: ("purchase" | "sale" | "adjustment" | "return" | "void" | "stocktake") | null;
+                q?: string | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                shop_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopStockLedgerPage"];
                 };
             };
             /** @description Validation Error */

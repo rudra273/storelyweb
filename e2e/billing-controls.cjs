@@ -80,11 +80,11 @@ const fixture = JSON.parse(fs.readFileSync(process.env.STORELY_FIXTURE, 'utf8'))
     assert.equal(line.discount_value, '10.00')
     assert.equal(line.discount_amount, '20.00')
 
-    console.log('E03.3A web billing-controls acceptance PASSED:', bill.bill_number, bill.total_amount)
+    process.stdout.write(`E03.3A web billing-controls acceptance PASSED: ${bill.bill_number} ${bill.total_amount}\n`)
   } finally {
     await browser.close()
   }
 })().catch(err => {
-  console.error(err)
+  process.stderr.write(`${err?.stack || err}\n`)
   process.exit(1)
 })

@@ -47,6 +47,7 @@ type ExtendedCartInput = Omit<CartInput, 'items'> & {
   tax_mode?: TaxMode
   round_off_mode?: RoundOffMode
   round_off_increment?: string
+  bill_date?: string | null
 }
 
 type ExtendedBillInput = Omit<BillInput, 'items'> & {
@@ -56,6 +57,16 @@ type ExtendedBillInput = Omit<BillInput, 'items'> & {
   tax_mode?: TaxMode
   round_off_mode?: RoundOffMode
   round_off_increment?: string
+  bill_date?: string | null
+  notes?: string | null
+}
+
+function localToday(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 const ROUND_OFF_INCREMENTS = [
@@ -106,6 +117,8 @@ interface BillDraft {
   custom: CustomLine[]
   customer: CustomerFields
   billType: BillType
+  billDate?: string
+  notes?: string
   discount: string
   discountMode?: DiscountMode
   taxMode?: TaxMode | null
@@ -136,6 +149,8 @@ function isBillDraft(value: unknown): value is BillDraft {
   if (!value.custom.every(item => record(item) && strings(item, ['key', 'name', 'unit_price', 'gst_percent', 'quantity', 'cost', 'hsn_code', 'unit']) && validLineControls(item))) return false
   if (!record(value.customer) || !strings(value.customer, Object.keys(BLANK_CUSTOMER)) || !strings(value, ['discount', 'amount', 'method', 'reference'])) return false
   if (value.discountMode !== undefined && value.discountMode !== 'percent' && value.discountMode !== 'amount') return false
+  if (value.billDate !== undefined && typeof value.billDate !== 'string') return false
+  if (value.notes !== undefined && typeof value.notes !== 'string') return false
   if (value.taxMode !== undefined && value.taxMode !== null && value.taxMode !== 'inclusive' && value.taxMode !== 'exclusive') return false
   if (value.roundOffMode !== undefined && value.roundOffMode !== null && !['none', 'nearest', 'up', 'down'].includes(String(value.roundOffMode))) return false
   if (value.roundOffIncrement !== undefined && value.roundOffIncrement !== null && typeof value.roundOffIncrement !== 'string') return false
@@ -151,7 +166,7 @@ function isBillDraft(value: unknown): value is BillDraft {
 }
 
 function hasInvoiceDraft(draft: BillDraft): boolean {
-  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.discount !== '0' || draft.discountMode === 'amount' || draft.taxMode != null || draft.roundOffMode != null || draft.roundOffIncrement != null || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.pendingCatalogProduct || draft.attempt)
+  return !!(draft.items.length || draft.custom.length || Object.values(draft.customer).some(value => value !== '') || draft.billType !== 'b2c' || draft.billDate || draft.notes || draft.discount !== '0' || draft.discountMode === 'amount' || draft.taxMode != null || draft.roundOffMode != null || draft.roundOffIncrement != null || draft.paid || draft.amount || draft.method !== 'cash' || draft.reference || draft.cash || draft.pendingCatalogProduct || draft.attempt)
 }
 
 function BillForm({ another }: { another: () => void }) {
@@ -169,6 +184,8 @@ function BillForm({ another }: { another: () => void }) {
   const saved = restored?.data
   const canCustom = can(role, 'billing.custom')
   const canCreateProduct = can(role, 'products.edit')
+  const canBackdate = can(role, 'billing.cancel')
+  const today = localToday()
   const checkoutOwner = useRef({ userId, shop, allowed: canCreateProduct, blocked: false, uncertain: false, conflict: false })
   const [custom, setCustom] = useState<CustomLine[]>(saved?.custom ?? [])
   const [addingCustom, setAddingCustom] = useState(false)
@@ -183,6 +200,8 @@ function BillForm({ another }: { another: () => void }) {
   const [customer, setCustomer] = useState(saved?.customer ?? BLANK_CUSTOMER)
   const [customerOpen, setCustomerOpen] = useState(false)
   const [billType, setBillType] = useState<BillType>(saved?.billType ?? 'b2c')
+  const [billDate, setBillDate] = useState(saved?.billDate ?? '')
+  const [notes, setNotes] = useState(saved?.notes ?? '')
   const [discount, setDiscount] = useState(saved?.discount ?? '0')
   const [discountMode, setDiscountMode] = useState<DiscountMode>(saved?.discountMode ?? 'percent')
   const [taxMode, setTaxMode] = useState<TaxMode | null>(saved?.taxMode ?? null)
@@ -215,7 +234,7 @@ function BillForm({ another }: { another: () => void }) {
     mounted.current = true
     return () => { mounted.current = false }
   }, [])
-  const draftText = JSON.stringify({ items, custom, customer, billType, discount, discountMode, taxMode, roundOffMode, roundOffIncrement, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, pendingCatalogProduct, attempt } satisfies BillDraft)
+  const draftText = JSON.stringify({ items, custom, customer, billType, billDate, notes, discount, discountMode, taxMode, roundOffMode, roundOffIncrement, paid: payment.paid, amount: payment.amount, method: payment.method, reference: payment.reference, cash: payment.cash, reviewedContext, allowUnassigned, consentContext, pendingCatalogProduct, attempt } satisfies BillDraft)
   useEffect(() => {
     if (done || !userId || creating || preparing) return
     const draft = JSON.parse(draftText) as BillDraft
@@ -225,7 +244,7 @@ function BillForm({ another }: { another: () => void }) {
   }, [draftText, userId, shop, done, draftStore, creating, preparing])
   async function discard() {
     try { await draftStore.clear({ isActive: () => mounted.current }) } catch (error) { persistenceFailure(error); return }
-    commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setDiscount('0')
+    commit([]); setCustom([]); setCustomer(BLANK_CUSTOMER); setBillType('b2c'); setBillDate(''); setNotes(''); setDiscount('0')
     setDiscountMode('percent'); setTaxMode(null); setRoundOffMode(null); setRoundOffIncrement(null); setOpenLineKeys({})
     setPayment({ paid: null, amount: '', method: 'cash', reference: '', cash: '' }); setPaidError('')
     setAllowUnassigned(false); setConsentContext(null); setReviewedContext(null)
@@ -268,6 +287,8 @@ function BillForm({ another }: { another: () => void }) {
     })),
   ]
   const discountPercentField = discountMode === 'percent' ? discount : '0'
+  const explicitBillDate = canBackdate && billDate.trim() ? billDate.trim() : undefined
+  const billDateOk = !explicitBillDate || (explicitBillDate >= '2000-01-01' && explicitBillDate <= today)
   const cart: ExtendedCartInput = {
     ...customer,
     customer_phone: customerErrors.phone ? null : customer.customer_phone,
@@ -280,6 +301,7 @@ function BillForm({ another }: { another: () => void }) {
     tax_mode: effectiveTaxMode,
     round_off_mode: effectiveRoundOffMode,
     round_off_increment: effectiveRoundOffIncrement,
+    ...(explicitBillDate ? { bill_date: explicitBillDate } : {}),
     items: lines,
   }
   const lineCount = items.length + custom.length
@@ -292,6 +314,7 @@ function BillForm({ another }: { another: () => void }) {
     tax_mode: effectiveTaxMode,
     round_off_mode: effectiveRoundOffMode,
     round_off_increment: effectiveRoundOffIncrement,
+    ...(explicitBillDate ? { bill_date: explicitBillDate } : {}),
     customer_gstin: cart.customer_gstin,
     place_of_supply_state_code: cart.place_of_supply_state_code,
     items: lines,
@@ -307,10 +330,10 @@ function BillForm({ another }: { another: () => void }) {
   const preview = useQuery({
     queryKey: ['bill-preview', shop, settledText],
     queryFn: () => api.post<Preview>(`/v1/shops/${shop}/bills/preview`, JSON.parse(settledText) as ExtendedCartInput),
-    enabled: lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && !needsGstin && !attempt, retry: false, placeholderData: keepPreviousData,
+    enabled: lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !needsGstin && !attempt, retry: false, placeholderData: keepPreviousData,
   })
-  const pricing = lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
-  const totals = lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && !needsGstin ? preview.data : undefined
+  const pricing = lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !attempt && !needsGstin && !preview.error && (!priceCurrent || preview.isFetching)
+  const totals = lineCount > 0 && quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !needsGstin ? preview.data : undefined
   const locked = !!attempt || mutation.isPending || preparing || draftConflict || !!creating
   useLayoutEffect(() => {
     checkoutOwner.current = { userId, shop, allowed: canCreateProduct, blocked: locked, uncertain: !!attempt, conflict: draftConflict }
@@ -358,7 +381,7 @@ function BillForm({ another }: { another: () => void }) {
   // The payment options may only just have appeared (the first item), so look after this render.
   const goToPayment = () => { setTimeout(() => document.getElementById(PAY_FULL_ID)?.focus(), 0) }
   const unlinked = !!payment.paid && payment.paid !== 'full' && (paymentMinorUnits(totals?.total ?? '') ?? 0n) > 0n && !/\d/.test(customer.customer_phone)
-  const canCreate = quantitiesOk && lineDiscountsOk && discountOk && !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
+  const canCreate = quantitiesOk && lineDiscountsOk && discountOk && billDateOk && !pendingCatalogProduct && !!totals && priceCurrent && !preview.isFetching && !preview.error &&
     lineCount > 0 && (!payment.paid || reviewCurrent) && (!unlinked || consentCurrent)
 
   async function submit(e: FormEvent) {
@@ -386,6 +409,7 @@ function BillForm({ another }: { another: () => void }) {
     const next = attempt ?? {
       body: {
         ...cart,
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
         settlement_choice: payment.paid === 'part' ? 'partial' : payment.paid === 'none' ? 'unpaid' : 'full',
         reviewed_context: totals!.reviewed_context,
         allow_unassigned_credit: unlinked && consentCurrent,
@@ -622,6 +646,31 @@ function BillForm({ another }: { another: () => void }) {
       <aside className="checkout-summary" aria-label="Customer and payment">
         <fieldset className="bare" disabled={locked}>
           <CustomerPanel customer={customer} onChange={next => { setCustomer(next); setAllowUnassigned(false) }} billType={billType} onBillType={next => { setBillType(next); setAllowUnassigned(false) }} errors={shownErrors} open={customerOpen || !!(shownErrors.phone || shownErrors.gstin)} onOpen={setCustomerOpen} disabled={locked} />
+          <section className="card" aria-label="Invoice details">
+            <label>
+              Invoice date
+              <input
+                type="date"
+                max={today}
+                value={canBackdate ? (billDate || today) : today}
+                disabled={locked || !canBackdate}
+                aria-invalid={!billDateOk || undefined}
+                onChange={e => setBillDate(e.target.value === today ? '' : e.target.value)}
+              />
+            </label>
+            {!canBackdate && <small className="muted">Only owners and admins can backdate invoices.</small>}
+            {!billDateOk && <small className="field-error" role="alert">Choose a date on or before today (from 2000-01-01).</small>}
+            <label className="field-block">
+              Invoice notes
+              <textarea
+                rows={2}
+                maxLength={500}
+                placeholder="Optional note printed on the invoice"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+              />
+            </label>
+          </section>
         </fieldset>
         <section className="card checkout-totals" aria-label="Invoice total" aria-busy={pricing}>
           {!lineCount ? <p className="muted">Totals and payment appear once you add an item.</p> : <>

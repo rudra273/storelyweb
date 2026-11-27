@@ -25,10 +25,74 @@ import type { RoundOffMode, TaxMode } from '../checkout/cart'
 
 type Change = components['schemas']['InvoiceSettingsIn']
 type ShowKey = keyof NonNullable<Change['show']>
+type ResetPeriod = 'never' | 'financial_year' | 'monthly' | 'daily'
 type BillingControlSettings = InvoiceSettings & {
   default_tax_mode?: TaxMode
   round_off_mode?: RoundOffMode
   round_off_increment?: string
+  series_name?: string
+  format_template?: string
+  sequence_padding?: number
+  reset_period?: ResetPeriod
+  next_sequence?: number
+  next_bill_number_preview?: string
+}
+
+const RESET_PERIODS: { value: ResetPeriod; label: string }[] = [
+  { value: 'financial_year', label: 'Financial year (Apr–Mar)' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'never', label: 'Never' },
+]
+
+const ALLOWED_TEMPLATE_TOKENS = new Set(['FY', 'YYYY', 'YY', 'MM', 'DD', 'SEQ', 'DEVICE'])
+
+const effectiveFormatTemplate = (s: BillingControlSettings): string =>
+  s.format_template ?? 'INV/{FY}/{SEQ}'
+
+const effectiveSequencePadding = (s: BillingControlSettings): number =>
+  typeof s.sequence_padding === 'number' ? s.sequence_padding : 4
+
+const effectiveResetPeriod = (s: BillingControlSettings): ResetPeriod =>
+  s.reset_period === 'never' || s.reset_period === 'financial_year' || s.reset_period === 'monthly' || s.reset_period === 'daily'
+    ? s.reset_period
+    : 'financial_year'
+
+const effectiveNextSequence = (s: BillingControlSettings): number =>
+  typeof s.next_sequence === 'number' ? s.next_sequence : 1
+
+function formatTemplateProblem(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return 'Enter an invoice number format template.'
+  if (trimmed.length > 16) return 'Format template can be at most 16 characters.'
+  const tokens = [...trimmed.matchAll(/\{([^}]*)\}/g)]
+  for (const match of tokens) {
+    const token = match[1] ?? ''
+    if (!ALLOWED_TEMPLATE_TOKENS.has(token)) return `Unknown token {${token}}. Allowed: {FY}, {YYYY}, {YY}, {MM}, {DD}, {SEQ}, {DEVICE}.`
+  }
+  const stripped = trimmed.replace(/\{[^}]*\}/g, '')
+  if (stripped.includes('{') || stripped.includes('}')) return 'Unmatched brace in format template.'
+  return null
+}
+
+function computeBillNumberPreview(template: string, padding: number, nextSeq: number): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const d = now.getDate()
+  const fyStart = m >= 3 ? y : y - 1
+  const fy = `${String(fyStart % 100).padStart(2, '0')}${String((fyStart + 1) % 100).padStart(2, '0')}`
+  const pad = Number.isInteger(padding) ? Math.min(8, Math.max(1, padding)) : 4
+  const seqNum = Number.isInteger(nextSeq) && nextSeq >= 1 ? nextSeq : 1
+  const seq = String(seqNum).padStart(pad, '0')
+  return template
+    .replaceAll('{FY}', fy)
+    .replaceAll('{YYYY}', String(y))
+    .replaceAll('{YY}', String(y % 100).padStart(2, '0'))
+    .replaceAll('{MM}', String(m + 1).padStart(2, '0'))
+    .replaceAll('{DD}', String(d).padStart(2, '0'))
+    .replaceAll('{SEQ}', seq)
+    .replaceAll('{DEVICE}', '')
 }
 
 const ROUND_OFF_INCREMENTS = [
@@ -68,6 +132,18 @@ function allSettingsChanges(base: BillingControlSettings, mine: BillingControlSe
   if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
     out.round_off_increment = normalizeIncrement(mine.round_off_increment)
   }
+  if (effectiveFormatTemplate(mine).trim() !== effectiveFormatTemplate(base).trim()) {
+    out.format_template = effectiveFormatTemplate(mine).trim()
+  }
+  if (effectiveSequencePadding(mine) !== effectiveSequencePadding(base)) {
+    out.sequence_padding = effectiveSequencePadding(mine)
+  }
+  if (effectiveResetPeriod(mine) !== effectiveResetPeriod(base)) {
+    out.reset_period = effectiveResetPeriod(mine)
+  }
+  if (effectiveNextSequence(mine) !== effectiveNextSequence(base)) {
+    out.next_sequence = effectiveNextSequence(mine)
+  }
   return out
 }
 
@@ -82,6 +158,10 @@ function allRebaseSettings(base: BillingControlSettings, mine: BillingControlSet
   if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
     merged.round_off_increment = normalizeIncrement(mine.round_off_increment)
   }
+  if (effectiveFormatTemplate(mine).trim() !== effectiveFormatTemplate(base).trim()) merged.format_template = effectiveFormatTemplate(mine).trim()
+  if (effectiveSequencePadding(mine) !== effectiveSequencePadding(base)) merged.sequence_padding = effectiveSequencePadding(mine)
+  if (effectiveResetPeriod(mine) !== effectiveResetPeriod(base)) merged.reset_period = effectiveResetPeriod(mine)
+  if (effectiveNextSequence(mine) !== effectiveNextSequence(base)) merged.next_sequence = effectiveNextSequence(mine)
   return merged
 }
 
@@ -95,6 +175,18 @@ function allSettingsReview(base: BillingControlSettings, mine: BillingControlSet
   }
   if (normalizeIncrement(mine.round_off_increment) !== normalizeIncrement(base.round_off_increment)) {
     rows.push({ label: 'Round-off increment', current: normalizeIncrement(latest.round_off_increment), mine: normalizeIncrement(mine.round_off_increment) })
+  }
+  if (effectiveFormatTemplate(mine).trim() !== effectiveFormatTemplate(base).trim()) {
+    rows.push({ label: 'Format template', current: effectiveFormatTemplate(latest), mine: effectiveFormatTemplate(mine).trim() })
+  }
+  if (effectiveSequencePadding(mine) !== effectiveSequencePadding(base)) {
+    rows.push({ label: 'Sequence padding', current: String(effectiveSequencePadding(latest)), mine: String(effectiveSequencePadding(mine)) })
+  }
+  if (effectiveResetPeriod(mine) !== effectiveResetPeriod(base)) {
+    rows.push({ label: 'Reset period', current: effectiveResetPeriod(latest), mine: effectiveResetPeriod(mine) })
+  }
+  if (effectiveNextSequence(mine) !== effectiveNextSequence(base)) {
+    rows.push({ label: 'Next sequence', current: String(effectiveNextSequence(latest)), mine: String(effectiveNextSequence(mine)) })
   }
   return rows
 }
@@ -226,8 +318,20 @@ function Editor({ saved }: { saved: BillingControlSettings }) {
     if (!draft.shop_name.trim()) found.shop_name = 'Enter the shop name.'
     const checks: [string, string | null][] = [['shop_phone', shopPhoneProblem(draft.shop_phone ?? '')], ['shop_email', emailProblem(draft.shop_email ?? '')], ['shop_gstin', gstinProblem(draft.shop_gstin ?? '')], ['upi_id', upiProblem(draft.upi_id ?? '')]]
     for (const [key, problem] of checks) if (problem) found[key] = problem
+    if (effectiveFormatTemplate(draft).trim() !== effectiveFormatTemplate(baseline).trim()) {
+      const tplErr = formatTemplateProblem(effectiveFormatTemplate(draft))
+      if (tplErr) found.format_template = tplErr
+    }
+    if (effectiveSequencePadding(draft) !== effectiveSequencePadding(baseline)) {
+      const pad = effectiveSequencePadding(draft)
+      if (!Number.isInteger(pad) || pad < 1 || pad > 8) found.sequence_padding = 'Enter a whole number from 1 to 8.'
+    }
+    if (effectiveNextSequence(draft) !== effectiveNextSequence(baseline)) {
+      const seq = effectiveNextSequence(draft)
+      if (!Number.isInteger(seq) || seq < 1) found.next_sequence = 'Enter a whole number of 1 or more.'
+    }
     setProblems(found)
-    if (Object.keys(found).length) { if (found.low_stock_threshold) setTab('shop'); else if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
+    if (Object.keys(found).length) { if (found.low_stock_threshold) setTab('shop'); else if (PRICING_SETTING_KEYS.some(key => found[key])) setTab('pricing'); else if (found.format_template || found.sequence_padding || found.next_sequence) setTab('invoice'); setError('Some details need fixing. They are marked below.'); focusFirstError(); return }
     setError(null)
     const change = allSettingsChanges(baseline, draft)
     if (!Object.keys(change).length) { setDone(true); return }
@@ -257,6 +361,15 @@ function Editor({ saved }: { saved: BillingControlSettings }) {
   }
 
   const changed = Object.keys(allSettingsChanges(baseline, draft)).length > 0
+  const numberingChanged =
+    effectiveFormatTemplate(draft).trim() !== effectiveFormatTemplate(baseline).trim() ||
+    effectiveSequencePadding(draft) !== effectiveSequencePadding(baseline) ||
+    effectiveResetPeriod(draft) !== effectiveResetPeriod(baseline) ||
+    effectiveNextSequence(draft) !== effectiveNextSequence(baseline)
+  const nextBillPreview =
+    !numberingChanged && draft.next_bill_number_preview
+      ? draft.next_bill_number_preview
+      : computeBillNumberPreview(effectiveFormatTemplate(draft), effectiveSequencePadding(draft), effectiveNextSequence(draft))
   useDirtyClose(changed, () => undefined)
   const show = (id: TabId) => ({ hidden: tab !== id, role: 'tabpanel' as const, 'aria-labelledby': `tab-${id}` })
   return <div className="settings-page">
@@ -358,6 +471,49 @@ function Editor({ saved }: { saved: BillingControlSettings }) {
           </section>
 
           <section className="card wide" {...show('invoice')}>
+            <h2 tabIndex={-1} data-settings-section="numbering">Invoice numbering</h2>
+            <div className="form-grid">
+              <Field
+                label="Format template"
+                maxLength={16}
+                value={effectiveFormatTemplate(draft)}
+                error={err('format_template')}
+                hint="Tokens: {FY}, {YYYY}, {YY}, {MM}, {DD}, {SEQ}, {DEVICE}. Max 16 characters."
+                onChange={e => set('format_template', e.target.value)}
+              />
+              <Field
+                label="Sequence padding"
+                type="number"
+                min={1}
+                max={8}
+                step={1}
+                value={Number.isFinite(effectiveSequencePadding(draft)) ? String(effectiveSequencePadding(draft)) : ''}
+                error={err('sequence_padding')}
+                hint="Digits in {SEQ}, from 1 to 8."
+                onChange={e => set('sequence_padding', e.target.value === '' ? Number.NaN : Number(e.target.value))}
+              />
+              <div className="field">
+                <label htmlFor="reset-period">Reset period</label>
+                <select id="reset-period" value={effectiveResetPeriod(draft)} onChange={e => set('reset_period', e.target.value as ResetPeriod)}>
+                  {RESET_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+                <small className="hint">When the sequence restarts at 1.</small>
+              </div>
+              <Field
+                label="Next sequence"
+                type="number"
+                min={1}
+                step={1}
+                value={Number.isFinite(effectiveNextSequence(draft)) ? String(effectiveNextSequence(draft)) : ''}
+                error={err('next_sequence')}
+                hint="Next invoice number in the current period."
+                onChange={e => set('next_sequence', e.target.value === '' ? Number.NaN : Number(e.target.value))}
+              />
+            </div>
+            <p className="muted">Next invoice number preview: <strong data-testid="next-bill-number-preview">{nextBillPreview}</strong></p>
+          </section>
+
+          <section className="card wide" {...show('invoice')}>
             <h2 tabIndex={-1} data-settings-section="visibility">What the invoice shows</h2>
             <div className="show-groups">{GROUPS.map(g => <fieldset key={g.title}><legend>{g.title}</legend>{g.keys.map(([key, label]) => <label key={key} className="check"><input type="checkbox" checked={draft.show[key] !== false} onChange={e => set('show', { ...draft.show, [key]: e.target.checked })} />{label}</label>)}</fieldset>)}</div>
           </section>
@@ -367,7 +523,7 @@ function Editor({ saved }: { saved: BillingControlSettings }) {
             <p className="muted">{paperGuidance(resolvePaper(draft.paper_size))}</p>
             <p className="muted">New invoices, reloads and the PDF open on this paper. Staff can pick another paper for a single print without changing it. Use the preview to check long names and line counts before printing on hardware.</p>
           </section>
-          <p className="muted">Team access is managed under <Link to="/team">Team &amp; permissions</Link>; plan and renewal under <Link to="/subscription">Subscription</Link>.</p>
+          <p className="muted">Team access is managed under <Link to="/team">Team &amp; permissions</Link>; plan and renewal under <Link to="/subscription">Subscription</Link>; history under <Link to="/activity">Activity &amp; audit</Link>.</p>
         </fieldset>
         <div className="settings-save">
           {error && <Alert>{error}</Alert>}

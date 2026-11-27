@@ -130,6 +130,7 @@ export function InvoiceDocument({ detail, settings: s, paper }: { detail: BillDe
       {show('show_payment_details') && detail.payments.length > 0 && <p className="invoice-payments">{b.document_type === 'credit_note' ? 'Refunded' : 'Received'}: {detail.payments.map(p => `${formatMoney(b.document_type === 'credit_note' ? String(Math.abs(Number(p.amount))) : p.amount)} ${p.payment_method === 'credit_note' ? 'applied to the invoice' : `by ${paymentMethod(p.payment_method)}`}${p.payment_reference && p.payment_method !== 'credit_note' ? ` (${p.payment_reference})` : ''}`).join(', ')}</p>}
       <section className="invoice-extras">
         {upi && <div className="invoice-upi"><QRCodeSVG value={upi} size={thermal ? 96 : 112} level="M" marginSize={2} role="img" aria-label={`UPI QR code to pay ${formatMoney(b.balance_due)}`} /><small>Scan to pay {formatMoney(b.balance_due)}<br />{s.upi_id}</small></div>}
+        {b.notes && <div className="invoice-bill-notes"><h4>Notes</h4><p>{b.notes}</p></div>}
         {s.bank_details && !thermal && <div><h4>Bank details</h4><p>{s.bank_details}</p></div>}
         {s.terms_text && <div><h4>Terms</h4><p>{s.terms_text}</p></div>}
       </section>
@@ -145,6 +146,7 @@ type BillingControlBill = BillDetail['bill'] & {
   tax_mode?: 'inclusive' | 'exclusive'
   round_off_mode?: 'none' | 'nearest' | 'up' | 'down'
   round_off_increment?: string
+  notes?: string | null
 }
 
 type Item = BillDetail['items'][number] & {

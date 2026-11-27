@@ -345,6 +345,18 @@
       ],
       "title": "Allow Unassigned Credit"
      },
+     "bill_date": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bill Date"
+     },
      "bill_type": {
       "default": "b2c",
       "enum": [
@@ -479,6 +491,18 @@
       "minItems": 1,
       "title": "Items",
       "type": "array"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
      },
      "payment": {
       "$ref": "#/components/schemas/Payment",
@@ -771,6 +795,97 @@
     "title": "BillLine",
     "type": "object"
    },
+   "BillMetadataPatchIn": {
+    "additionalProperties": false,
+    "properties": {
+     "customer_address": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Address"
+     },
+     "customer_gst_legal_name": {
+      "anyOf": [
+       {
+        "maxLength": 150,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Gst Legal Name"
+     },
+     "customer_gst_trade_name": {
+      "anyOf": [
+       {
+        "maxLength": 150,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Gst Trade Name"
+     },
+     "customer_gstin": {
+      "anyOf": [
+       {
+        "maxLength": 15,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Gstin"
+     },
+     "customer_name": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Name"
+     },
+     "customer_phone": {
+      "anyOf": [
+       {
+        "maxLength": 20,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Phone"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "maxLength": 500,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     }
+    },
+    "title": "BillMetadataPatchIn",
+    "type": "object"
+   },
    "BillPage": {
     "properties": {
      "items": {
@@ -863,6 +978,17 @@
       ],
       "title": "Customer Gst Legal Name"
      },
+     "customer_gst_trade_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Customer Gst Trade Name"
+     },
      "customer_gstin": {
       "anyOf": [
        {
@@ -926,6 +1052,17 @@
      "lifecycle_status": {
       "title": "Lifecycle Status",
       "type": "string"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
      },
      "original_bill_number": {
       "anyOf": [
@@ -1490,6 +1627,18 @@
    "CartIn": {
     "additionalProperties": false,
     "properties": {
+     "bill_date": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bill Date"
+     },
      "bill_type": {
       "default": "b2c",
       "enum": [
@@ -2040,6 +2189,12 @@
       "const": 1,
       "default": 1,
       "title": "Billing Controls",
+      "type": "integer"
+     },
+     "billing_metadata": {
+      "const": 1,
+      "default": 1,
+      "title": "Billing Metadata",
       "type": "integer"
      },
      "native_billing_commands": {
@@ -4215,6 +4370,11 @@
       "title": "Footer Text",
       "type": "string"
      },
+     "format_template": {
+      "default": "INV/{FY}/{SEQ}",
+      "title": "Format Template",
+      "type": "string"
+     },
      "gst_registered": {
       "title": "Gst Registered",
       "type": "boolean"
@@ -4237,8 +4397,29 @@
       "title": "Low Stock Threshold",
       "type": "string"
      },
+     "next_bill_number_preview": {
+      "default": "",
+      "title": "Next Bill Number Preview",
+      "type": "string"
+     },
+     "next_sequence": {
+      "default": 1,
+      "title": "Next Sequence",
+      "type": "integer"
+     },
      "paper_size": {
       "title": "Paper Size",
+      "type": "string"
+     },
+     "reset_period": {
+      "default": "financial_year",
+      "enum": [
+       "never",
+       "financial_year",
+       "monthly",
+       "daily"
+      ],
+      "title": "Reset Period",
       "type": "string"
      },
      "revision": {
@@ -4264,6 +4445,16 @@
      "round_off_total": {
       "title": "Round Off Total",
       "type": "boolean"
+     },
+     "sequence_padding": {
+      "default": 4,
+      "title": "Sequence Padding",
+      "type": "integer"
+     },
+     "series_name": {
+      "default": "Default",
+      "title": "Series Name",
+      "type": "string"
      },
      "shop_address": {
       "anyOf": [
@@ -4491,6 +4682,19 @@
       ],
       "title": "Footer Text"
      },
+     "format_template": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Format Template"
+     },
      "gst_scheme": {
       "anyOf": [
        {
@@ -4535,6 +4739,19 @@
       ],
       "title": "Low Stock Threshold"
      },
+     "next_sequence": {
+      "anyOf": [
+       {
+        "maximum": 999999999.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Sequence"
+     },
      "paper_size": {
       "anyOf": [
        {
@@ -4551,6 +4768,23 @@
        }
       ],
       "title": "Paper Size"
+     },
+     "reset_period": {
+      "anyOf": [
+       {
+        "enum": [
+         "never",
+         "financial_year",
+         "monthly",
+         "daily"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reset Period"
      },
      "round_off_increment": {
       "anyOf": [
@@ -4595,6 +4829,32 @@
        }
       ],
       "title": "Round Off Total"
+     },
+     "sequence_padding": {
+      "anyOf": [
+       {
+        "maximum": 8.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sequence Padding"
+     },
+     "series_name": {
+      "anyOf": [
+       {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Series Name"
      },
      "shop_address": {
       "anyOf": [
@@ -12061,6 +12321,124 @@
     "title": "ShopOut",
     "type": "object"
    },
+   "ShopStockLedgerPage": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ShopStockMovementOut"
+      },
+      "title": "Items",
+      "type": "array"
+     },
+     "next_cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Cursor"
+     }
+    },
+    "required": [
+     "items",
+     "next_cursor"
+    ],
+    "title": "ShopStockLedgerPage",
+    "type": "object"
+   },
+   "ShopStockMovementOut": {
+    "properties": {
+     "balance_after": {
+      "title": "Balance After",
+      "type": "string"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "movement_type": {
+      "title": "Movement Type",
+      "type": "string"
+     },
+     "product_name": {
+      "title": "Product Name",
+      "type": "string"
+     },
+     "product_uuid": {
+      "title": "Product Uuid",
+      "type": "string"
+     },
+     "quantity_delta": {
+      "title": "Quantity Delta",
+      "type": "string"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "source_document_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Document Type"
+     },
+     "source_document_uuid": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Document Uuid"
+     },
+     "unit_cost": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit Cost"
+     },
+     "uuid": {
+      "title": "Uuid",
+      "type": "string"
+     }
+    },
+    "required": [
+     "uuid",
+     "product_uuid",
+     "product_name",
+     "movement_type",
+     "quantity_delta",
+     "balance_after",
+     "reason",
+     "source_document_type",
+     "source_document_uuid",
+     "created_at"
+    ],
+    "title": "ShopStockMovementOut",
+    "type": "object"
+   },
    "SignupIn": {
     "properties": {
      "email": {
@@ -15234,6 +15612,57 @@
      },
      {
       "in": "query",
+      "name": "action",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 40,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Action"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "in": "query",
       "name": "q",
       "required": false,
       "schema": {
@@ -15904,6 +16333,66 @@
      }
     },
     "summary": "Bill Detail",
+    "tags": [
+     "billing"
+    ]
+   },
+   "patch": {
+    "description": "Update non-financial buyer metadata and notes on a live posted bill.",
+    "operationId": "edit_bill_metadata_v1_shops__shop_id__bills__bill_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "bill_id",
+      "required": true,
+      "schema": {
+       "title": "Bill Id",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BillMetadataPatchIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BillDetail"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Edit Bill Metadata",
     "tags": [
      "billing"
     ]
@@ -21058,6 +21547,30 @@
        "title": "Shop Id",
        "type": "string"
       }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 100,
+       "maximum": 200,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "offset",
+      "required": false,
+      "schema": {
+       "default": 0,
+       "maximum": 100000,
+       "minimum": 0,
+       "title": "Offset",
+       "type": "integer"
+      }
      }
     ],
     "responses": {
@@ -21089,6 +21602,152 @@
     "summary": "Shop Security Events",
     "tags": [
      "shops"
+    ]
+   }
+  },
+  "/v1/shops/{shop_id}/stock-movements": {
+   "get": {
+    "description": "Shop-wide stock ledger across all products, newest first.",
+    "operationId": "shop_stock_ledger_v1_shops__shop_id__stock_movements_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "shop_id",
+      "required": true,
+      "schema": {
+       "title": "Shop Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "in": "query",
+      "name": "type",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "purchase",
+          "sale",
+          "adjustment",
+          "return",
+          "void",
+          "stocktake"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Type"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 100,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 25,
+       "maximum": 100,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     {
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Cursor"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ShopStockLedgerPage"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Shop Stock Ledger",
+    "tags": [
+     "catalog"
     ]
    }
   },
